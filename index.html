@@ -1316,7 +1316,7 @@ async function callAnthropicAPI(prompt, model){
   const modelToUse = model || state.config.modelFast;
   let response;
   try{
-    response = await fetch('/.netlify/functions/anthropic-proxy', {
+    response = await fetch('/api/ai-proxy', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
