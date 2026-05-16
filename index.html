@@ -8,38 +8,41 @@
 <meta name="apple-mobile-web-app-title" content="Brokkom CRM">
 <meta name="theme-color" content="#1a3a6b">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a3a6b'/><rect x='10' y='30' width='55' height='35' rx='6' fill='%234a90d9'/><rect x='65' y='42' width='25' height='22' rx='4' fill='%237ab8f5'/><circle cx='22' cy='72' r='8' fill='white'/><circle cx='52' cy='72' r='8' fill='white'/><circle cx='78' cy='72' r='8' fill='white'/></svg>">
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Brokkom CRM&quot;,&quot;short_name&quot;:&quot;Brokkom&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231a3a6b&quot;,&quot;theme_color&quot;:&quot;%231a3a6b&quot;}">
 <title>BROKKOM CRM · Suport comercial</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
   :root{
-    --bg:#fafaf7;
+    --bg:#ffffff;
     --surface:#ffffff;
-    --surface-2:#f4f3ee;
-    --border:rgba(0,0,0,0.08);
-    --border-2:rgba(0,0,0,0.15);
-    --text:#1a1a1a;
-    --text-2:#5a5a5a;
-    --text-3:#888780;
-    --primary:#1a3a6b;
-    --primary-2:#2a4d8a;
-    --accent:#185FA5;
-    --success:#27500A;
-    --success-bg:#EAF3DE;
-    --warning:#633806;
-    --warning-bg:#FAEEDA;
-    --danger:#791F1F;
-    --danger-bg:#FCEBEB;
-    --info:#0C447C;
-    --info-bg:#E6F1FB;
-    --purple:#3C3489;
-    --purple-bg:#EEEDFE;
-    --radius:8px;
-    --radius-lg:12px;
-    --shadow:0 1px 3px rgba(0,0,0,0.04);
+    --surface-2:#f7fafa;
+    --surface-3:#edfaf8;
+    --border:rgba(0,0,0,0.07);
+    --border-2:rgba(0,0,0,0.12);
+    --text:#111827;
+    --text-2:#4B5563;
+    --text-3:#9CA3AF;
+    --primary:#0D9488;
+    --primary-2:#0F766E;
+    --primary-light:#CCFBF1;
+    --accent:#0D9488;
+    --success:#065F46;
+    --success-bg:#D1FAE5;
+    --warning:#92400E;
+    --warning-bg:#FEF3C7;
+    --danger:#991B1B;
+    --danger-bg:#FEE2E2;
+    --info:#0D9488;
+    --info-bg:#F0FDFA;
+    --purple:#6D28D9;
+    --purple-bg:#EDE9FE;
+    --radius:10px;
+    --radius-lg:14px;
+    --shadow:0 1px 4px rgba(0,0,0,0.06);
+    --shadow-md:0 4px 16px rgba(13,148,136,0.10);
   }
   body{
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+    font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:var(--bg);
     color:var(--text);
     line-height:1.5;
@@ -48,46 +51,48 @@
   }
   .layout{display:flex;min-height:100vh}
   .sidebar{
-    width:220px;
-    background:var(--surface);
+    width:230px;
+    background:#ffffff;
     border-right:1px solid var(--border);
-    padding:20px 12px;
+    padding:24px 14px;
     flex-shrink:0;
     overflow-y:auto;
+    box-shadow:1px 0 0 var(--border);
   }
   .main{flex:1;padding:24px 32px;overflow-y:auto}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:0 8px}
-  .brand-logo{width:36px;height:36px;border-radius:var(--radius);background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .brand-name{font-size:14px;font-weight:600;color:var(--text)}
+  .brand-logo{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:13px;color:#fff;letter-spacing:-0.5px;flex-shrink:0}
+  .brand-name{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
   .brand-sub{font-size:11px;color:var(--text-3);margin-top:1px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-2);margin-bottom:2px;transition:all 0.1s}
-  .nav-item:hover{background:var(--surface-2);color:var(--text)}
-  .nav-item.active{background:var(--info-bg);color:var(--info);font-weight:500}
-  .nav-item .badge{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-3)}
-  .nav-item.active .badge{background:rgba(12,68,124,0.1);color:var(--info)}
-  .nav-divider{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;padding:14px 10px 6px;font-weight:500}
-  .nav-status{margin-top:24px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius);font-size:11px;color:var(--text-3)}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-2);margin-bottom:1px;transition:all 0.15s;font-weight:400}
+  .nav-item:hover{background:var(--surface-3);color:var(--text)}
+  .nav-item.active{background:var(--primary-light);color:var(--primary-2);font-weight:500}
+  .nav-item .badge{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:10px;background:var(--surface-2);color:var(--text-3)}
+  .nav-item.active .badge{background:rgba(13,148,136,0.15);color:var(--primary-2)}
+  .nav-divider{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;padding:16px 12px 6px;font-weight:600}
+  .nav-status{margin-top:24px;padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);font-size:11px;color:var(--text-3);border:1px solid var(--border)}
   .nav-status .ok{color:var(--success);font-weight:500}
   .nav-status .err{color:var(--danger);font-weight:500}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-  .page-title{font-size:20px;font-weight:600;color:var(--text)}
+  .page-title{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.4px}
   .page-sub{font-size:13px;color:var(--text-2);margin-top:2px}
   .topbar-actions{display:flex;gap:8px;align-items:center}
-  .btn{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.1s;display:inline-flex;align-items:center;gap:6px}
-  .btn:hover{background:var(--surface-2)}
-  .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
-  .btn-primary:hover{background:var(--primary-2)}
-  .btn-sm{font-size:12px;padding:5px 10px}
+  .btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;font-weight:400}
+  .btn:hover{background:var(--surface-2);border-color:rgba(0,0,0,0.18)}
+  .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500;box-shadow:0 1px 4px rgba(13,148,136,0.25)}
+  .btn-primary:hover{background:var(--primary-2);border-color:var(--primary-2);box-shadow:0 2px 8px rgba(13,148,136,0.35)}
+  .btn-sm{font-size:12px;padding:5px 11px;border-radius:8px}
   .btn-icon{padding:6px 8px}
   .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;transition:box-shadow 0.15s}
+  .metric:hover{box-shadow:var(--shadow-md)}
   .metric-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px}
   .metric-value{font-size:24px;font-weight:600;color:var(--text);line-height:1.2}
   .metric-sub{font-size:11px;color:var(--text-3);margin-top:3px}
   .metric-trend{font-size:11px;color:var(--success);margin-top:3px;font-weight:500}
   .metric-trend.down{color:var(--danger)}
   .section-title{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;font-weight:500}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow)}
   .card.compact{padding:12px 14px}
   .card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
   .card-title{font-size:14px;font-weight:600;color:var(--text)}
@@ -95,7 +100,7 @@
   .card-divider{height:1px;background:var(--border);margin:10px 0}
   .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500}
   .p-pend{background:var(--warning-bg);color:var(--warning)}
-  .p-info{background:var(--info-bg);color:var(--info)}
+  .p-info{background:var(--primary-light);color:var(--primary-2)}
   .p-purple{background:var(--purple-bg);color:var(--purple)}
   .p-success{background:var(--success-bg);color:var(--success)}
   .p-danger{background:var(--danger-bg);color:var(--danger)}
@@ -107,7 +112,7 @@
   input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],input[type=password],select,textarea{
     font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--surface);color:var(--text);width:100%;outline:none;transition:border 0.1s
   }
-  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(13,148,136,0.1)}
   textarea{resize:vertical;min-height:80px;line-height:1.5}
   label{font-size:12px;color:var(--text-2);display:block;margin-bottom:4px;font-weight:500}
   .form-row{margin-bottom:12px}
@@ -132,7 +137,7 @@
   .pipeline-col-title{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;padding:0 4px;display:flex;justify-content:space-between;align-items:center}
   .pipeline-col-count{font-size:10px;background:var(--surface);color:var(--text-3);padding:1px 6px;border-radius:10px}
   .pipeline-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;cursor:pointer;font-size:12px;transition:all 0.1s}
-  .pipeline-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .pipeline-card:hover{border-color:var(--primary);transform:translateY(-1px);box-shadow:0 2px 8px rgba(13,148,136,0.12)}
   .pipeline-card-title{font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.3}
   .pipeline-card-sub{font-size:11px;color:var(--text-3)}
   .pipeline-card-amount{font-size:11px;color:var(--success);font-weight:500;margin-top:3px}
@@ -156,17 +161,17 @@
   .chart-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
   .chart-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 0.3s}
   .chart-value{flex:0 0 60px;text-align:right;color:var(--text);font-weight:500}
-  .ai-input-area{background:var(--info-bg);border:1px solid rgba(12,68,124,0.15);border-radius:var(--radius-lg);padding:14px;margin-bottom:16px}
-  .ai-input-title{font-size:12px;color:var(--info);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-  .ai-input-area textarea{background:var(--surface);min-height:90px}
+  .ai-input-area{background:var(--info-bg);border:1px solid rgba(13,148,136,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px}
+  .ai-input-title{font-size:12px;color:var(--primary);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .ai-input-area textarea{background:var(--surface);min-height:90px;border-color:rgba(13,148,136,0.2)}
   .opp-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;margin-bottom:8px}
   .opp-card.alta{border-left-color:#E24B4A}
   .opp-card.mitjana{border-left-color:#EF9F27}
   .opp-card.baixa{border-left-color:#639922}
   .topic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
   .topic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;cursor:pointer;transition:all 0.1s}
-  .topic-card:hover{border-color:var(--accent);transform:translateY(-2px)}
-  .topic-card.selected{border-color:var(--accent);background:var(--info-bg)}
+  .topic-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .topic-card.selected{border-color:var(--primary);background:var(--info-bg)}
   .topic-icon{font-size:20px;margin-bottom:8px}
   .topic-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
   .topic-hint{font-size:11px;color:var(--text-3);line-height:1.4}
@@ -190,11 +195,11 @@
   }
 
   .idea-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:0 var(--radius-lg) var(--radius-lg) 0;padding:12px 14px;margin-bottom:8px}
-  .idea-card.linkedin{border-left-color:var(--info)}
+  .idea-card.linkedin{border-left-color:var(--primary)}
   .idea-card.comercial{border-left-color:var(--success)}
   .idea-card.proces{border-left-color:var(--warning)}
   .hashtag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--purple-bg);color:var(--purple);margin-right:4px;font-weight:500}
-  .pwa-banner{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);color:#fff;padding:12px 16px;z-index:300;font-size:13px;align-items:center;gap:10px;box-shadow:0 -2px 12px rgba(0,0,0,0.2)}
+  .pwa-banner{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);color:#fff;padding:12px 18px;z-index:300;font-size:13px;align-items:center;gap:10px;box-shadow:0 -2px 16px rgba(13,148,136,0.25)}
   .pwa-banner.show{display:flex}
   .pwa-banner strong{flex:1}
   .pwa-banner .btn-pwa{background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.3);font-size:12px;padding:6px 12px}
@@ -202,9 +207,9 @@
   .img-preview{max-width:100%;border-radius:var(--radius);margin-bottom:10px;max-height:200px;object-fit:contain}
   .hashtag-helper{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .hashtag-btn{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border-2);background:var(--surface);cursor:pointer;color:var(--text-2);transition:all 0.1s}
-  .hashtag-btn:hover{background:var(--purple-bg);color:var(--purple);border-color:var(--purple)}
+  .hashtag-btn:hover{background:var(--primary-light);color:var(--primary-2);border-color:var(--primary)}
   .hidden{display:none !important}
-  .ai-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:1px 6px;background:var(--purple-bg);color:var(--purple);border-radius:10px;margin-left:6px;font-weight:500}
+  .ai-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;background:var(--primary-light);color:var(--primary-2);border-radius:10px;margin-left:6px;font-weight:500;border:1px solid rgba(13,148,136,0.2)}
   .ai-chip::before{content:"●";font-size:8px}
   details summary{cursor:pointer;font-size:12px;color:var(--text-2);padding:6px 0}
   details summary:hover{color:var(--text)}
@@ -217,15 +222,7 @@
 
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand-logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="6" width="14" height="9" rx="1.5" fill="#4a90d9"/>
-        <rect x="16" y="9" width="6" height="6" rx="1" fill="#7ab8f5"/>
-        <circle cx="6" cy="17" r="2" fill="#fff"/>
-        <circle cx="14" cy="17" r="2" fill="#fff"/>
-        <circle cx="19" cy="17" r="2" fill="#fff"/>
-      </svg>
-    </div>
+    <div class="brand-logo">KK</div>
     <div>
       <div class="brand-name">BROKKOM</div>
       <div class="brand-sub">CRM comercial</div>
@@ -254,8 +251,8 @@
   <div class="nav-item" data-tab="config">⚙️ Configuració</div>
 
   <div class="nav-status">
-    <div>API Anthropic</div>
-    <div id="api-status" class="err">⚠️ no configurada</div>
+    <div>IA</div>
+    <div id="api-status" class="ok">✓ servidor actiu</div>
   </div>
 </aside>
 
@@ -573,25 +570,25 @@
 
   <div class="section-title">API Anthropic</div>
   <div class="card">
-    <div class="form-row">
-      <label>Clau API (es guarda només al teu navegador)</label>
-      <input type="password" id="config-api-key" placeholder="sk-ant-api03-...">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--success-bg);border-radius:var(--radius);margin-bottom:14px">
+      <span style="font-size:18px">✓</span>
+      <div><div style="font-weight:500;font-size:13px;color:var(--success)">Clau API configurada al servidor</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">La clau viu a Vercel i mai s'exposa al navegador</div></div>
     </div>
     <div class="form-row">
-      <label>Model per defecte (tasques simples)</label>
+      <label>Model per a tasques simples (extracció, classificació)</label>
       <select id="config-model-fast">
-        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (ràpid, barat)</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (ràpid, econòmic)</option>
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (intermedi)</option>
       </select>
     </div>
     <div class="form-row">
-      <label>Model per a tasques complexes (posts, anàlisi)</label>
+      <label>Model per a tasques complexes (posts, anàlisi estratègica)</label>
       <select id="config-model-smart">
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recomanat)</option>
-        <option value="claude-opus-4-7">Claude Opus 4.7 (màxima qualitat)</option>
+        <option value="claude-opus-4-6">Claude Opus 4.6 (màxima qualitat)</option>
       </select>
     </div>
-    <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar configuració</button>
+    <button class="btn btn-primary" onclick="saveConfig()">Guardar preferències</button>
   </div>
 
   <div class="section-title" style="margin-top:24px">Mediadors</div>
@@ -622,11 +619,11 @@
 
   <div class="section-title" style="margin-top:24px">Sobre BROKKOM CRM</div>
   <div class="card" style="font-size:12px;color:var(--text-2);line-height:1.7">
-    <strong style="color:var(--text)">Versió 1.0</strong> · Suport comercial per a corredoria de seguros<br>
+    <strong style="color:var(--text)">Versió 2.0</strong> · Suport comercial per a corredoria de seguros<br>
     Disseny i desenvolupament: Brokkom amb assistència IA<br>
-    Stack: HTML + JavaScript pur · localStorage · API Anthropic<br>
+    Stack: HTML + JS · localStorage · API Anthropic via Vercel · Proxy serverless<br>
     <br>
-    Properes versions: integració Supabase (multi-dispositiu), Apollo.io (prospecció), accés multi-usuari.
+    Properes versions: Supabase (multi-dispositiu), Apollo.io (prospecció), accés multi-usuari.
   </div>
 </div>
 
@@ -647,7 +644,7 @@
       <option value="linkedin">LinkedIn</option>
       <option value="comercial">Comercial</option>
       <option value="producte">Producte</option>
-      <option value="proces">Procés</option>
+      <option value="proces">Procos</option>
       <option value="altres">Altres</option>
     </select>
     <select id="filter-idees-estat" onchange="renderIdees()">
@@ -662,7 +659,6 @@
 </main>
 </div>
 
-
 <div class="pwa-banner" id="pwa-banner">
   <strong>📱 Afegeix Brokkom CRM a la pantalla d'inici</strong>
   <span style="font-size:12px;opacity:0.8">Accés directe com una app</span>
@@ -671,7 +667,6 @@
 </div>
 <div id="modal-container"></div>
 <div id="toast-container"></div>
-
 
 <script>
 const STATE_KEY = 'brokkom_crm_v1';
@@ -777,8 +772,8 @@ function updateNavBadges(){
   document.getElementById('nav-venc').textContent = state.venciments.length;
   document.getElementById('nav-tasques').textContent = state.tasques.filter(t=>t.estat==='pendent').length;
   const navIdees = document.getElementById('nav-idees'); if(navIdees) navIdees.textContent = (state.idees||[]).filter(i=>i.estat==='nova').length;
-  document.getElementById('api-status').className = state.config.apiKey ? 'ok' : 'err';
-  document.getElementById('api-status').textContent = state.config.apiKey ? '✓ configurada' : '⚠️ no configurada';
+  document.getElementById('api-status').className = 'ok';
+  document.getElementById('api-status').textContent = '✓ clau al servidor';
 }
 
 function renderDashboard(){
@@ -1344,7 +1339,6 @@ function savePost(){
 }
 
 function renderConfig(){
-  document.getElementById('config-api-key').value = state.config.apiKey || '';
   document.getElementById('config-model-fast').value = state.config.modelFast;
   document.getElementById('config-model-smart').value = state.config.modelSmart;
   renderMediadors();
@@ -1376,29 +1370,23 @@ function addMediador(){state.mediadors.push('Nou mediador');saveState();renderMe
 function addRam(){state.rams.push('Nou ram');saveState();renderRams()}
 
 function saveConfig(){
-  state.config.apiKey = document.getElementById('config-api-key').value.trim();
   state.config.modelFast = document.getElementById('config-model-fast').value;
   state.config.modelSmart = document.getElementById('config-model-smart').value;
   saveState();
   updateNavBadges();
-  toast('Configuració guardada');
+  toast('Preferències guardades');
 }
 
 function renderIA(){
-  document.getElementById('ia-cost-estimate').textContent = state.config.apiKey ? '~0,002€ per processament (Haiku)' : '⚠️ Configura primer la API Key';
+  document.getElementById('ia-cost-estimate').textContent = '~0,002€ per processament (Haiku) · clau al servidor';
 }
 
 async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='image/jpeg'){
-  // Usem proxy serverless per evitar problemes amb iOS/Safari
   const msgContent = [];
   if(imageBase64){
-    msgContent.push({
-      type:'image',
-      source:{type:'base64', media_type:imageType, data:imageBase64}
-    });
+    msgContent.push({type:'image', source:{type:'base64', media_type:imageType, data:imageBase64}});
   }
   msgContent.push({type:'text', text:prompt});
-
   const response = await fetch('/api/ai-proxy', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1408,11 +1396,14 @@ async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='imag
       messages: [{role:'user', content:msgContent}]
     })
   });
+  const responseText = await response.text();
   if(!response.ok){
-    const err = await response.text();
-    throw new Error(`API error ${response.status}: ${err}`);
+    throw new Error(`API error ${response.status}: ${responseText}`);
   }
-  const data = await response.json();
+  let data;
+  try{ data = JSON.parse(responseText); }
+  catch(e){ throw new Error('Resposta invàlida del servidor: '+responseText.slice(0,100)); }
+  if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
   return data.content[0].text;
 }
 
@@ -1423,11 +1414,7 @@ async function processarIA(){
   const resultDiv = document.getElementById('ia-result-content');
   document.getElementById('ia-result').classList.remove('hidden');
   resultDiv.innerHTML = '<div class="empty-state">🔄 Processant amb IA...</div>';
-  
-  // Detectar hashtags
   const hashtags = detectHashtags(text);
-  const voldIdea = hashtags.includes('idea') || hashtags.includes('borrador') || hashtags.length === 0;
-  const voldDades = hashtags.some(t=>['client','oferta','seguiment','tasca','venciment'].includes(t)) || hashtags.length === 0;
   const prompt = `Ets el CRM intel·ligent de Brokkom Correduria de Seguros (sector transport). Analitza aquest contingut i extreu de forma estructurada en JSON:
 
 {
@@ -1448,7 +1435,7 @@ Regles importants:
 - Si l'estalvi supera el 30%, marca-ho com a alerta
 - Numbers: només números, sense símbol €
 - Si una dada no apareix, no la inventis (deixa-la buida)
-- Qualsevol observació interessant, reflexió de negoci, idea de post o millora de procés que aparegui → inclou-la a 'idees' amb la categoria adequada
+- Qualsevol observació interessant, reflexió de negoci, idea de post o millora de procés → inclou-la a 'idees'
 - Empreses: si parla de "ells", "la companyia", etc., busca el context per identificar de quina empresa es tracta
 
 TEXT A ANALITZAR:
@@ -1457,7 +1444,6 @@ ${text}
 Retorna NOMÉS el JSON, sense cap explicació.`;
   try{
     const result = await callAnthropicAPI(prompt, hasImage ? state.config.modelSmart : state.config.modelFast, _currentImageBase64, _currentImageType);
-    // Netejar imatge un cop processada
     clearImage();
     let parsed;
     try{
@@ -1521,7 +1507,6 @@ Retorna NOMÉS el JSON, sense cap explicació.`;
 }
 
 async function regenerarOportunitats(){
-  if(!state.config.apiKey){toast('Configura primer la API Key','error');return}
   if(state.clients.length === 0){toast('Cal tenir clients registrats primer','error');return}
   toast('Regenerant amb IA...');
   const prompt = `Per a aquests clients de Brokkom Correduria de Seguros (sector transport), detecta oportunitats de cross-selling/upselling tenint en compte:
@@ -1561,7 +1546,6 @@ Retorna NOMÉS un array JSON:
 }
 
 async function iaAccio(tipus){
-  if(!state.config.apiKey){toast('Configura primer la API Key','error');return}
   let prompt = '';
   if(tipus === 'resum-pipeline'){
     prompt = `Fes un resum executiu del pipeline comercial de Brokkom (3-4 paràgrafs en català):
@@ -1723,6 +1707,30 @@ function openModal(type, data={}){
         <button class="btn btn-primary" onclick="saveTasca()">Guardar</button>
       </div>
     `;
+  }else if(type === 'idea'){
+    html = `
+      <div class="modal-title">Nova idea</div>
+      <div class="modal-sub">Apunta una idea al vol</div>
+      <div class="form-row"><label>Títol / resum *</label><input type="text" id="m-titol" placeholder="Idea en 5-10 paraules..."></div>
+      <div class="form-row"><label>Contingut / detall</label><textarea id="m-contingut" placeholder="Desenvolupa la idea, afegeix context..."></textarea></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Categoria</label><select id="m-categoria">
+          <option value="linkedin">LinkedIn</option>
+          <option value="comercial">Comercial</option>
+          <option value="producte">Producte</option>
+          <option value="proces">Procos</option>
+          <option value="altres" selected>Altres</option>
+        </select></div>
+        <div class="form-row"><label>Estat</label><select id="m-estat">
+          <option value="nova" selected>Nova</option>
+          <option value="desenvolupant">En desenvolupament</option>
+        </select></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel·lar</button>
+        <button class="btn btn-primary" onclick="saveIdea()">Guardar idea</button>
+      </div>
+    `;
   }else if(type === 'asseguradora'){
     html = `
       <div class="modal-title">Nova asseguradora</div>
@@ -1739,30 +1747,6 @@ function openModal(type, data={}){
         <button class="btn btn-primary" onclick="saveAsseguradora()">Guardar</button>
       </div>
     `;
-  }else if(type === 'idea'){
-    html = `
-      <div class="modal-title">Nova idea</div>
-      <div class="modal-sub">Apunta una idea al vol</div>
-      <div class="form-row"><label>Títol / resum *</label><input type="text" id="m-titol" placeholder="Idea en 5-10 paraules..."></div>
-      <div class="form-row"><label>Contingut / detall</label><textarea id="m-contingut" placeholder="Desenvolupa la idea, afegeix context..."></textarea></div>
-      <div class="form-grid">
-        <div class="form-row"><label>Categoria</label><select id="m-categoria">
-          <option value="linkedin">LinkedIn</option>
-          <option value="comercial">Comercial</option>
-          <option value="producte">Producte</option>
-          <option value="proces">Procés</option>
-          <option value="altres" selected>Altres</option>
-        </select></div>
-        <div class="form-row"><label>Estat</label><select id="m-estat">
-          <option value="nova" selected>Nova</option>
-          <option value="desenvolupant">En desenvolupament</option>
-        </select></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">Cancel·lar</button>
-        <button class="btn btn-primary" onclick="saveIdea()">Guardar idea</button>
-      </div>
-    \`;
   }else if(type === 'consolidat'){
     const clientOptions = state.clients.map(c=>`<option value="${c.id}" ${c.id===data.clientId?'selected':''}>${c.empresa}</option>`).join('');
     const ramOptions = state.rams.map(r=>`<option ${data.ram===r?'selected':''}>${r}</option>`).join('');
@@ -1794,24 +1778,6 @@ function openModal(type, data={}){
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
 }
 
-function saveIdea(){
-  const titol = document.getElementById('m-titol').value.trim();
-  if(!titol){toast('Títol obligatori','error');return}
-  if(!state.idees) state.idees = [];
-  state.idees.unshift({
-    id:uid(), titol,
-    contingut:document.getElementById('m-contingut').value,
-    categoria:document.getElementById('m-categoria').value,
-    estat:document.getElementById('m-estat').value,
-    creat:new Date().toISOString(),
-    origen:'manual'
-  });
-  saveState();
-  closeModal();
-  renderIdees();
-  updateNavBadges();
-  toast('Idea guardada');
-}
 function closeModal(){document.getElementById('modal-container').innerHTML = ''}
 
 function saveClient(id){
@@ -2116,7 +2082,7 @@ function renderIdees(){
     <div class="idea-card ${idea.categoria||'altres'}">
       <div class="card-row">
         <div style="flex:1">
-          <div class="card-title">${idea.titol||'Sense títol'}</div>
+          <div class="card-title">${idea.titol||'Sense titol'}</div>
           <div class="card-sub">${fmtDate(idea.creat)}${idea.origen?' · '+idea.origen:''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end">
@@ -2126,9 +2092,9 @@ function renderIdees(){
       </div>
       ${idea.contingut?`<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--text-2)">${idea.contingut}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-        ${idea.categoria==='linkedin'||idea.categoria==='borrador'?`<button class="btn btn-sm" onclick="convertirIdeaPostLinkedIn('${idea.id}')">✍️ Generar post</button>`:''}
+        ${idea.categoria==='linkedin'||idea.categoria==='borrador'?`<button class="btn btn-sm" onclick="convertirIdeaPostLinkedIn('${idea.id}')">Generar post</button>`:''}
         <button class="btn btn-sm" onclick="canviarEstatIdea('${idea.id}')">Canviar estat</button>
-        <button class="btn btn-sm" onclick="deleteIdea('${idea.id}')" style="color:var(--danger)">🗑</button>
+        <button class="btn btn-sm" onclick="deleteIdea('${idea.id}')" style="color:var(--danger)">Esborrar</button>
       </div>
     </div>
   `).join('');
@@ -2140,48 +2106,45 @@ function canviarEstatIdea(id){
   const estats = ['nova','desenvolupant','descartada'];
   const idx = estats.indexOf(idea.estat||'nova');
   idea.estat = estats[(idx+1)%estats.length];
-  saveState();
-  renderIdees();
-  updateNavBadges();
+  saveState(); renderIdees(); updateNavBadges();
 }
 
 function deleteIdea(id){
   state.idees = (state.idees||[]).filter(i=>i.id!==id);
-  saveState();
-  renderIdees();
-  updateNavBadges();
+  saveState(); renderIdees(); updateNavBadges();
+}
+
+function saveIdea(){
+  const titol = document.getElementById('m-titol').value.trim();
+  if(!titol){toast('Titol obligatori','error');return}
+  if(!state.idees) state.idees = [];
+  state.idees.unshift({
+    id:uid(), titol,
+    contingut:document.getElementById('m-contingut').value,
+    categoria:document.getElementById('m-categoria').value,
+    estat:document.getElementById('m-estat').value,
+    creat:new Date().toISOString(),
+    origen:'manual'
+  });
+  saveState(); closeModal(); renderIdees(); updateNavBadges();
+  toast('Idea guardada');
 }
 
 async function convertirIdeaPostLinkedIn(id){
-  if(!state.config.apiKey && !true){ toast('Cal configurar la API Key','error'); return; }
   const idea = (state.idees||[]).find(x=>x.id===id);
   if(!idea) return;
   toast('Generant post...');
   const prompt = `Escriu un post professional de LinkedIn per a Brokkom Correduria de Seguros (especialitzada en sector transport).
-
 Idea base: ${idea.titol}
 Detalls: ${idea.contingut||''}
-
-Requisits:
-- Català natural i professional
-- 150-250 paraules
-- Hook potent a la primera línia
-- Estructura: problema → context → solució Brokkom → CTA
-- To proper, expert
-- Màxim 2 emojis
-- Acaba amb call to action concret
-- Sense hashtags
-
-Retorna només el text del post.`;
+Requisits: catala natural i professional, 150-250 paraules, hook potent, estructura problema-context-solucio-CTA, maxim 2 emojis, sense hashtags.
+Retorna nomes el text del post.`;
   try{
     const result = await callAnthropicAPI(prompt, state.config.modelSmart);
     state.posts.unshift({id:uid(), tema:idea.titol, contingut:result, data:new Date().toISOString()});
-    saveState();
-    showTab('comunicacio');
-    toast('Post generat i guardat a LinkedIn ✓');
-  }catch(e){
-    toast('Error: '+e.message,'error');
-  }
+    saveState(); showTab('comunicacio');
+    toast('Post generat i guardat');
+  }catch(e){ toast('Error: '+e.message,'error'); }
 }
 
 // ============================================================
@@ -2190,10 +2153,7 @@ Retorna només el text del post.`;
 function addHashtag(tag){
   const ta = document.getElementById('ia-input');
   if(!ta) return;
-  const val = ta.value;
-  if(!val.includes(tag)){
-    ta.value = (val ? val + ' ' : '') + tag + ' ';
-  }
+  if(!ta.value.includes(tag)) ta.value = (ta.value ? ta.value+' ' : '')+tag+' ';
   ta.focus();
 }
 
@@ -2206,9 +2166,8 @@ function loadImage(event){
   _currentImageType = file.type || 'image/jpeg';
   const reader = new FileReader();
   reader.onload = e => {
-    const dataUrl = e.target.result;
-    _currentImageBase64 = dataUrl.split(',')[1];
-    document.getElementById('ia-img-preview').src = dataUrl;
+    _currentImageBase64 = e.target.result.split(',')[1];
+    document.getElementById('ia-img-preview').src = e.target.result;
     document.getElementById('ia-img-preview-wrap').classList.remove('hidden');
   };
   reader.readAsDataURL(file);
@@ -2223,7 +2182,7 @@ function clearImage(){
 function detectHashtags(text){
   const tags = [];
   if(text.includes('#client')) tags.push('client');
-  if(text.includes('#oferta') || text.includes('#cotització')) tags.push('oferta');
+  if(text.includes('#oferta')||text.includes('#cotitzacio')) tags.push('oferta');
   if(text.includes('#idea')) tags.push('idea');
   if(text.includes('#borrador')) tags.push('borrador');
   if(text.includes('#seguiment')) tags.push('seguiment');
@@ -2233,39 +2192,36 @@ function detectHashtags(text){
 }
 
 // ============================================================
-// PWA — instruccions per afegir a pantalla inici
+// PWA
 // ============================================================
 function showPWAInstructions(){
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="modal-title">📱 Afegir a la pantalla d'inici</div>
-    <div class="modal-sub">Accés directe com una app nativa</div>
+    <div class="modal-title">Afegir a la pantalla d'inici</div>
+    <div class="modal-sub">Acces directe com una app nativa</div>
     <div style="margin-bottom:16px">
-      <div style="font-weight:600;margin-bottom:8px;font-size:13px">iPhone / iPad (Safari):</div>
+      <div style="font-weight:600;margin-bottom:8px;font-size:13px">iPhone / iPad — IMPORTANT: cal Safari</div>
       <ol style="font-size:13px;line-height:2;padding-left:20px;color:var(--text-2)">
-        <li>Obre aquesta pàgina a <strong>Safari</strong> (no Firefox ni Chrome)</li>
-        <li>Toca la icona de <strong>compartir</strong> (quadrat amb fletxa cap amunt)</li>
-        <li>Desplaça't i toca <strong>"Afegir a la pantalla d'inici"</strong></li>
-        <li>Toca <strong>"Afegir"</strong> — apareixerà la icona de Brokkom</li>
+        <li>Obre aquesta pagina a <strong>Safari</strong> (no Firefox ni Chrome)</li>
+        <li>Toca la icona de <strong>compartir</strong> (quadrat amb fletxa amunt)</li>
+        <li>Toca <strong>"Afegir a la pantalla d'inici"</strong></li>
+        <li>Toca <strong>"Afegir"</strong> — apareixera la icona Brokkom</li>
       </ol>
     </div>
     <div style="margin-bottom:16px">
       <div style="font-weight:600;margin-bottom:8px;font-size:13px">Android (Chrome):</div>
       <ol style="font-size:13px;line-height:2;padding-left:20px;color:var(--text-2)">
-        <li>Toca els <strong>tres punts</strong> (menú)</li>
+        <li>Toca els <strong>tres punts</strong> (menu)</li>
         <li>Toca <strong>"Afegir a la pantalla d'inici"</strong></li>
-        <li>Confirma — apareixerà la icona</li>
+        <li>Confirma</li>
       </ol>
     </div>
     <div style="padding:10px;background:var(--info-bg);border-radius:var(--radius);font-size:12px;color:var(--info)">
-      💡 Un cop afegida, s'obre a pantalla completa sense barra del navegador, com una app real.
+      Un cop afegida, s'obre a pantalla completa sense barra del navegador.
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal()">Entès</button>
-    </div>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Entes</button></div>
   </div></div>`;
 }
 
-// Mostrar banner PWA si no s'ha descartat
 function checkPWABanner(){
   const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
   const dismissed = localStorage.getItem('pwa_dismissed');
