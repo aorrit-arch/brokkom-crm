@@ -114,10 +114,7 @@ function renderDashboard() {
 // CLIENTS
 // ==================================================================
 function renderClients() {
-  const mediadorsList = [...new Set(state.clients.map(c => {
-    const u = state.usuaris.find(x => x.id === c.user_id);
-    return u?.nom || u?.email || null;
-  }).filter(Boolean))];
+  const allHashtags = [...new Set(state.clients.flatMap(c => c.hashtags || []))].sort();
 
   document.getElementById('tab-content').innerHTML = `
     <div class="topbar">
@@ -126,27 +123,59 @@ function renderClients() {
     </div>
     <div class="toolbar">
       <input type="text" id="search-clients" class="grow" placeholder="Cerca per empresa, CIF, contacte..." oninput="renderClientsList()">
+      <select id="filter-clients-estat" onchange="renderClientsList()">
+        <option value="">Tots els estats</option>
+        <option value="prospect">Prospects</option>
+        <option value="actiu">Clients actius</option>
+        <option value="ex_client">Ex-clients</option>
+      </select>
       <select id="filter-clients-sector" onchange="renderClientsList()">
         <option value="">Tots els sectors</option>
         <option>Transport mercaderies</option><option>Logística</option><option>Transport viatgers</option><option>ADR / mercaderies perilloses</option><option>Altres</option>
+      </select>
+      <select id="filter-clients-comprum" onchange="renderClientsList()">
+        <option value="">Tots</option>
+        <option value="si">COMPRUM ✓</option>
+        <option value="no">No COMPRUM</option>
       </select>
       <select id="filter-clients-mediador" onchange="renderClientsList()">
         <option value="">Tots els mediadors</option>
         ${state.usuaris.map(u => `<option value="${u.id}">${u.nom || u.email}</option>`).join('')}
       </select>
     </div>
+    ${allHashtags.length > 0 ? `
+      <div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-right:4px">Hashtags:</span>
+        <span class="hashtag-pill" data-tag="" onclick="filterByHashtag('')">tots</span>
+        ${allHashtags.map(t => `<span class="hashtag-pill" data-tag="${t}" onclick="filterByHashtag('${t}')">#${t}</span>`).join('')}
+      </div>
+    ` : ''}
     <div id="clients-list"></div>
   `;
+  window._activeHashtag = '';
   renderClientsList();
 }
+
+window.filterByHashtag = (tag) => {
+  window._activeHashtag = tag;
+  document.querySelectorAll('.hashtag-pill').forEach(p => p.classList.toggle('selected', p.dataset.tag === tag));
+  renderClientsList();
+};
 
 window.renderClientsList = () => {
   const q = (document.getElementById('search-clients')?.value || '').toLowerCase();
   const sector = document.getElementById('filter-clients-sector')?.value || '';
+  const estat = document.getElementById('filter-clients-estat')?.value || '';
+  const comprumF = document.getElementById('filter-clients-comprum')?.value || '';
   const mediador = document.getElementById('filter-clients-mediador')?.value || '';
+  const tag = window._activeHashtag || '';
   const filtered = state.clients.filter(c => {
     if (sector && c.sector !== sector) return false;
+    if (estat && (c.estat_client || 'prospect') !== estat) return false;
+    if (comprumF === 'si' && !c.comprum) return false;
+    if (comprumF === 'no' && c.comprum) return false;
     if (mediador && c.user_id !== mediador) return false;
+    if (tag && !(c.hashtags || []).includes(tag)) return false;
     if (q && !c.empresa.toLowerCase().includes(q) && !(c.cif||'').toLowerCase().includes(q) && !(c.contacte||'').toLowerCase().includes(q)) return false;
     return true;
   });
@@ -154,30 +183,42 @@ window.renderClientsList = () => {
     document.getElementById('clients-list').innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">🏢</div>Cap client trobat<br><br><button class="btn btn-primary" onclick="openModal(\'client\')">+ Crear client</button></div></div>';
     return;
   }
+  const estatLabels = {prospect:'Prospect', actiu:'Client actiu', ex_client:'Ex-client'};
+  const estatPills = {prospect:'p-info', actiu:'p-success', ex_client:'p-gray'};
   document.getElementById('clients-list').innerHTML = filtered.map(c => {
     const ofertes = state.ofertes.filter(o => o.client_id === c.id);
     const consolidats = state.consolidats.filter(co => co.client_id === c.id);
     const opps = state.oportunitats.filter(o => o.client_id === c.id && o.estat !== 'Descartada');
     const owner = state.usuaris.find(u => u.id === c.user_id);
     const ownerName = owner ? (owner.nom || owner.email.split('@')[0]) : 'sense propietari';
+    const estatKey = c.estat_client || 'prospect';
+    const haComprat = c.ha_comprat || consolidats.length > 0;
     return `<div class="card">
       <div class="card-row">
-        <div style="flex:1">
-          <div class="card-title">${c.empresa}</div>
-          <div class="card-sub">${c.cif||'—'} · ${c.sector||'sense sector'} ${c.treballadors?'· '+c.treballadors+' treb.':''} <span class="pill p-gray" style="margin-left:6px">${ownerName}</span></div>
+        <div style="flex:1;min-width:0">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            ${c.comprum ? '<span class="badge-comprum sm" title="COMPRUM">C</span>' : ''}
+            ${c.empresa}
+            ${haComprat ? '<span style="font-size:12px;opacity:0.7" title="Ha comprat alguna vegada">💰</span>' : ''}
+          </div>
+          <div class="card-sub">${c.cif||'—'}${c.activitat?' · '+c.activitat:c.sector?' · '+c.sector:''}${c.provincia?' · '+c.provincia:''}${c.treballadors?' · '+c.treballadors+' treb.':''} <span class="pill p-gray" style="margin-left:6px">${ownerName}</span></div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start">
+          <span class="pill ${estatPills[estatKey]}">${estatLabels[estatKey]}</span>
+          ${c.origen?`<span class="pill p-gray" style="font-size:10px">${c.origen}</span>`:''}
           ${ofertes.length>0?`<span class="pill p-info">${ofertes.length} ofertes</span>`:''}
           ${consolidats.length>0?`<span class="pill p-success">${consolidats.length} tancades</span>`:''}
           ${opps.length>0?`<span class="pill p-purple">${opps.length} opps</span>`:''}
         </div>
       </div>
+      ${(c.hashtags && c.hashtags.length) ? `<div style="margin-top:8px">${c.hashtags.map(t => `<span class="hashtag-pill" onclick="event.stopPropagation();filterByHashtag('${t}')">#${t}</span>`).join('')}</div>` : ''}
       <div class="info-grid">
-        ${c.contacte?`<div class="info-row"><span class="info-label">Contacte</span><span class="info-val">${c.contacte}</span></div>`:''}
-        ${c.carrec?`<div class="info-row"><span class="info-label">Càrrec</span><span class="info-val">${c.carrec}</span></div>`:''}
+        ${c.contacte?`<div class="info-row"><span class="info-label">Contacte</span><span class="info-val">${c.contacte}${c.carrec?' · '+c.carrec:''}</span></div>`:''}
         ${c.email?`<div class="info-row"><span class="info-label">Email</span><span class="info-val">${c.email}</span></div>`:''}
-        ${c.telefon?`<div class="info-row"><span class="info-label">Telèfon</span><span class="info-val">${c.telefon}</span></div>`:''}
+        ${c.telefon?`<div class="info-row"><span class="info-label">Telèfon</span><span class="info-val">${c.telefon} ${c.telefon ? `<a href="https://wa.me/${(c.telefon||'').replace(/[^0-9]/g,'')}" target="_blank" style="color:#25d366;text-decoration:none;margin-left:4px" title="WhatsApp">💬</a>` : ''}</span></div>`:''}
         ${c.facturacio?`<div class="info-row"><span class="info-label">Facturació</span><span class="info-val">${c.facturacio}</span></div>`:''}
+        ${c.poblacio?`<div class="info-row"><span class="info-label">Població</span><span class="info-val">${c.poblacio}</span></div>`:''}
+        ${c.adreca?`<div class="info-row"><span class="info-label">Adreça</span><span class="info-val">${c.adreca}</span></div>`:''}
       </div>
       ${c.notes?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)">${c.notes}</div>`:''}
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
