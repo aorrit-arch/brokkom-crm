@@ -221,7 +221,15 @@
   .sync-indicator{position:fixed;top:16px;right:16px;padding:6px 12px;background:var(--primary-light);color:var(--primary-2);border-radius:20px;font-size:11px;font-weight:500;z-index:90;display:none;align-items:center;gap:6px}
   .sync-indicator.show{display:flex}
   .sync-indicator::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.2s infinite}
+  .load-banner{position:fixed;top:0;left:0;right:0;background:var(--danger-bg,#fee2e2);color:var(--danger,#b91c1c);padding:10px 16px;font-size:13px;z-index:95;display:none;align-items:center;justify-content:center;gap:12px;border-bottom:1px solid rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .load-banner.show{display:flex}
+  .load-banner.warn{background:#fef3c7;color:#92400e}
+  .load-banner .msg{flex:1;max-width:780px}
+  .load-banner button{background:#fff;border:1px solid currentColor;color:inherit;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+  .load-banner button:hover{opacity:0.85}
+  .load-banner .close{background:transparent;border:0;color:inherit;opacity:0.6;padding:4px 8px;font-size:16px;line-height:1}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .user-menu{padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);margin-top:10px;font-size:11px;color:var(--text-2);border:1px solid var(--border)}
   .user-menu strong{color:var(--text);font-weight:500;display:block;margin-bottom:4px}
   .user-menu a{color:var(--primary);text-decoration:none;font-size:11px;cursor:pointer}
@@ -707,6 +715,11 @@
   <button class="btn-close" onclick="document.getElementById('pwa-banner').classList.remove('show');localStorage.setItem('pwa_dismissed','1')">✕</button>
 </div>
 <div class="sync-indicator" id="sync-indicator">Sincronitzant</div>
+<div class="load-banner" id="load-banner" role="alert">
+  <span class="msg" id="load-banner-msg"></span>
+  <button id="load-banner-retry" type="button">Reintentar</button>
+  <button class="close" id="load-banner-close" type="button" aria-label="Tancar">×</button>
+</div>
 <div id="modal-container"></div>
 <div id="toast-container"></div>
 
@@ -780,42 +793,140 @@ function hideSync(){
   setTimeout(()=>document.getElementById('sync-indicator')?.classList.remove('show'), 400);
 }
 
-// Reintent automàtic en cas d'error de desincronia de rellotge (JWT issued at future)
-// Si Supabase rebutja el token per skew temporal, esperem i refresquem el token, i reintentem.
-async function retryOnClockSkew(operation, maxRetries=3){
-  for(let attempt=0; attempt<=maxRetries; attempt++){
-    const result = await operation();
-    const err = result?.error;
-    // Detectem errors de skew temporal de JWT (codi PGRST303 o missatge "JWT issued at future")
-    const isClockSkew = err && (err.code === 'PGRST303' || /JWT issued at future|jwt.*future/i.test(err.message||''));
-    if(!isClockSkew) return result;
-    if(attempt === maxRetries){
-      console.warn('Clock skew: esgotats els reintents');
-      return result;
-    }
-    // Esperem amb backoff progressiu (2s, 4s, 6s)
-    const waitMs = 2000 * (attempt + 1);
-    console.warn(`Clock skew detectat, reintent ${attempt+1}/${maxRetries} en ${waitMs}ms...`);
-    showSync('Sincronitzant');
-    await new Promise(r => setTimeout(r, waitMs));
-    // Forcem refrescar el token
-    try { await sb.auth.refreshSession(); } catch(e){ console.warn('refresh failed:', e); }
+// =============================================================================
+// CAPA DE RESILIÈNCIA: detecció de skew + reintents serialitzats + UI d'error
+// =============================================================================
+// Causa típica del bug: el rellotge del client va desfasat respecte Supabase i
+// PostgREST rebutja el JWT amb "JWT issued at future"/PGRST30x. Refrescar el
+// token no arregla un skew real (l'`iat` el posa el servidor), però sí cobreix
+// errors transitoris (xarxa, expiracions, 5xx). Per això combinem:
+//   1) detectClockSkew()  → mesurem offset i, si és gros, avisem l'usuari
+//   2) withRetry()        → backoff exp. + refreshSession() amb mutex
+//   3) banner d'error UI  → res silenciat, l'usuari pot reintentar manualment
+
+// Errors que potser val la pena reintentar
+function isJwtError(err){
+  if(!err) return false;
+  const code = String(err.code || '');
+  const msg  = String(err.message || '');
+  // PGRST301 (expired), PGRST302/303 i variants relacionades amb JWT
+  return /^PGRST30[1-3]$/.test(code) || /\bJWT\b|jwt/i.test(msg);
+}
+function isRetriableError(err){
+  if(!err) return false;
+  if(isJwtError(err)) return true;
+  const status = err.status || err.statusCode;
+  if(status && status >= 500 && status < 600) return true;
+  if(err.name === 'TypeError') return true; // fetch failure
+  if(/network|failed to fetch|load failed/i.test(err.message || '')) return true;
+  return false;
+}
+
+// Mutex per refrescar la sessió: si 11 queries fallen alhora, només una refresca.
+let refreshInFlight = null;
+function refreshSessionOnce(){
+  if(!refreshInFlight){
+    refreshInFlight = sb.auth.refreshSession()
+      .catch(e => { console.warn('refreshSession failed:', e); })
+      .finally(() => { refreshInFlight = null; });
   }
+  return refreshInFlight;
+}
+
+// Wrapper genèric. `operation` retorna una thenable de Supabase (`{data,error}`).
+// Si llança (errors de xarxa), ho convertim a forma {error} per uniformitat.
+async function withRetry(operation, opts={}){
+  const maxRetries = opts.maxRetries ?? 3;
+  let lastResult = {error: new Error('cap intent executat')};
+  for(let attempt=0; attempt<=maxRetries; attempt++){
+    let result;
+    try {
+      result = await operation();
+    } catch(thrownErr){
+      result = {error: thrownErr};
+    }
+    lastResult = result;
+    const err = result?.error;
+    if(!err) return result;
+    if(attempt === maxRetries || !isRetriableError(err)) return result;
+    if(isJwtError(err)){
+      try { await refreshSessionOnce(); } catch(_){}
+    }
+    const waitMs = Math.min(300 * Math.pow(3, attempt), 5000); // 300, 900, 2700
+    console.warn(`withRetry: ${err.code||err.name||'err'} — reintent ${attempt+1}/${maxRetries} en ${waitMs}ms`);
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  return lastResult;
+}
+
+// Detecció de skew client↔servidor (capçalera Date de Supabase REST).
+let serverClockOffsetMs = 0;
+async function detectClockSkew(){
+  try{
+    const t0 = Date.now();
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      method: 'GET',
+      headers: {'apikey': SUPABASE_KEY},
+      cache: 'no-store'
+    });
+    const t1 = Date.now();
+    const dateHeader = resp.headers.get('Date');
+    if(!dateHeader) return 0;
+    const serverMs = new Date(dateHeader).getTime();
+    const localMidMs = (t0 + t1) / 2;
+    serverClockOffsetMs = serverMs - localMidMs;
+    if(Math.abs(serverClockOffsetMs) > 30000){
+      const sign = serverClockOffsetMs > 0 ? 'endarrere' : 'endavant';
+      const mins = Math.round(Math.abs(serverClockOffsetMs)/60000);
+      const detall = mins >= 1 ? `${mins} min` : `${Math.round(Math.abs(serverClockOffsetMs)/1000)} s`;
+      showLoadBanner(
+        `El rellotge del teu dispositiu va ${detall} ${sign} respecte el servidor. ` +
+        `Pot fer que Supabase rebutgi les peticions (\"JWT issued at future\"). ` +
+        `Activa l'hora automàtica del sistema i recarrega.`,
+        {kind:'warn', onRetry:()=>{ hideLoadBanner(); detectClockSkew().then(()=>loadFromSupabase()); }}
+      );
+    }
+    return serverClockOffsetMs;
+  }catch(e){
+    console.warn('detectClockSkew failed:', e);
+    return 0;
+  }
+}
+
+// Banner d'error/avís persistent
+let loadBannerRetryHandler = null;
+function showLoadBanner(message, opts={}){
+  const el = document.getElementById('load-banner');
+  if(!el) return;
+  document.getElementById('load-banner-msg').textContent = message;
+  el.classList.toggle('warn', opts.kind === 'warn');
+  loadBannerRetryHandler = opts.onRetry || null;
+  document.getElementById('load-banner-retry').style.display = loadBannerRetryHandler ? '' : 'none';
+  el.classList.add('show');
+}
+function hideLoadBanner(){
+  document.getElementById('load-banner')?.classList.remove('show');
+  loadBannerRetryHandler = null;
 }
 
 // Wrapper genèric per a operacions BD
 async function dbSelect(table){
-  const result = await retryOnClockSkew(()=>
+  const result = await withRetry(()=>
     sb.from(table).select('*').order('created_at',{ascending:false})
   );
   const {data, error} = result || {};
-  if(error){ console.error(`SELECT ${table}:`, error); return []; }
+  if(error){
+    console.error(`SELECT ${table}:`, error);
+    const e = new Error(error.message || 'SELECT failed');
+    e.code = error.code; e.table = table; e.cause = error;
+    throw e;
+  }
   return (data||[]).map(fromDb);
 }
 async function dbInsert(table, obj){
   showSync('Guardant');
   const payload = toDb({...obj, user_id: currentUser.id});
-  const result = await retryOnClockSkew(()=>
+  const result = await withRetry(()=>
     sb.from(table).insert(payload).select().single()
   );
   const {data, error} = result || {};
@@ -828,7 +939,7 @@ async function dbUpdate(table, id, obj){
   const payload = toDb(obj);
   delete payload.user_id;
   delete payload.created_at;
-  const result = await retryOnClockSkew(()=>
+  const result = await withRetry(()=>
     sb.from(table).update(payload).eq('id', id).select().single()
   );
   const {data, error} = result || {};
@@ -838,7 +949,7 @@ async function dbUpdate(table, id, obj){
 }
 async function dbDelete(table, id){
   showSync('Esborrant');
-  const result = await retryOnClockSkew(()=>
+  const result = await withRetry(()=>
     sb.from(table).delete().eq('id', id)
   );
   const {error} = result || {};
@@ -847,46 +958,86 @@ async function dbDelete(table, id){
   return true;
 }
 
-// Carregar tot l'estat des de Supabase
+// Carregar tot l'estat des de Supabase. Errors per taula s'aïllen, l'estat
+// previ es conserva i es mostra un banner amb opció de reintentar.
 async function loadFromSupabase(){
   showSync('Carregant');
-  const [clients, ofertes, consolidats, seguiments, oportunitats, venciments, tasques, idees, asseguradores, posts, config] = await Promise.all([
-    dbSelect('clients'),
-    dbSelect('ofertes'),
-    dbSelect('consolidats'),
-    dbSelect('seguiments'),
-    dbSelect('oportunitats'),
-    dbSelect('venciments'),
-    dbSelect('tasques'),
-    retryOnClockSkew(()=>
-      sb.from('notes').select('*').eq('tipus','idea').order('created_at',{ascending:false})
-    ).then(r=>(r?.data||[]).map(n=>({
-      id:n.id, titol:n.titol, contingut:n.contingut, categoria:n.hashtags?.[0]||'altres',
-      estat:'nova', creat:n.created_at, origen:n.hashtags?.includes('IA')?'IA':'manual'
-    }))),
-    dbSelect('asseguradores'),
-    dbSelect('posts'),
-    retryOnClockSkew(()=>
-      sb.from('user_config').select('*').eq('user_id', currentUser.id).maybeSingle()
-    )
-  ]);
-  state.clients = clients;
-  state.ofertes = ofertes;
-  state.consolidats = consolidats;
-  state.seguiments = seguiments;
-  state.oportunitats = oportunitats;
-  state.venciments = venciments;
-  state.tasques = tasques;
-  state.idees = idees;
-  state.asseguradores = asseguradores;
-  state.posts = posts;
-  if(config?.data){
-    state.mediadors = config.data.mediadors || ['Mediador principal'];
-    state.rams = config.data.rams || state.rams;
-    state.config.modelFast = config.data.model_fast || state.config.modelFast;
-    state.config.modelSmart = config.data.model_smart || state.config.modelSmart;
+  const tasks = [
+    {key:'clients',       run:()=>dbSelect('clients')},
+    {key:'ofertes',       run:()=>dbSelect('ofertes')},
+    {key:'consolidats',   run:()=>dbSelect('consolidats')},
+    {key:'seguiments',    run:()=>dbSelect('seguiments')},
+    {key:'oportunitats',  run:()=>dbSelect('oportunitats')},
+    {key:'venciments',    run:()=>dbSelect('venciments')},
+    {key:'tasques',       run:()=>dbSelect('tasques')},
+    {key:'idees',         run: async ()=>{
+      const r = await withRetry(()=>
+        sb.from('notes').select('*').eq('tipus','idea').order('created_at',{ascending:false})
+      );
+      if(r.error){ const e=new Error(r.error.message||'SELECT idees failed'); e.code=r.error.code; e.table='notes'; throw e; }
+      return (r.data||[]).map(n=>({
+        id:n.id, titol:n.titol, contingut:n.contingut, categoria:n.hashtags?.[0]||'altres',
+        estat:'nova', creat:n.created_at, origen:n.hashtags?.includes('IA')?'IA':'manual'
+      }));
+    }},
+    {key:'asseguradores', run:()=>dbSelect('asseguradores')},
+    {key:'posts',         run:()=>dbSelect('posts')},
+    {key:'config',        run: async ()=>{
+      const r = await withRetry(()=>
+        sb.from('user_config').select('*').eq('user_id', currentUser.id).maybeSingle()
+      );
+      if(r.error){ const e=new Error(r.error.message||'SELECT user_config failed'); e.code=r.error.code; e.table='user_config'; throw e; }
+      return r.data;
+    }}
+  ];
+
+  const settled = await Promise.allSettled(tasks.map(t => t.run()));
+  const failures = [];
+  const data = {};
+  settled.forEach((s, i) => {
+    const key = tasks[i].key;
+    if(s.status === 'fulfilled') data[key] = s.value;
+    else failures.push({key, error: s.reason});
+  });
+
+  // Assignem només les taules que han carregat bé — preservem l'estat previ
+  // per a les que han fallat per no buidar la UI.
+  if('clients' in data)       state.clients       = data.clients;
+  if('ofertes' in data)       state.ofertes       = data.ofertes;
+  if('consolidats' in data)   state.consolidats   = data.consolidats;
+  if('seguiments' in data)    state.seguiments    = data.seguiments;
+  if('oportunitats' in data)  state.oportunitats  = data.oportunitats;
+  if('venciments' in data)    state.venciments    = data.venciments;
+  if('tasques' in data)       state.tasques       = data.tasques;
+  if('idees' in data)         state.idees         = data.idees;
+  if('asseguradores' in data) state.asseguradores = data.asseguradores;
+  if('posts' in data)         state.posts         = data.posts;
+  if(data.config){
+    state.mediadors = data.config.mediadors || ['Mediador principal'];
+    state.rams = data.config.rams || state.rams;
+    state.config.modelFast = data.config.model_fast || state.config.modelFast;
+    state.config.modelSmart = data.config.model_smart || state.config.modelSmart;
   }
-  // Seed asseguradores si la cartera està buida
+
+  hideSync();
+
+  if(failures.length){
+    const first = failures[0].error;
+    const isJwt = isJwtError(first);
+    const tables = failures.map(f=>f.key).join(', ');
+    const baseMsg = isJwt
+      ? `Supabase ha rebutjat el token (${first.code||'JWT'}). Pot ser un desfasament de rellotge entre el teu dispositiu i el servidor.`
+      : `No s'han pogut carregar ${failures.length} taula(es): ${tables}. ${first.message||''}`.trim();
+    showLoadBanner(baseMsg, {
+      kind: isJwt ? 'warn' : 'error',
+      onRetry: ()=>{ hideLoadBanner(); loadFromSupabase(); }
+    });
+    return {ok:false, failures: failures.map(f=>f.key)};
+  }
+
+  hideLoadBanner();
+
+  // Seed asseguradores si la cartera està buida (només si la càrrega ha anat bé)
   if(state.asseguradores.length === 0){
     const seed = [
       {nom:'Zurich', rams:['Multiriscos','Vehicles','RC']},
@@ -897,9 +1048,16 @@ async function loadFromSupabase(){
       {nom:'AXA', rams:['Vehicles','Multiriscos','Salut']}
     ];
     for(const a of seed){ await dbInsert('asseguradores', a); }
-    state.asseguradores = await dbSelect('asseguradores');
+    state.asseguradores = await dbSelect('asseguradores').catch(()=>state.asseguradores);
   }
-  hideSync();
+  window.dispatchEvent(new CustomEvent('brokkom:loaded', {detail:{state}}));
+  return {ok:true, counts:{
+    clients: state.clients.length, ofertes: state.ofertes.length,
+    consolidats: state.consolidats.length, seguiments: state.seguiments.length,
+    oportunitats: state.oportunitats.length, venciments: state.venciments.length,
+    tasques: state.tasques.length, idees: state.idees.length,
+    asseguradores: state.asseguradores.length, posts: state.posts.length
+  }};
 }
 
 // Stub: saveState ja no fa res — escrivim directament via dbInsert/Update
@@ -2488,21 +2646,98 @@ async function logout(){
   await sb.auth.signOut();
   location.reload();
 }
+// Re-renderitza el tab que estigui actiu — així garantim que després de carregar
+// dades no només el dashboard es refresca, sinó qualsevol vista que vegi l'usuari.
+function renderActiveView(){
+  const active = document.querySelector('.nav-item.active')?.dataset?.tab;
+  switch(active){
+    case 'clients':       renderClients(); break;
+    case 'pipeline':      renderPipeline(); break;
+    case 'consolidats':   renderConsolidats(); break;
+    case 'seguiments':    renderSeguiments(); break;
+    case 'oportunitats':  renderOpps(); break;
+    case 'venciments':    renderVenciments(); break;
+    case 'tasques':       renderTasques(); break;
+    case 'idees':         if(typeof renderIdees==='function') renderIdees(); break;
+    case 'asseguradores': if(typeof renderAsseguradores==='function') renderAsseguradores(); break;
+    case 'dashboard':
+    default:              renderDashboard();
+  }
+}
+
+// Substitueix temporalment el formulari d'auth per un estat "carregant dades"
+// perquè la UI mai es vegi sense dades entre el login i la càrrega completa.
+function setAuthOverlayLoading(on){
+  const box = document.querySelector('.auth-box');
+  if(!box) return;
+  if(on){
+    if(!box.dataset.original) box.dataset.original = box.innerHTML;
+    box.innerHTML = `
+      <div class="auth-logo">KK</div>
+      <div class="auth-title">Brokkom CRM</div>
+      <div class="auth-sub">Carregant les teves dades…</div>
+      <div style="text-align:center;margin-top:24px">
+        <span style="display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span>
+      </div>`;
+  } else if(box.dataset.original){
+    box.innerHTML = box.dataset.original;
+    delete box.dataset.original;
+  }
+}
+
 async function onLoginSuccess(user){
   currentUser = user;
-  document.getElementById('auth-overlay').style.display = 'none';
   document.getElementById('user-menu-block').style.display = 'block';
   document.getElementById('user-email').textContent = user.email;
-  await loadFromSupabase();
-  renderDashboard();
+  // Mostra "Carregant dades..." dins l'overlay mentre baixem l'estat,
+  // perquè l'usuari mai vegi una UI sense dades entre login i loadFromSupabase.
+  setAuthOverlayLoading(true);
+  try{
+    await checkSessionClockSkew();
+    await loadFromSupabase();
+  } finally {
+    document.getElementById('auth-overlay').style.display = 'none';
+    setAuthOverlayLoading(false);
+  }
+  renderActiveView();
   updateNavBadges();
   checkPWABanner();
 }
 async function bootAuth(){
-  const {data:{session}} = await sb.auth.getSession();
-  if(session?.user){
-    await onLoginSuccess(session.user);
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    if(session?.user){
+      await onLoginSuccess(session.user);
+    }
+  }catch(e){
+    console.warn('bootAuth:', e);
   }
+}
+
+// Detecta skew mirant el JWT iat de la sessió activa (complementari a
+// detectClockSkew, que mira la capçalera Date). Si la capçalera Date no és
+// accessible per CORS, aquesta via sí que funciona quan tenim sessió.
+async function checkSessionClockSkew(){
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session?.access_token) return;
+    const parts = session.access_token.split('.');
+    if(parts.length < 2) return;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if(!payload.iat) return;
+    const offset = (payload.iat * 1000) - Date.now();
+    if(Math.abs(offset) > 30000){
+      serverClockOffsetMs = offset;
+      const sign = offset > 0 ? 'endarrere' : 'endavant';
+      const mins = Math.round(Math.abs(offset)/60000);
+      const detall = mins >= 1 ? `${mins} min` : `${Math.round(Math.abs(offset)/1000)} s`;
+      showLoadBanner(
+        `El rellotge del teu dispositiu va ${detall} ${sign} respecte el servidor. ` +
+        `Activa l'hora automàtica del sistema o Supabase rebutjarà les peticions.`,
+        {kind:'warn', onRetry:()=>{ hideLoadBanner(); loadFromSupabase(); }}
+      );
+    }
+  }catch(e){ console.warn('checkSessionClockSkew:', e); }
 }
 
 
@@ -2510,8 +2745,18 @@ document.querySelectorAll('.nav-item').forEach(el=>{
   el.addEventListener('click', ()=>{const tab=el.dataset.tab; if(tab)showTab(tab)});
 });
 
-renderDashboard();
-updateNavBadges();
+// Banner d'error: botons Reintentar / Tancar
+document.getElementById('load-banner-retry')?.addEventListener('click', ()=>{
+  if(typeof loadBannerRetryHandler === 'function') loadBannerRetryHandler();
+});
+document.getElementById('load-banner-close')?.addEventListener('click', hideLoadBanner);
+
+// Detecta skew abans de l'auth (via capçalera Date si CORS ho permet) i
+// restaura sessió persistida (bootAuth ja no es queda orfe). El render inicial
+// el fa onLoginSuccess un cop loadFromSupabase ha completat — un únic punt
+// d'entrada, sense renders amb state buit.
+detectClockSkew();
+bootAuth();
 </script>
 </body>
 </html>
