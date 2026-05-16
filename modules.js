@@ -20,7 +20,11 @@ window.showTab = (tab) => {
     comunicacio: renderComunicacio,
     usuaris: renderUsuaris,
     ia: renderIA,
-    config: renderConfig
+    config: renderConfig,
+    inbox: renderInbox,
+    notes: renderNotes,
+    agenda: renderAgenda,
+    esborranys: renderEsborranys
   };
   (renderers[tab] || renderDashboard)();
   updateNavBadges();
@@ -34,6 +38,12 @@ window.updateNavBadges = () => {
   set('nav-opps', state.oportunitats.filter(o => o.estat !== 'Descartada').length);
   set('nav-venc', state.venciments.length);
   set('nav-tasques', state.tasques.filter(t => t.estat === 'pendent').length);
+  set('nav-inbox', state.inbox.filter(i => i.estat === 'pendent').length);
+  set('nav-notes', state.notes.length);
+  set('nav-esborranys', (state.esborranys || []).filter(e => e.estat !== 'arxivat').length);
+  // Agenda: events d'avui i futurs
+  const now = new Date(); now.setHours(0,0,0,0);
+  set('nav-agenda', state.agenda.filter(e => new Date(e.data_inici) >= now).length);
 };
 
 // ==================================================================
@@ -716,4 +726,778 @@ window.deleteRecord = async (table, id, msg) => {
   await refreshData(table);
   showTab(state.currentTab);
   toast('Esborrat');
+};
+
+// ==================================================================
+// INBOX
+// ==================================================================
+function renderInbox() {
+  const filtre = window._inboxFiltre || 'pendent';
+  document.getElementById('tab-content').innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">📥 Inbox</div><div class="page-sub">Captura ràpida · revisa quan tinguis temps</div></div>
+    </div>
+
+    <div class="inbox-capture">
+      <div class="inbox-capture-title">⚡ Captura ràpida</div>
+      <div class="inbox-capture-tabs">
+        <button class="inbox-capture-tab active" data-mode="text" onclick="switchCaptureMode('text')">📝 Text</button>
+        <button class="inbox-capture-tab" data-mode="image" onclick="switchCaptureMode('image')">📷 Imatge / Foto</button>
+      </div>
+
+      <div id="capture-mode-text">
+        <div class="inbox-capture-sub">Enganxa un email, una nota, una idea. Ctrl+Enter per guardar.</div>
+        <textarea id="inbox-quick" placeholder="Enganxa text aquí..."></textarea>
+        <div class="inbox-capture-actions">
+          <button class="btn btn-primary" onclick="saveInboxQuick()">📥 Arxivar a inbox</button>
+          <button class="btn" onclick="saveInboxQuick(true)">🤖 Arxivar i processar amb IA</button>
+          <span style="font-size:11px;color:var(--text-3);margin-left:auto">${state.inbox.filter(i=>i.estat==='pendent').length} pendents</span>
+        </div>
+      </div>
+
+      <div id="capture-mode-image" style="display:none">
+        <div class="inbox-capture-sub">Foto de targeta, pòlissa, nota, document... La IA llegirà el text.</div>
+        <div id="image-drop" class="image-drop-zone" onclick="document.getElementById('image-file').click()">
+          <span class="icon">📷</span>
+          <div class="text">Fes una foto o tria un fitxer</div>
+          <div class="sub">JPG, PNG, WEBP — màxim 5 MB</div>
+        </div>
+        <input type="file" id="image-file" accept="image/*" capture="environment" style="display:none" onchange="handleImageSelected(event)">
+        <div id="image-preview-area" style="margin-top:14px;display:none">
+          <div id="image-preview-wrap"></div>
+          <div id="image-titol-row" style="margin-top:10px">
+            <input type="text" id="image-titol" placeholder="Títol opcional (ex: targeta fira Logistics 2026)">
+          </div>
+          <div class="inbox-capture-actions">
+            <button class="btn btn-primary" onclick="saveInboxImage(true)">🤖 Pujar i processar amb IA</button>
+            <button class="btn" onclick="saveInboxImage(false)">📥 Només arxivar</button>
+            <button class="btn" onclick="resetImageCapture()">Cancel·lar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <select onchange="window._inboxFiltre=this.value;renderInboxList()">
+        <option value="pendent" ${filtre==='pendent'?'selected':''}>Pendents</option>
+        <option value="processat" ${filtre==='processat'?'selected':''}>Processats</option>
+        <option value="" ${filtre===''?'selected':''}>Tots</option>
+      </select>
+    </div>
+
+    <div id="inbox-list"></div>
+  `;
+
+  // Ctrl+Enter
+  const ta = document.getElementById('inbox-quick');
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      saveInboxQuick();
+    }
+  });
+
+  // Drag and drop
+  const dropZone = document.getElementById('image-drop');
+  ['dragover','dragenter'].forEach(ev => dropZone.addEventListener(ev, e => {e.preventDefault();dropZone.classList.add('drag-over')}));
+  ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => dropZone.classList.remove('drag-over')));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      document.getElementById('image-file').files = e.dataTransfer.files;
+      handleImageSelected({target:{files: e.dataTransfer.files}});
+    }
+  });
+
+  renderInboxList();
+}
+
+window.switchCaptureMode = (mode) => {
+  document.querySelectorAll('.inbox-capture-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  document.getElementById('capture-mode-text').style.display = mode === 'text' ? '' : 'none';
+  document.getElementById('capture-mode-image').style.display = mode === 'image' ? '' : 'none';
+};
+
+window.resetImageCapture = () => {
+  document.getElementById('image-file').value = '';
+  document.getElementById('image-preview-area').style.display = 'none';
+  document.getElementById('image-preview-wrap').innerHTML = '';
+  document.getElementById('image-titol').value = '';
+  window._currentImageFile = null;
+};
+
+window.handleImageSelected = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Imatge massa gran (màx 5 MB)','error');
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    toast('Ha de ser una imatge','error');
+    return;
+  }
+  window._currentImageFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('image-preview-wrap').innerHTML = `
+      <div class="image-preview">
+        <img src="${e.target.result}" alt="Preview">
+        <button class="remove" onclick="resetImageCapture()" title="Eliminar">×</button>
+      </div>
+    `;
+    document.getElementById('image-preview-area').style.display = '';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveInboxImage = async (alsoProcess) => {
+  const file = window._currentImageFile;
+  if (!file) { toast('Tria primer una imatge','error'); return; }
+  const titol = document.getElementById('image-titol').value.trim() || null;
+
+  toast('Pujant imatge...');
+  // Path: userId/timestamp_random.ext
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${state.user.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+  // Upload to Supabase Storage
+  const { error: upErr } = await supabase.storage.from('inbox-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if (upErr) { toast('Error pujant: '+upErr.message,'error'); return; }
+
+  // Get signed URL (private bucket)
+  const { data: signedData, error: sigErr } = await supabase.storage.from('inbox-images')
+    .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 any
+
+  if (sigErr) { toast('Error URL: '+sigErr.message,'error'); return; }
+
+  // Create inbox item
+  const { data: item, error: insErr } = await supabase.from('inbox_items').insert({
+    user_id: state.user.id,
+    titol,
+    contingut: titol || '(imatge — pendent de processar)',
+    estat: 'pendent',
+    imatge_url: signedData.signedUrl,
+    imatge_path: path
+  }).select().single();
+
+  if (insErr) { toast('Error: '+insErr.message,'error'); return; }
+
+  resetImageCapture();
+  await refreshData('inbox');
+  renderInboxList();
+  toast('Imatge arxivada ✓');
+
+  if (alsoProcess && item) {
+    await processInboxImageIA(item.id);
+  }
+};
+
+window.renderInboxList = () => {
+  const filtre = window._inboxFiltre || 'pendent';
+  let list = [...state.inbox].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  if (filtre) list = list.filter(i => i.estat === filtre);
+
+  if (list.length === 0) {
+    document.getElementById('inbox-list').innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📥</div>Inbox buida<br><br><span style="font-size:12px">Captura coses i les revises després</span></div></div>';
+    return;
+  }
+
+  document.getElementById('inbox-list').innerHTML = list.map(item => {
+    const created = new Date(item.created_at);
+    const isToday = created.toDateString() === new Date().toDateString();
+    const timeStr = isToday ? created.toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'}) : created.toLocaleDateString('ca-ES');
+    const previewText = (item.contingut||'').slice(0, 400);
+    const isLong = (item.contingut||'').length > 400;
+    const hasImage = !!item.imatge_url;
+    return `<div class="inbox-item ${item.estat==='processat'?'processed':''} ${item.ia_processed?'suggested':''}" id="inbox-${item.id}">
+      <div class="inbox-meta">
+        <div style="flex:1">
+          ${item.titol ? `<strong>${item.titol}</strong> · ` : ''}
+          ${hasImage ? '<span class="pill p-purple" style="font-size:10px">📷 amb imatge</span> · ' : ''}
+          <span class="inbox-time">${timeStr}</span>
+          ${item.estat==='processat' ? '<span class="pill p-success" style="margin-left:6px">processat</span>' : ''}
+        </div>
+        <button class="btn btn-sm" onclick="deleteInboxItem('${item.id}','${item.imatge_path||''}')" style="color:var(--danger)">🗑</button>
+      </div>
+      ${hasImage ? `<img src="${item.imatge_url}" class="inbox-item-image" onclick="showImageLightbox('${item.imatge_url}')" alt="Imatge inbox">` : ''}
+      <div class="inbox-content">${previewText}${isLong?`<a onclick="this.parentNode.textContent=${JSON.stringify(item.contingut)}" style="color:var(--primary-2);cursor:pointer">... veure tot</a>`:''}</div>
+      ${item.ia_summary ? `<div class="inbox-ai-block"><strong>🤖 Resum IA</strong>${item.ia_summary}</div>` : ''}
+      ${item.estat !== 'processat' ? `<div class="inbox-actions">
+        ${!item.ia_processed ? (hasImage ? `<button class="btn btn-sm" onclick="processInboxImageIA('${item.id}')">🤖 Llegir imatge amb IA</button>` : `<button class="btn btn-sm" onclick="processInboxIA('${item.id}')">🤖 Processar amb IA</button>`) : ''}
+        <button class="btn btn-sm" onclick="promoteInbox('${item.id}','client')">→ Client</button>
+        <button class="btn btn-sm" onclick="promoteInbox('${item.id}','oferta')">→ Oferta</button>
+        <button class="btn btn-sm" onclick="promoteInbox('${item.id}','tasca')">→ Tasca</button>
+        <button class="btn btn-sm" onclick="promoteInbox('${item.id}','seguiment')">→ Seguiment</button>
+        <button class="btn btn-sm" onclick="promoteInbox('${item.id}','nota')">→ Nota</button>
+        <button class="btn btn-sm" onclick="markInboxProcessed('${item.id}','${item.imatge_path||''}')">✓ Marcar com a fet</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+};
+
+window.showImageLightbox = (url) => {
+  const div = document.createElement('div');
+  div.className = 'image-lightbox';
+  div.onclick = () => div.remove();
+  div.innerHTML = `<img src="${url}" alt="Imatge">`;
+  document.body.appendChild(div);
+};
+
+window.deleteInboxItem = async (id, imagePath) => {
+  if (!confirm('Esborrar aquesta entrada de la inbox?')) return;
+  // Esborrar imatge del bucket si existeix
+  if (imagePath) {
+    await supabase.storage.from('inbox-images').remove([imagePath]);
+  }
+  await supabase.from('inbox_items').delete().eq('id', id);
+  await refreshData('inbox');
+  renderInboxList();
+  toast('Esborrat');
+};
+
+window.processInboxImageIA = async (id) => {
+  const item = state.inbox.find(i => i.id === id);
+  if (!item || !item.imatge_path) return;
+  const el = document.getElementById('inbox-'+id);
+  const btn = el?.querySelector('.inbox-actions .btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Llegint imatge...'; }
+  try {
+    // Descarregar imatge i convertir-la a base64
+    const { data: blob, error: dlErr } = await supabase.storage.from('inbox-images').download(item.imatge_path);
+    if (dlErr) throw new Error('No es pot descarregar imatge: ' + dlErr.message);
+    const base64 = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onloadend = () => resolve(fr.result.split(',')[1]);
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+    const mediaType = blob.type || 'image/jpeg';
+
+    const prompt = `Aquesta imatge ha estat capturada per a Brokkom Correduria de Seguros (sector transport). Analitza-la i retorna NOMÉS un JSON amb aquesta forma:
+
+{
+  "tipus_document": "targeta_visita|polissa|nota_manuscrita|factura|email_imprès|proposta_competidor|altre",
+  "text_extret": "tot el text llegible de la imatge",
+  "tipus_suggerit": "client|oferta|tasca|seguiment|nota|venciment",
+  "resum": "2-3 frases del que diu",
+  "dades_extretes": {
+    "empresa": null,
+    "contacte": null,
+    "carrec": null,
+    "telefon": null,
+    "email": null,
+    "data": null,
+    "import": null,
+    "ram": null,
+    "asseguradora": null,
+    "polissa_num": null
+  },
+  "alertes": []
+}
+
+Si una dada no apareix, posa-la com a null. NO inventis dades. Retorna NOMÉS el JSON.`;
+
+    const resp = await fetch('/api/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: state.config?.model_fast || 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const txt = data.content[0].text;
+    let summary = txt;
+    let newContent = item.contingut;
+    try {
+      const cleaned = txt.replace(/```json\n?|\n?```/g,'').trim();
+      const parsed = JSON.parse(cleaned);
+      summary = `📄 Tipus: ${parsed.tipus_document || '?'}\n\n${parsed.resum || ''}`;
+      if (parsed.dades_extretes) {
+        const d = parsed.dades_extretes;
+        const dades = [];
+        if (d.empresa) dades.push(`Empresa: ${d.empresa}`);
+        if (d.contacte) dades.push(`Contacte: ${d.contacte}${d.carrec?' ('+d.carrec+')':''}`);
+        if (d.email) dades.push(`Email: ${d.email}`);
+        if (d.telefon) dades.push(`Telèfon: ${d.telefon}`);
+        if (d.ram) dades.push(`Ram: ${d.ram}`);
+        if (d.asseguradora) dades.push(`Asseguradora: ${d.asseguradora}`);
+        if (d.polissa_num) dades.push(`Pòlissa nº: ${d.polissa_num}`);
+        if (d.import) dades.push(`Import: ${d.import}€`);
+        if (d.data) dades.push(`Data: ${d.data}`);
+        if (dades.length) summary += '\n\n📋 ' + dades.join(' · ');
+      }
+      if (parsed.alertes?.length) summary += '\n\n⚠️ ' + parsed.alertes.join(' · ');
+      if (parsed.tipus_suggerit) summary += `\n\n💡 Suggereix: convertir a ${parsed.tipus_suggerit}`;
+      if (parsed.text_extret) newContent = parsed.text_extret;
+    } catch(e) {
+      summary = txt;
+    }
+    await supabase.from('inbox_items').update({
+      ia_processed: true,
+      ia_summary: summary,
+      contingut: newContent
+    }).eq('id', id);
+    await refreshData('inbox');
+    renderInboxList();
+    toast('Imatge processada ✓');
+  } catch (err) {
+    toast('Error IA: '+err.message,'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 Llegir imatge amb IA'; }
+  }
+};
+
+window.saveInboxQuick = async (alsoProcess = false) => {
+  const text = document.getElementById('inbox-quick').value.trim();
+  if (!text) { toast('Posa contingut primer','error'); return; }
+  const { data, error } = await supabase.from('inbox_items').insert({
+    user_id: state.user.id,
+    contingut: text,
+    estat: 'pendent'
+  }).select().single();
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  document.getElementById('inbox-quick').value = '';
+  await refreshData('inbox');
+  renderInboxList();
+  toast('Arxivat a inbox');
+  if (alsoProcess && data) {
+    await processInboxIA(data.id);
+  }
+};
+
+window.processInboxIA = async (id) => {
+  const item = state.inbox.find(i => i.id === id);
+  if (!item) return;
+  const el = document.getElementById('inbox-'+id);
+  const btn = el?.querySelector('.inbox-actions .btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Processant...'; }
+  try {
+    const prompt = `Ets el CRM intel·ligent de Brokkom Correduria de Seguros (sector transport). Analitza aquest text i retorna NOMÉS un JSON amb aquesta forma:
+
+{
+  "tipus_suggerit": "client|oferta|tasca|seguiment|nota|venciment",
+  "resum": "2-3 frases del que diu el text",
+  "dades_extretes": {
+    "empresa": "...",
+    "contacte": "...",
+    "telefon": "...",
+    "email": "...",
+    "data": "YYYY-MM-DD",
+    "import": null,
+    "ram": "..."
+  },
+  "alertes": ["coses importants detectades..."]
+}
+
+Si una dada no apareix, posa-la com a null. Si veus convenis col·lectius, marca alerta d'oportunitat RC Patronal. Si veus mencions de venciments amb data, suggereix tipus "venciment".
+
+TEXT:
+${item.contingut}
+
+Retorna NOMÉS el JSON.`;
+
+    const resp = await fetch('/api/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: state.config?.model_fast || 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{role:'user', content: prompt}]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const txt = data.content[0].text;
+    let summary = txt;
+    try {
+      const cleaned = txt.replace(/```json\n?|\n?```/g,'').trim();
+      const parsed = JSON.parse(cleaned);
+      summary = `${parsed.resum || ''}`;
+      if (parsed.dades_extretes) {
+        const d = parsed.dades_extretes;
+        const dades = [];
+        if (d.empresa) dades.push(`Empresa: ${d.empresa}`);
+        if (d.contacte) dades.push(`Contacte: ${d.contacte}`);
+        if (d.email) dades.push(`Email: ${d.email}`);
+        if (d.telefon) dades.push(`Telèfon: ${d.telefon}`);
+        if (d.ram) dades.push(`Ram: ${d.ram}`);
+        if (d.import) dades.push(`Import: ${d.import}€`);
+        if (d.data) dades.push(`Data: ${d.data}`);
+        if (dades.length) summary += '\n\n📋 ' + dades.join(' · ');
+      }
+      if (parsed.alertes?.length) summary += '\n\n⚠️ ' + parsed.alertes.join(' · ');
+      if (parsed.tipus_suggerit) summary += `\n\n💡 Suggereix: convertir a ${parsed.tipus_suggerit}`;
+    } catch(e) {
+      summary = txt;
+    }
+    await supabase.from('inbox_items').update({
+      ia_processed: true,
+      ia_summary: summary
+    }).eq('id', id);
+    await refreshData('inbox');
+    renderInboxList();
+    toast('Processat amb IA');
+  } catch (err) {
+    toast('Error IA: '+err.message,'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 Processar amb IA'; }
+  }
+};
+
+window.promoteInbox = async (id, target) => {
+  const item = state.inbox.find(i => i.id === id);
+  if (!item) return;
+  if (target === 'client') {
+    openModal('client', { notes: item.contingut, _fromInbox: id, _imagePath: item.imatge_path });
+  } else if (target === 'oferta') {
+    openModal('oferta', { notes: item.contingut, _fromInbox: id, _imagePath: item.imatge_path });
+  } else if (target === 'tasca') {
+    openModal('tasca', { descripcio: item.contingut, titol: (item.titol || item.contingut.slice(0,60)), _fromInbox: id, _imagePath: item.imatge_path });
+  } else if (target === 'seguiment') {
+    openModal('seguiment', { resum: item.contingut, _fromInbox: id, _imagePath: item.imatge_path });
+  } else if (target === 'nota') {
+    // Crear directament una nota
+    const { error } = await supabase.from('notes').insert({
+      user_id: state.user.id,
+      titol: item.titol || item.contingut.slice(0,60),
+      contingut: item.contingut
+    });
+    if (error) { toast('Error: '+error.message,'error'); return; }
+    // Esborrar imatge del bucket si existeix
+    if (item.imatge_path) {
+      await supabase.storage.from('inbox-images').remove([item.imatge_path]);
+    }
+    await supabase.from('inbox_items').update({ estat: 'processat', imatge_url: null, imatge_path: null }).eq('id', id);
+    await refreshData('inbox');
+    await refreshData('notes');
+    renderInboxList();
+    toast('Convertit a nota ✓');
+  }
+};
+
+window.markInboxProcessed = async (id, imagePath) => {
+  // Si té imatge, l'esborrem del bucket (mantenim les dades extretes)
+  if (imagePath) {
+    await supabase.storage.from('inbox-images').remove([imagePath]);
+    await supabase.from('inbox_items').update({ estat: 'processat', imatge_url: null, imatge_path: null }).eq('id', id);
+  } else {
+    await supabase.from('inbox_items').update({ estat: 'processat' }).eq('id', id);
+  }
+  await refreshData('inbox');
+  renderInboxList();
+  toast('Marcat com a fet');
+};
+
+// ==================================================================
+// NOTES
+// ==================================================================
+function renderNotes() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">💭 Notes / Idees</div><div class="page-sub">Calaix de sastre · ${state.notes.length} notes</div></div>
+      <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('nota')">+ Nova nota</button></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search-notes" class="grow" placeholder="Cerca per títol o contingut..." oninput="renderNotesList()">
+      <select id="filter-notes-fav" onchange="renderNotesList()">
+        <option value="">Totes</option>
+        <option value="fav">Favorites ⭐</option>
+      </select>
+    </div>
+    <div id="notes-list"></div>
+  `;
+  renderNotesList();
+}
+
+window.renderNotesList = () => {
+  const q = (document.getElementById('search-notes')?.value || '').toLowerCase();
+  const favF = document.getElementById('filter-notes-fav')?.value || '';
+  let list = [...state.notes].sort((a,b) => {
+    if (a.favorita && !b.favorita) return -1;
+    if (!a.favorita && b.favorita) return 1;
+    return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+  });
+  if (favF === 'fav') list = list.filter(n => n.favorita);
+  if (q) list = list.filter(n => (n.titol||'').toLowerCase().includes(q) || (n.contingut||'').toLowerCase().includes(q));
+  if (list.length === 0) {
+    document.getElementById('notes-list').innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">💭</div>Cap nota encara<br><br><button class="btn btn-primary" onclick="openModal(\'nota\')">+ Crear primera nota</button></div></div>';
+    return;
+  }
+  document.getElementById('notes-list').innerHTML = list.map(n => {
+    const cli = n.client_id ? state.clients.find(c => c.id === n.client_id) : null;
+    return `<div class="note-card ${n.favorita?'favorita':''}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          ${n.titol ? `<div class="note-title">${n.titol}</div>` : ''}
+          ${cli ? `<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">📎 ${cli.empresa}</div>` : ''}
+          <div class="note-body">${n.contingut}</div>
+        </div>
+        <span class="note-fav-star ${n.favorita?'on':''}" onclick="toggleFavoritaNota('${n.id}')" title="Favorita">${n.favorita?'⭐':'☆'}</span>
+      </div>
+      <div class="note-meta">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${(n.hashtags||[]).map(t => `<span class="hashtag-pill">#${t}</span>`).join('')}
+          <span class="pill p-gray" style="font-size:10px">${new Date(n.updated_at || n.created_at).toLocaleDateString('ca-ES')}</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick='openModal("nota",${JSON.stringify(n).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn btn-sm" onclick="deleteRecord('notes','${n.id}','Esborrar aquesta nota?')" style="color:var(--danger)">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.toggleFavoritaNota = async (id) => {
+  const n = state.notes.find(x => x.id === id);
+  if (!n) return;
+  await supabase.from('notes').update({ favorita: !n.favorita }).eq('id', id);
+  await refreshData('notes');
+  renderNotesList();
+};
+
+// ==================================================================
+// AGENDA
+// ==================================================================
+function renderAgenda() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">📅 Agenda</div><div class="page-sub">Esdeveniments propis + venciments + tasques + seguiments</div></div>
+      <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('agenda_event')">+ Nou esdeveniment</button></div>
+    </div>
+    <div class="toolbar">
+      <select id="filter-agenda" onchange="renderAgendaList()">
+        <option value="setmana">Aquesta setmana</option>
+        <option value="mes">Aquest mes</option>
+        <option value="tot">Tot el futur</option>
+        <option value="passat">Esdeveniments passats</option>
+      </select>
+    </div>
+    <div id="agenda-list"></div>
+  `;
+  renderAgendaList();
+}
+
+window.renderAgendaList = () => {
+  const filtre = document.getElementById('filter-agenda')?.value || 'setmana';
+  const now = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const endWeek = new Date(today); endWeek.setDate(today.getDate()+7);
+  const endMonth = new Date(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+  // Construir llista combinada
+  let allEvents = [];
+
+  // Esdeveniments propis
+  state.agenda.forEach(e => {
+    allEvents.push({
+      id: 'a_'+e.id,
+      origin: 'agenda',
+      title: e.titol,
+      sub: e.descripcio || (e.client_id ? state.clients.find(c=>c.id===e.client_id)?.empresa : ''),
+      date: new Date(e.data_inici),
+      raw: e,
+      tag: e.tot_el_dia ? 'tot el dia' : null
+    });
+  });
+  // Venciments
+  state.venciments.forEach(v => {
+    const d = new Date(v.data_venciment);
+    allEvents.push({
+      id: 'v_'+v.id,
+      origin: 'venciment',
+      title: '🛡️ Venciment: ' + v.empresa,
+      sub: v.ram + (v.asseguradora ? ' · '+v.asseguradora : ''),
+      date: d,
+      raw: v,
+      tag: 'venciment'
+    });
+  });
+  // Tasques amb data
+  state.tasques.filter(t => t.data_limit && t.estat === 'pendent').forEach(t => {
+    allEvents.push({
+      id: 't_'+t.id,
+      origin: 'tasca',
+      title: '✓ ' + t.titol,
+      sub: t.descripcio || '',
+      date: new Date(t.data_limit),
+      raw: t,
+      tag: 'tasca'
+    });
+  });
+  // Seguiments futurs
+  state.seguiments.filter(s => new Date(s.data) >= today).forEach(s => {
+    const cli = state.clients.find(c => c.id === s.client_id);
+    allEvents.push({
+      id: 's_'+s.id,
+      origin: 'seguiment',
+      title: '📞 Seguiment: ' + (cli?.empresa || '?'),
+      sub: s.proper_pas || s.resum || '',
+      date: new Date(s.data),
+      raw: s,
+      tag: 'seguiment'
+    });
+  });
+
+  // Filtrar
+  if (filtre === 'setmana') allEvents = allEvents.filter(e => e.date >= today && e.date <= endWeek);
+  else if (filtre === 'mes') allEvents = allEvents.filter(e => e.date >= today && e.date <= endMonth);
+  else if (filtre === 'tot') allEvents = allEvents.filter(e => e.date >= today);
+  else if (filtre === 'passat') allEvents = allEvents.filter(e => e.date < today);
+
+  allEvents.sort((a,b) => a.date - b.date);
+
+  if (allEvents.length === 0) {
+    document.getElementById('agenda-list').innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📅</div>Cap esdeveniment en aquest període</div></div>';
+    return;
+  }
+
+  // Agrupar per dia
+  const grouped = {};
+  allEvents.forEach(e => {
+    const k = e.date.toISOString().slice(0,10);
+    if (!grouped[k]) grouped[k] = [];
+    grouped[k].push(e);
+  });
+
+  let html = '';
+  Object.keys(grouped).sort().forEach(k => {
+    const d = new Date(k);
+    const isToday = d.toDateString() === new Date().toDateString();
+    const dayName = d.toLocaleDateString('ca-ES',{weekday:'long', day:'numeric', month:'long'});
+    html += `<div class="agenda-day-header ${isToday?'today':''}">${dayName}${isToday?' · avui':''} <span class="day-count">${grouped[k].length} esdeveniments</span></div>`;
+    grouped[k].forEach(e => {
+      const isPast = e.date < new Date() && !isToday;
+      const time = e.tag === 'tot el dia' || (e.origin !== 'agenda') ? '—' : e.date.toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'});
+      const calBtn = e.origin === 'agenda' ? `<button class="btn btn-sm" onclick="event.stopPropagation();syncToGoogleCalendar('${e.raw.id}')" title="Sincronitzar amb Google Calendar">📅</button>` : '';
+      const delBtn = e.origin === 'agenda' ? `<button class="btn btn-sm" onclick="event.stopPropagation();deleteRecord('agenda_events','${e.raw.id}','Esborrar esdeveniment?')" style="color:var(--danger)">🗑</button>` : '';
+      const editBtn = e.origin === 'agenda' ? `<button class="btn btn-sm" onclick='event.stopPropagation();openModal("agenda_event",${JSON.stringify(e.raw).replace(/'/g,"&#39;")})'>✏️</button>` : '';
+      html += `<div class="agenda-event from-${e.origin} ${isPast?'past':''}">
+        <div class="agenda-event-time">${time}</div>
+        <div style="flex:1;min-width:0">
+          <div class="agenda-event-title">${e.title}<span class="agenda-tag">${e.tag||e.origin}</span></div>
+          ${e.sub ? `<div class="agenda-event-sub">${e.sub}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:4px">${editBtn}${calBtn}${delBtn}</div>
+      </div>`;
+    });
+  });
+
+  document.getElementById('agenda-list').innerHTML = html;
+};
+
+window.syncToGoogleCalendar = (eventId) => {
+  const e = state.agenda.find(x => x.id === eventId);
+  if (!e) return;
+  const start = new Date(e.data_inici);
+  const end = e.data_fi ? new Date(e.data_fi) : new Date(start.getTime() + 60*60*1000);
+  const fmt = (d) => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const cli = e.client_id ? state.clients.find(c=>c.id===e.client_id)?.empresa : '';
+  const details = (e.descripcio||'') + (cli?`\n\nClient: ${cli}`:'') + (e.ubicacio?`\n\nUbicació: ${e.ubicacio}`:'');
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.titol)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(details)}${e.ubicacio?'&location='+encodeURIComponent(e.ubicacio):''}`;
+  window.open(url,'_blank');
+  // Marcar com a sincronitzat
+  supabase.from('agenda_events').update({ google_calendar_synced: true }).eq('id', eventId);
+  toast('Obrint Google Calendar...');
+};
+// ==================================================================
+// ESBORRANYS
+// ==================================================================
+const TIPUS_ESBORRANY = [
+  {v:'email', n:'📧 Email'},
+  {v:'trucada', n:'📞 Trucada'},
+  {v:'proposta', n:'💼 Proposta'},
+  {v:'post', n:'📰 Post LinkedIn'},
+  {v:'whatsapp', n:'💬 WhatsApp'},
+  {v:'altre', n:'📝 Altre'}
+];
+const ESTATS_ESBORRANY = [
+  {v:'en_borrador', n:'En borrador'},
+  {v:'llest', n:'Llest per enviar'},
+  {v:'diferit', n:'Diferit'},
+  {v:'arxivat', n:'Arxivat'}
+];
+window.TIPUS_ESBORRANY = TIPUS_ESBORRANY;
+window.ESTATS_ESBORRANY = ESTATS_ESBORRANY;
+
+function renderEsborranys() {
+  document.getElementById('tab-content').innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">📝 Esborranys</div><div class="page-sub">Coses a mig fer · per recuperar després</div></div>
+      <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('esborrany')">+ Nou esborrany</button></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search-esborrany" class="grow" placeholder="Cerca per títol o contingut..." oninput="renderEsborranysList()">
+      <select id="filter-esborrany-estat" onchange="renderEsborranysList()">
+        <option value="">Tots els estats</option>
+        ${ESTATS_ESBORRANY.map(e => `<option value="${e.v}">${e.n}</option>`).join('')}
+      </select>
+      <select id="filter-esborrany-tipus" onchange="renderEsborranysList()">
+        <option value="">Tots els tipus</option>
+        ${TIPUS_ESBORRANY.map(t => `<option value="${t.v}">${t.n}</option>`).join('')}
+      </select>
+    </div>
+    <div id="esborrany-list"></div>
+  `;
+  renderEsborranysList();
+}
+
+window.renderEsborranysList = () => {
+  const q = (document.getElementById('search-esborrany')?.value || '').toLowerCase();
+  const estat = document.getElementById('filter-esborrany-estat')?.value || '';
+  const tipus = document.getElementById('filter-esborrany-tipus')?.value || '';
+  let list = [...(state.esborranys||[])].sort((a,b) => new Date(b.updated_at||b.created_at) - new Date(a.updated_at||a.created_at));
+  if (estat) list = list.filter(e => e.estat === estat);
+  if (tipus) list = list.filter(e => e.tipus === tipus);
+  if (q) list = list.filter(e => (e.titol||'').toLowerCase().includes(q) || (e.contingut||'').toLowerCase().includes(q));
+
+  if (list.length === 0) {
+    document.getElementById('esborrany-list').innerHTML = '<div class="card"><div class="empty-state"><div class="empty-icon">📝</div>Cap esborrany<br><br><button class="btn btn-primary" onclick="openModal(\'esborrany\')">+ Crear primer esborrany</button></div></div>';
+    return;
+  }
+
+  document.getElementById('esborrany-list').innerHTML = list.map(e => {
+    const cli = e.client_id ? state.clients.find(c => c.id === e.client_id) : null;
+    const tipusObj = TIPUS_ESBORRANY.find(t => t.v === e.tipus) || TIPUS_ESBORRANY[5];
+    const estatObj = ESTATS_ESBORRANY.find(es => es.v === e.estat) || ESTATS_ESBORRANY[0];
+    const dataPrevista = e.data_prevista ? new Date(e.data_prevista) : null;
+    const dataPrevistaStr = dataPrevista ? dataPrevista.toLocaleDateString('ca-ES',{day:'numeric',month:'short',year:'numeric'}) : null;
+    return `<div class="esborrany-card estat-${e.estat}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span class="esborrany-tipus">${tipusObj.n}</span>
+            <span class="pill ${e.estat==='llest'?'p-success':e.estat==='diferit'?'p-pend':e.estat==='arxivat'?'p-gray':'p-info'}">${estatObj.n}</span>
+            ${cli ? `<span class="pill p-gray">📎 ${cli.empresa}</span>` : ''}
+            ${dataPrevistaStr ? `<span class="pill p-info">⏰ ${dataPrevistaStr}</span>` : ''}
+          </div>
+          <div class="card-title">${e.titol}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick='openModal("esborrany",${JSON.stringify(e).replace(/'/g,"&#39;")})'>✏️ Obrir</button>
+          <button class="btn btn-sm" onclick="copyEsborrany('${e.id}')">📋 Copiar</button>
+          <button class="btn btn-sm" onclick="deleteRecord('esborranys','${e.id}','Esborrar?')" style="color:var(--danger)">🗑</button>
+        </div>
+      </div>
+      ${e.contingut ? `<div class="esborrany-preview collapsed">${e.contingut}</div>` : ''}
+    </div>`;
+  }).join('');
+};
+
+window.copyEsborrany = async (id) => {
+  const e = state.esborranys.find(x => x.id === id);
+  if (!e || !e.contingut) { toast('Sense contingut','error'); return; }
+  await navigator.clipboard.writeText(e.contingut);
+  toast('Copiat al portapapers');
 };
