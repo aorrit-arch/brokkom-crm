@@ -897,11 +897,13 @@ async function detectClockSkew(){
 let loadBannerRetryHandler = null;
 function showLoadBanner(message, opts={}){
   const el = document.getElementById('load-banner');
-  if(!el) return;
-  document.getElementById('load-banner-msg').textContent = message;
+  if(!el){ console.warn('load-banner missing — original message:', message); return; }
+  const msgEl = document.getElementById('load-banner-msg');
+  if(msgEl) msgEl.textContent = message;
   el.classList.toggle('warn', opts.kind === 'warn');
   loadBannerRetryHandler = opts.onRetry || null;
-  document.getElementById('load-banner-retry').style.display = loadBannerRetryHandler ? '' : 'none';
+  const retryBtn = document.getElementById('load-banner-retry');
+  if(retryBtn) retryBtn.style.display = loadBannerRetryHandler ? '' : 'none';
   el.classList.add('show');
 }
 function hideLoadBanner(){
@@ -2596,24 +2598,28 @@ function checkPWABanner(){
 let authMode = 'login';
 function switchAuthTab(mode){
   authMode = mode;
-  document.getElementById('tab-login').classList.toggle('active', mode==='login');
-  document.getElementById('tab-signup').classList.toggle('active', mode==='signup');
-  document.getElementById('auth-submit').textContent = mode==='login' ? 'Entrar' : 'Crear compte';
-  document.getElementById('auth-msg').style.display = 'none';
+  document.getElementById('tab-login')?.classList.toggle('active', mode==='login');
+  document.getElementById('tab-signup')?.classList.toggle('active', mode==='signup');
+  const submitBtn = document.getElementById('auth-submit');
+  if(submitBtn) submitBtn.textContent = mode==='login' ? 'Entrar' : 'Crear compte';
+  const msgEl = document.getElementById('auth-msg');
+  if(msgEl) msgEl.style.display = 'none';
 }
 function showAuthMsg(text, type='error'){
   const el = document.getElementById('auth-msg');
+  if(!el){ console.warn('auth-msg missing — original message:', text); return; }
   el.textContent = text;
   el.className = 'auth-msg ' + type;
   el.style.display = 'block';
 }
 async function doAuth(){
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
+  const emailEl = document.getElementById('auth-email');
+  const passwordEl = document.getElementById('auth-password');
+  const email = emailEl?.value?.trim() || '';
+  const password = passwordEl?.value || '';
   if(!email || !password){showAuthMsg('Cal email i contrasenya');return}
   const btn = document.getElementById('auth-submit');
-  btn.disabled = true;
-  btn.textContent = '...';
+  if(btn){ btn.disabled = true; btn.textContent = '...'; }
   try{
     if(authMode === 'signup'){
       const {data, error} = await sb.auth.signUp({email, password});
@@ -2629,10 +2635,16 @@ async function doAuth(){
       await onLoginSuccess(data.user);
     }
   }catch(e){
+    console.error('doAuth:', e);
     showAuthMsg(e.message || 'Error d\'autenticació');
   }finally{
-    btn.disabled = false;
-    btn.textContent = authMode==='login' ? 'Entrar' : 'Crear compte';
+    // Tornem a buscar el botó — pot haver canviat si setAuthOverlayLoading
+    // s'ha cridat al mig (ara no, però per robustesa).
+    const finalBtn = document.getElementById('auth-submit') || btn;
+    if(finalBtn){
+      finalBtn.disabled = false;
+      finalBtn.textContent = authMode==='login' ? 'Entrar' : 'Crear compte';
+    }
   }
 }
 async function resetPassword(){
@@ -2665,43 +2677,60 @@ function renderActiveView(){
   }
 }
 
-// Substitueix temporalment el formulari d'auth per un estat "carregant dades"
-// perquè la UI mai es vegi sense dades entre el login i la càrrega completa.
+// Mostra/amaga un estat "Carregant dades..." dins l'auth-overlay sense
+// destruir el form de login (auth-email/password/submit/msg). Crucial per
+// evitar que el password manager del navegador trenqui quan els camps
+// desapareixen, i perquè qualsevol referència en cua a aquests nodes
+// (p.ex. `btn` dins doAuth.finally) segueixi sent vàlida.
 function setAuthOverlayLoading(on){
-  const box = document.querySelector('.auth-box');
-  if(!box) return;
+  const overlay = document.getElementById('auth-overlay');
+  if(!overlay) return;
+  const authBox = overlay.querySelector('.auth-box:not(#auth-loading)');
+  let loader = document.getElementById('auth-loading');
   if(on){
-    if(!box.dataset.original) box.dataset.original = box.innerHTML;
-    box.innerHTML = `
-      <div class="auth-logo">KK</div>
-      <div class="auth-title">Brokkom CRM</div>
-      <div class="auth-sub">Carregant les teves dades…</div>
-      <div style="text-align:center;margin-top:24px">
-        <span style="display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span>
-      </div>`;
-  } else if(box.dataset.original){
-    box.innerHTML = box.dataset.original;
-    delete box.dataset.original;
+    if(!loader){
+      loader = document.createElement('div');
+      loader.id = 'auth-loading';
+      loader.className = 'auth-box';
+      loader.innerHTML =
+        '<div class="auth-logo">KK</div>' +
+        '<div class="auth-title">Brokkom CRM</div>' +
+        '<div class="auth-sub">Carregant les teves dades…</div>' +
+        '<div style="text-align:center;margin-top:24px">' +
+          '<span style="display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span>' +
+        '</div>';
+      overlay.appendChild(loader);
+    }
+    if(authBox) authBox.style.display = 'none';
+    loader.style.display = '';
+  } else {
+    if(loader) loader.style.display = 'none';
+    if(authBox) authBox.style.display = '';
   }
 }
 
 async function onLoginSuccess(user){
   currentUser = user;
-  document.getElementById('user-menu-block').style.display = 'block';
-  document.getElementById('user-email').textContent = user.email;
-  // Mostra "Carregant dades..." dins l'overlay mentre baixem l'estat,
-  // perquè l'usuari mai vegi una UI sense dades entre login i loadFromSupabase.
+  // Elements opcionals: existien al CSS però no al HTML actual.
+  // Els deixem protegits perquè funcionin automàticament si demà s'afegeixen.
+  const userMenu = document.getElementById('user-menu-block');
+  if(userMenu) userMenu.style.display = 'block';
+  const userEmailEl = document.getElementById('user-email');
+  if(userEmailEl) userEmailEl.textContent = user.email;
+  // Mostra "Carregant dades..." mentre baixem l'estat — la UI mai es veu sense
+  // dades entre login i loadFromSupabase.
   setAuthOverlayLoading(true);
   try{
     await checkSessionClockSkew();
     await loadFromSupabase();
   } finally {
-    document.getElementById('auth-overlay').style.display = 'none';
+    const overlay = document.getElementById('auth-overlay');
+    if(overlay) overlay.style.display = 'none';
     setAuthOverlayLoading(false);
   }
   renderActiveView();
   updateNavBadges();
-  checkPWABanner();
+  if(typeof checkPWABanner === 'function') checkPWABanner();
 }
 async function bootAuth(){
   try{
