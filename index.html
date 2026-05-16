@@ -780,16 +780,45 @@ function hideSync(){
   setTimeout(()=>document.getElementById('sync-indicator')?.classList.remove('show'), 400);
 }
 
+// Reintent automàtic en cas d'error de desincronia de rellotge (JWT issued at future)
+// Si Supabase rebutja el token per skew temporal, esperem i refresquem el token, i reintentem.
+async function retryOnClockSkew(operation, maxRetries=3){
+  for(let attempt=0; attempt<=maxRetries; attempt++){
+    const result = await operation();
+    const err = result?.error;
+    // Detectem errors de skew temporal de JWT (codi PGRST303 o missatge "JWT issued at future")
+    const isClockSkew = err && (err.code === 'PGRST303' || /JWT issued at future|jwt.*future/i.test(err.message||''));
+    if(!isClockSkew) return result;
+    if(attempt === maxRetries){
+      console.warn('Clock skew: esgotats els reintents');
+      return result;
+    }
+    // Esperem amb backoff progressiu (2s, 4s, 6s)
+    const waitMs = 2000 * (attempt + 1);
+    console.warn(`Clock skew detectat, reintent ${attempt+1}/${maxRetries} en ${waitMs}ms...`);
+    showSync('Sincronitzant');
+    await new Promise(r => setTimeout(r, waitMs));
+    // Forcem refrescar el token
+    try { await sb.auth.refreshSession(); } catch(e){ console.warn('refresh failed:', e); }
+  }
+}
+
 // Wrapper genèric per a operacions BD
 async function dbSelect(table){
-  const {data, error} = await sb.from(table).select('*').order('created_at',{ascending:false});
+  const result = await retryOnClockSkew(()=>
+    sb.from(table).select('*').order('created_at',{ascending:false})
+  );
+  const {data, error} = result || {};
   if(error){ console.error(`SELECT ${table}:`, error); return []; }
   return (data||[]).map(fromDb);
 }
 async function dbInsert(table, obj){
   showSync('Guardant');
   const payload = toDb({...obj, user_id: currentUser.id});
-  const {data, error} = await sb.from(table).insert(payload).select().single();
+  const result = await retryOnClockSkew(()=>
+    sb.from(table).insert(payload).select().single()
+  );
+  const {data, error} = result || {};
   hideSync();
   if(error){ console.error(`INSERT ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
   return fromDb(data);
@@ -799,14 +828,20 @@ async function dbUpdate(table, id, obj){
   const payload = toDb(obj);
   delete payload.user_id;
   delete payload.created_at;
-  const {data, error} = await sb.from(table).update(payload).eq('id', id).select().single();
+  const result = await retryOnClockSkew(()=>
+    sb.from(table).update(payload).eq('id', id).select().single()
+  );
+  const {data, error} = result || {};
   hideSync();
   if(error){ console.error(`UPDATE ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
   return fromDb(data);
 }
 async function dbDelete(table, id){
   showSync('Esborrant');
-  const {error} = await sb.from(table).delete().eq('id', id);
+  const result = await retryOnClockSkew(()=>
+    sb.from(table).delete().eq('id', id)
+  );
+  const {error} = result || {};
   hideSync();
   if(error){ console.error(`DELETE ${table}:`, error); toast('Error: '+error.message,'error'); return false; }
   return true;
@@ -823,13 +858,17 @@ async function loadFromSupabase(){
     dbSelect('oportunitats'),
     dbSelect('venciments'),
     dbSelect('tasques'),
-    sb.from('notes').select('*').eq('tipus','idea').order('created_at',{ascending:false}).then(r=>(r.data||[]).map(n=>({
+    retryOnClockSkew(()=>
+      sb.from('notes').select('*').eq('tipus','idea').order('created_at',{ascending:false})
+    ).then(r=>(r?.data||[]).map(n=>({
       id:n.id, titol:n.titol, contingut:n.contingut, categoria:n.hashtags?.[0]||'altres',
       estat:'nova', creat:n.created_at, origen:n.hashtags?.includes('IA')?'IA':'manual'
     }))),
     dbSelect('asseguradores'),
     dbSelect('posts'),
-    sb.from('user_config').select('*').eq('user_id', currentUser.id).maybeSingle()
+    retryOnClockSkew(()=>
+      sb.from('user_config').select('*').eq('user_id', currentUser.id).maybeSingle()
+    )
   ]);
   state.clients = clients;
   state.ofertes = ofertes;
@@ -841,7 +880,7 @@ async function loadFromSupabase(){
   state.idees = idees;
   state.asseguradores = asseguradores;
   state.posts = posts;
-  if(config.data){
+  if(config?.data){
     state.mediadors = config.data.mediadors || ['Mediador principal'];
     state.rams = config.data.rams || state.rams;
     state.config.modelFast = config.data.model_fast || state.config.modelFast;
