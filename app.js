@@ -24,6 +24,10 @@ window.state = {
   tasques: [],
   asseguradores: [],
   posts: [],
+  inbox: [],
+  notes: [],
+  agenda: [],
+  esborranys: [],
   usuaris: [],
   currentTab: 'dashboard'
 };
@@ -168,7 +172,7 @@ async function loadAllData() {
     if (error) { console.warn(`Error loading ${table}:`, error.message); return []; }
     return data || [];
   };
-  const [clients, ofertes, consolidats, seguiments, oportunitats, venciments, tasques, asseguradores, posts] = await Promise.all([
+  const [clients, ofertes, consolidats, seguiments, oportunitats, venciments, tasques, asseguradores, posts, inbox, notes, agenda, esborranys] = await Promise.all([
     fetchAll('clients'),
     fetchAll('ofertes'),
     fetchAll('consolidats'),
@@ -177,7 +181,11 @@ async function loadAllData() {
     fetchAll('venciments'),
     fetchAll('tasques'),
     fetchAll('asseguradores'),
-    fetchAll('posts')
+    fetchAll('posts'),
+    fetchAll('inbox_items'),
+    fetchAll('notes'),
+    fetchAll('agenda_events'),
+    fetchAll('esborranys')
   ]);
   state.clients = clients;
   state.ofertes = ofertes;
@@ -188,6 +196,10 @@ async function loadAllData() {
   state.tasques = tasques;
   state.asseguradores = asseguradores;
   state.posts = posts;
+  state.inbox = inbox;
+  state.notes = notes;
+  state.agenda = agenda;
+  state.esborranys = esborranys;
   if (isAdmin()) {
     const { data: users } = await supabase.from('profiles').select('*');
     state.usuaris = users || [];
@@ -204,6 +216,10 @@ window.refreshData = async (only) => {
   if (!only || only === 'tasques') state.tasques = (await supabase.from('tasques').select('*')).data || [];
   if (!only || only === 'asseguradores') state.asseguradores = (await supabase.from('asseguradores').select('*')).data || [];
   if (!only || only === 'posts') state.posts = (await supabase.from('posts').select('*')).data || [];
+  if (!only || only === 'inbox') state.inbox = (await supabase.from('inbox_items').select('*')).data || [];
+  if (!only || only === 'notes') state.notes = (await supabase.from('notes').select('*')).data || [];
+  if (!only || only === 'agenda') state.agenda = (await supabase.from('agenda_events').select('*')).data || [];
+  if (!only || only === 'esborranys') state.esborranys = (await supabase.from('esborranys').select('*')).data || [];
   updateNavBadges();
 };
 
