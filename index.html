@@ -198,6 +198,76 @@ details summary:hover{color:var(--text)}
 .checkbox-row input[type=checkbox]{width:auto;cursor:pointer;margin:0}
 .checkbox-row label{margin:0;cursor:pointer;flex:1;font-size:13px;color:var(--text);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 .checkbox-row .hint{display:block;font-size:11px;color:var(--text-3);font-weight:400;width:100%;margin-top:2px}
+
+/* INBOX */
+.inbox-capture{background:linear-gradient(135deg,var(--brand-bg) 0%,var(--surface) 100%);border:1px solid rgba(91,196,191,0.3);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px}
+.inbox-capture-title{font-size:13px;font-weight:600;color:var(--info);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.inbox-capture-sub{font-size:11px;color:var(--text-3);margin-bottom:10px}
+.inbox-capture textarea{background:var(--surface);min-height:80px;font-size:13px}
+.inbox-capture-actions{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.inbox-item{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;transition:all 0.12s}
+.inbox-item:hover{border-color:var(--border-2)}
+.inbox-item.processed{opacity:0.55;border-left-color:var(--success)}
+.inbox-item.suggested{border-left-color:var(--purple);background:linear-gradient(to right,var(--purple-bg) 0%,var(--surface) 8%)}
+.inbox-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.inbox-time{font-size:11px;color:var(--text-3)}
+.inbox-content{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;word-break:break-word;margin:6px 0}
+.inbox-ai-block{margin-top:10px;padding:10px 12px;background:var(--purple-bg);border-radius:var(--radius);border-left:2px solid var(--purple);font-size:12px;line-height:1.5;color:var(--text-2)}
+.inbox-ai-block strong{color:var(--purple);text-transform:uppercase;font-size:10px;letter-spacing:0.06em;display:block;margin-bottom:4px}
+.inbox-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+/* NOTES */
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;transition:all 0.12s}
+.note-card:hover{border-color:var(--border-2);box-shadow:var(--shadow)}
+.note-card.favorita{border-left:3px solid var(--warning)}
+.note-card .note-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.note-card .note-body{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;margin-top:6px}
+.note-card .note-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.note-fav-star{cursor:pointer;font-size:16px;line-height:1;opacity:0.4;transition:opacity 0.12s}
+.note-fav-star.on{opacity:1}
+
+/* AGENDA */
+.agenda-day-header{font-size:13px;font-weight:600;color:var(--text);margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);text-transform:capitalize}
+.agenda-day-header.today{color:var(--primary-2)}
+.agenda-day-header .day-count{font-size:10px;color:var(--text-3);margin-left:8px;font-weight:400;text-transform:lowercase}
+.agenda-event{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;cursor:pointer;transition:all 0.12s;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.agenda-event:hover{border-color:var(--border-2);transform:translateX(2px)}
+.agenda-event.from-venciment{border-left-color:var(--danger)}
+.agenda-event.from-tasca{border-left-color:var(--warning)}
+.agenda-event.from-seguiment{border-left-color:var(--info)}
+.agenda-event.past{opacity:0.6}
+.agenda-event-time{font-size:11px;color:var(--text-3);font-family:monospace;margin-right:10px;flex-shrink:0;width:48px}
+.agenda-event-title{font-size:13px;font-weight:500;color:var(--text)}
+.agenda-event-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+.agenda-tag{display:inline-block;font-size:10px;padding:1px 6px;background:var(--surface-2);color:var(--text-3);border-radius:8px;margin-left:6px;text-transform:uppercase;letter-spacing:0.04em}
+
+/* ESBORRANYS */
+.esborrany-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;transition:all 0.12s}
+.esborrany-card:hover{border-color:var(--border-2);box-shadow:var(--shadow)}
+.esborrany-card.estat-llest{border-left-color:var(--success)}
+.esborrany-card.estat-diferit{border-left-color:var(--warning);opacity:0.85}
+.esborrany-card.estat-arxivat{opacity:0.5}
+.esborrany-tipus{display:inline-block;font-size:10px;padding:2px 7px;background:var(--purple-bg);color:var(--purple);border-radius:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.esborrany-preview{font-size:13px;color:var(--text-2);line-height:1.55;margin-top:8px;white-space:pre-wrap;max-height:80px;overflow:hidden;position:relative}
+.esborrany-preview.expanded{max-height:none}
+.esborrany-preview.collapsed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,var(--surface))}
+
+/* CAPTURA IMATGE */
+.inbox-capture-tabs{display:flex;gap:2px;margin-bottom:10px;border-bottom:1px solid var(--border)}
+.inbox-capture-tab{font-size:12px;padding:6px 12px;background:none;border:none;cursor:pointer;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;font-weight:500}
+.inbox-capture-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.image-drop-zone{border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:30px 20px;text-align:center;background:var(--surface);cursor:pointer;transition:all 0.12s}
+.image-drop-zone:hover,.image-drop-zone.drag-over{border-color:var(--primary);background:var(--brand-bg)}
+.image-drop-zone .icon{font-size:36px;margin-bottom:10px;display:block}
+.image-drop-zone .text{font-size:13px;color:var(--text-2);font-weight:500}
+.image-drop-zone .sub{font-size:11px;color:var(--text-3);margin-top:4px}
+.image-preview{position:relative;display:inline-block;max-width:200px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.image-preview img{display:block;max-width:100%;height:auto}
+.image-preview .remove{position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(0,0,0,0.7);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;border:none;font-weight:bold}
+.inbox-item-image{margin-top:10px;max-width:300px;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer}
+.inbox-item-image:hover{opacity:0.9}
+.image-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:1000;cursor:zoom-out;padding:20px}
+.image-lightbox img{max-width:100%;max-height:100%;border-radius:var(--radius)}
 </style>
 </head>
 <body>
@@ -263,6 +333,7 @@ details summary:hover{color:var(--text)}
   </div>
 
   <div class="nav-divider">Comercial</div>
+  <div class="nav-item" data-tab="inbox" style="position:relative">📥 Inbox <span class="badge" id="nav-inbox">0</span></div>
   <div class="nav-item active" data-tab="dashboard">📊 Tauler</div>
   <div class="nav-item" data-tab="clients">🏢 Clients <span class="badge" id="nav-clients">0</span></div>
   <div class="nav-item" data-tab="pipeline">🎯 Pipeline <span class="badge" id="nav-pipeline">0</span></div>
@@ -271,8 +342,11 @@ details summary:hover{color:var(--text)}
   <div class="nav-item" data-tab="oportunitats">💡 Oportunitats <span class="badge" id="nav-opps">0</span></div>
 
   <div class="nav-divider">Operativa</div>
+  <div class="nav-item" data-tab="agenda">📅 Agenda <span class="badge" id="nav-agenda">0</span></div>
   <div class="nav-item" data-tab="venciments">📅 Venciments <span class="badge" id="nav-venc">0</span></div>
   <div class="nav-item" data-tab="tasques">✓ Tasques <span class="badge" id="nav-tasques">0</span></div>
+  <div class="nav-item" data-tab="notes">💭 Notes / Idees <span class="badge" id="nav-notes">0</span></div>
+  <div class="nav-item" data-tab="esborranys">📝 Esborranys <span class="badge" id="nav-esborranys">0</span></div>
   <div class="nav-item" data-tab="asseguradores">🛡️ Asseguradores</div>
 
   <div class="nav-divider admin-only hidden">Admin</div>
