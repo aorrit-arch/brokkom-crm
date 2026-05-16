@@ -1399,7 +1399,7 @@ async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='imag
   }
   msgContent.push({type:'text', text:prompt});
 
-  const response = await fetch('/api/anthropic', {
+  const response = await fetch('/api/ai-proxy', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
