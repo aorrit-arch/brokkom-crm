@@ -189,6 +189,15 @@ details summary:hover{color:var(--text)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .app-loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:1000}
 .app-loading .loader{width:32px;height:32px;border-width:3px}
+.badge-comprum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--text);color:#fff;font-weight:800;font-size:11px;letter-spacing:-0.5px;flex-shrink:0}
+.badge-comprum.sm{width:18px;height:18px;font-size:10px}
+.hashtag-pill{display:inline-block;font-size:11px;padding:2px 8px;background:var(--brand-bg);color:var(--info);border-radius:10px;margin-right:4px;margin-bottom:3px;cursor:pointer;font-weight:500;transition:all 0.1s;border:1px solid transparent}
+.hashtag-pill:hover{background:var(--primary);color:#fff}
+.hashtag-pill.selected{background:var(--primary);color:#fff;border-color:var(--primary-2)}
+.checkbox-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--brand-bg);border-radius:var(--radius);border:1px solid rgba(91,196,191,0.25)}
+.checkbox-row input[type=checkbox]{width:auto;cursor:pointer;margin:0}
+.checkbox-row label{margin:0;cursor:pointer;flex:1;font-size:13px;color:var(--text);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.checkbox-row .hint{display:block;font-size:11px;color:var(--text-3);font-weight:400;width:100%;margin-top:2px}
 </style>
 </head>
 <body>
