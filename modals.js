@@ -6,18 +6,51 @@ window.openModal = (type, data = {}) => {
   let html = '';
 
   if (type === 'client') {
+    const sectors = ['Transport mercaderies','Logística','Transport viatgers','ADR / mercaderies perilloses','Altres'];
+    const origens = ['Recomanació','Campanya','Web','LinkedIn','Cold call','Networking','ERP existent','Reactivació ex-client','Altres'];
+    const hashtagsStr = Array.isArray(data.hashtags) ? data.hashtags.join(', ') : '';
     html = `
-      <div class="modal-title">${data.id?'Editar':'Nou'} client</div>
-      <div class="form-grid">
-        <div class="form-row"><label>Empresa *</label><input type="text" id="m-empresa" value="${data.empresa||''}"></div>
-        <div class="form-row"><label>CIF</label><input type="text" id="m-cif" value="${data.cif||''}"></div>
+      <div class="modal-title" style="display:flex;align-items:center;gap:10px">
+        ${data.comprum ? '<span class="badge-comprum">C</span>' : ''}
+        ${data.id?'Editar':'Nou'} client
+        ${data.ha_comprat ? '<span class="pill p-success" style="font-size:10px">💰 ha comprat</span>' : ''}
       </div>
       <div class="form-grid">
+        <div class="form-row"><label>Empresa *</label><input type="text" id="m-empresa" value="${(data.empresa||'').replace(/"/g,'&quot;')}"></div>
+        <div class="form-row"><label>CIF</label><input type="text" id="m-cif" value="${data.cif||''}"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Estat client</label><select id="m-estat_client">
+          <option value="prospect" ${(data.estat_client||'prospect')==='prospect'?'selected':''}>Prospect</option>
+          <option value="actiu" ${data.estat_client==='actiu'?'selected':''}>Client actiu</option>
+          <option value="ex_client" ${data.estat_client==='ex_client'?'selected':''}>Ex-client</option>
+        </select></div>
         <div class="form-row"><label>Sector</label><select id="m-sector">
           <option value="">—</option>
-          ${['Transport mercaderies','Logística','Transport viatgers','ADR / mercaderies perilloses','Altres'].map(s => `<option ${data.sector===s?'selected':''}>${s}</option>`).join('')}
+          ${sectors.map(s => `<option ${data.sector===s?'selected':''}>${s}</option>`).join('')}
+        </select></div>
+        <div class="form-row"><label>Activitat</label><input type="text" id="m-activitat" value="${(data.activitat||'').replace(/"/g,'&quot;')}" placeholder="ex: cisternes ADR"></div>
+      </div>
+      <div class="form-row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="m-comprum" ${data.comprum?'checked':''}>
+          <label for="m-comprum">
+            <span class="badge-comprum" style="margin-right:6px">C</span>Pertany al col·lectiu COMPRUM
+            <span class="hint">Central de compres del sector transport</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Origen</label><select id="m-origen">
+          <option value="">—</option>
+          ${origens.map(o => `<option ${data.origen===o?'selected':''}>${o}</option>`).join('')}
         </select></div>
         <div class="form-row"><label>Treballadors</label><input type="text" id="m-treballadors" value="${data.treballadors||''}"></div>
+        <div class="form-row"><label>Facturació</label><input type="text" id="m-facturacio" value="${data.facturacio||''}" placeholder="ex: 4,2M€"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Província</label><input type="text" id="m-provincia" value="${data.provincia||''}"></div>
+        <div class="form-row"><label>Població</label><input type="text" id="m-poblacio" value="${data.poblacio||''}"></div>
       </div>
       <div class="form-grid">
         <div class="form-row"><label>Contacte</label><input type="text" id="m-contacte" value="${data.contacte||''}"></div>
@@ -28,8 +61,8 @@ window.openModal = (type, data = {}) => {
         <div class="form-row"><label>Telèfon</label><input type="tel" id="m-telefon" value="${data.telefon||''}"></div>
       </div>
       <div class="form-row"><label>Adreça</label><input type="text" id="m-adreca" value="${data.adreca||''}"></div>
-      <div class="form-row"><label>Facturació</label><input type="text" id="m-facturacio" value="${data.facturacio||''}"></div>
-      <div class="form-row"><label>Notes</label><textarea id="m-notes">${data.notes||''}</textarea></div>
+      <div class="form-row"><label>Hashtags <span style="color:var(--text-3);text-transform:none;letter-spacing:0;font-weight:400">(separats per coma — per filtrar)</span></label><input type="text" id="m-hashtags" value="${hashtagsStr}" placeholder="frigorific, ADR, internacional, conveni-mercaderies"></div>
+      <div class="form-row"><label>Notes estratègiques</label><textarea id="m-notes" placeholder="Història, riscos, oportunitats, peculiaritats...">${data.notes||''}</textarea></div>
       <div class="modal-actions">
         <button class="btn" onclick="closeModal()">Cancel·lar</button>
         <button class="btn btn-primary" onclick="saveClient('${data.id||''}')">Guardar</button>
@@ -175,11 +208,27 @@ const getNum = id => { const v = parseFloat(getVal(id)); return isNaN(v) ? null 
 window.saveClient = async (id) => {
   const empresa = getVal('m-empresa')?.trim();
   if (!empresa) { toast('Empresa obligatòria','error'); return; }
+  const hashtagsRaw = getVal('m-hashtags') || '';
+  const hashtags = hashtagsRaw.split(',').map(s => s.trim().toLowerCase().replace(/^#/,'')).filter(Boolean);
   const data = {
-    empresa, cif: getVal('m-cif'), sector: getVal('m-sector'), treballadors: getVal('m-treballadors'),
-    contacte: getVal('m-contacte'), carrec: getVal('m-carrec'), email: getVal('m-email'),
-    telefon: getVal('m-telefon'), adreca: getVal('m-adreca'), facturacio: getVal('m-facturacio'),
-    notes: getVal('m-notes')
+    empresa,
+    cif: getVal('m-cif'),
+    sector: getVal('m-sector'),
+    activitat: getVal('m-activitat'),
+    treballadors: getVal('m-treballadors'),
+    contacte: getVal('m-contacte'),
+    carrec: getVal('m-carrec'),
+    email: getVal('m-email'),
+    telefon: getVal('m-telefon'),
+    adreca: getVal('m-adreca'),
+    facturacio: getVal('m-facturacio'),
+    notes: getVal('m-notes'),
+    comprum: document.getElementById('m-comprum')?.checked || false,
+    estat_client: getVal('m-estat_client') || 'prospect',
+    origen: getVal('m-origen'),
+    provincia: getVal('m-provincia'),
+    poblacio: getVal('m-poblacio'),
+    hashtags: hashtags.length ? hashtags : null
   };
   let err;
   if (id) { ({ error: err } = await supabase.from('clients').update(data).eq('id', id)); }
