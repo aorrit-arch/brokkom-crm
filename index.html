@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Brokkom CRM">
-<meta name="theme-color" content="#1a3a6b">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a3a6b'/><rect x='10' y='30' width='55' height='35' rx='6' fill='%234a90d9'/><rect x='65' y='42' width='25' height='22' rx='4' fill='%237ab8f5'/><circle cx='22' cy='72' r='8' fill='white'/><circle cx='52' cy='72' r='8' fill='white'/><circle cx='78' cy='72' r='8' fill='white'/></svg>">
+<meta name="theme-color" content="#0D9488">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230D9488'/><text x='50' y='65' font-size='44' font-weight='700' fill='white' text-anchor='middle' font-family='sans-serif'>KK</text></svg>">
 <title>BROKKOM CRM · Suport comercial</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
   :root{
     --bg:#ffffff;
     --surface:#ffffff;
@@ -61,38 +61,37 @@
   }
   .main{flex:1;padding:24px 32px;overflow-y:auto}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:0 8px}
-  .brand-logo{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:13px;color:#fff;letter-spacing:-0.5px;flex-shrink:0}
-  .brand-name{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+  .brand-logo{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:13px;color:#fff;letter-spacing:-0.5px}
+  .brand-name{font-size:14px;font-weight:600;color:var(--text)}
   .brand-sub{font-size:11px;color:var(--text-3);margin-top:1px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-2);margin-bottom:1px;transition:all 0.15s;font-weight:400}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-2);margin-bottom:1px;transition:all 0.15s}
   .nav-item:hover{background:var(--surface-3);color:var(--text)}
   .nav-item.active{background:var(--primary-light);color:var(--primary-2);font-weight:500}
   .nav-item .badge{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:10px;background:var(--surface-2);color:var(--text-3)}
   .nav-item.active .badge{background:rgba(13,148,136,0.15);color:var(--primary-2)}
-  .nav-divider{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;padding:16px 12px 6px;font-weight:600}
-  .nav-status{margin-top:24px;padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);font-size:11px;color:var(--text-3);border:1px solid var(--border)}
+  .nav-divider{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;padding:14px 10px 6px;font-weight:500}
+  .nav-status{margin-top:24px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius);font-size:11px;color:var(--text-3)}
   .nav-status .ok{color:var(--success);font-weight:500}
   .nav-status .err{color:var(--danger);font-weight:500}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-  .page-title{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.4px}
+  .page-title{font-size:20px;font-weight:600;color:var(--text)}
   .page-sub{font-size:13px;color:var(--text-2);margin-top:2px}
   .topbar-actions{display:flex;gap:8px;align-items:center}
-  .btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;font-weight:400}
+  .btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px}
   .btn:hover{background:var(--surface-2);border-color:rgba(0,0,0,0.18)}
   .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:500;box-shadow:0 1px 4px rgba(13,148,136,0.25)}
   .btn-primary:hover{background:var(--primary-2);border-color:var(--primary-2);box-shadow:0 2px 8px rgba(13,148,136,0.35)}
-  .btn-sm{font-size:12px;padding:5px 11px;border-radius:8px}
+  .btn-sm{font-size:12px;padding:5px 10px}
   .btn-icon{padding:6px 8px}
   .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;transition:box-shadow 0.15s}
-  .metric:hover{box-shadow:var(--shadow-md)}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
   .metric-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px}
   .metric-value{font-size:24px;font-weight:600;color:var(--text);line-height:1.2}
   .metric-sub{font-size:11px;color:var(--text-3);margin-top:3px}
   .metric-trend{font-size:11px;color:var(--success);margin-top:3px;font-weight:500}
   .metric-trend.down{color:var(--danger)}
   .section-title{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;font-weight:500}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
   .card.compact{padding:12px 14px}
   .card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
   .card-title{font-size:14px;font-weight:600;color:var(--text)}
@@ -208,6 +207,25 @@
   .hashtag-helper{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .hashtag-btn{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border-2);background:var(--surface);cursor:pointer;color:var(--text-2);transition:all 0.1s}
   .hashtag-btn:hover{background:var(--primary-light);color:var(--primary-2);border-color:var(--primary)}
+  .auth-overlay{position:fixed;inset:0;background:#f7fafa;display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .auth-box{background:#fff;border-radius:16px;padding:40px;max-width:400px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.1)}
+  .auth-logo{width:60px;height:60px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;letter-spacing:-0.5px}
+  .auth-title{font-size:22px;font-weight:600;text-align:center;margin-bottom:6px;letter-spacing:-0.3px}
+  .auth-sub{font-size:13px;color:var(--text-2);text-align:center;margin-bottom:28px}
+  .auth-tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:10px;margin-bottom:20px}
+  .auth-tab{flex:1;padding:8px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2);transition:all 0.15s}
+  .auth-tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+  .auth-msg{font-size:12px;padding:10px 12px;border-radius:8px;margin-top:12px}
+  .auth-msg.error{background:var(--danger-bg);color:var(--danger)}
+  .auth-msg.success{background:var(--success-bg);color:var(--success)}
+  .sync-indicator{position:fixed;top:16px;right:16px;padding:6px 12px;background:var(--primary-light);color:var(--primary-2);border-radius:20px;font-size:11px;font-weight:500;z-index:90;display:none;align-items:center;gap:6px}
+  .sync-indicator.show{display:flex}
+  .sync-indicator::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .user-menu{padding:10px 14px;background:var(--surface-2);border-radius:var(--radius);margin-top:10px;font-size:11px;color:var(--text-2);border:1px solid var(--border)}
+  .user-menu strong{color:var(--text);font-weight:500;display:block;margin-bottom:4px}
+  .user-menu a{color:var(--primary);text-decoration:none;font-size:11px;cursor:pointer}
+  .user-menu a:hover{text-decoration:underline}
   .hidden{display:none !important}
   .ai-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;background:var(--primary-light);color:var(--primary-2);border-radius:10px;margin-left:6px;font-weight:500;border:1px solid rgba(13,148,136,0.2)}
   .ai-chip::before{content:"●";font-size:8px}
@@ -218,6 +236,29 @@
 </style>
 </head>
 <body>
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">KK</div>
+    <div class="auth-title">Brokkom CRM</div>
+    <div class="auth-sub">Suport comercial · Sector transport</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Iniciar sessió</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Crear compte</div>
+    </div>
+    <div class="form-row">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="el-teu@email.com" autocomplete="email">
+    </div>
+    <div class="form-row">
+      <label>Contrasenya</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="auth-submit" onclick="doAuth()" style="width:100%;justify-content:center">Entrar</button>
+    <div id="auth-msg" style="display:none"></div>
+    <div style="margin-top:14px;text-align:center"><a onclick="resetPassword()" style="font-size:12px;color:var(--primary);cursor:pointer;text-decoration:none">He oblidat la contrasenya</a></div>
+  </div>
+</div>
+
 <div class="layout">
 
 <aside class="sidebar">
@@ -568,21 +609,21 @@
     </div>
   </div>
 
-  <div class="section-title">API Anthropic</div>
+  <div class="section-title">Connexió</div>
   <div class="card">
     <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--success-bg);border-radius:var(--radius);margin-bottom:14px">
       <span style="font-size:18px">✓</span>
-      <div><div style="font-weight:500;font-size:13px;color:var(--success)">Clau API configurada al servidor</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">La clau viu a Vercel i mai s'exposa al navegador</div></div>
+      <div><div style="font-weight:500;font-size:13px;color:var(--success)">Sincronitzat amb Supabase</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">Les teves dades estan al núvol i sincronitzades entre dispositius</div></div>
     </div>
     <div class="form-row">
-      <label>Model per a tasques simples (extracció, classificació)</label>
+      <label>Model per a tasques simples</label>
       <select id="config-model-fast">
         <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (ràpid, econòmic)</option>
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (intermedi)</option>
       </select>
     </div>
     <div class="form-row">
-      <label>Model per a tasques complexes (posts, anàlisi estratègica)</label>
+      <label>Model per a tasques complexes</label>
       <select id="config-model-smart">
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recomanat)</option>
         <option value="claude-opus-4-6">Claude Opus 4.6 (màxima qualitat)</option>
@@ -619,11 +660,11 @@
 
   <div class="section-title" style="margin-top:24px">Sobre BROKKOM CRM</div>
   <div class="card" style="font-size:12px;color:var(--text-2);line-height:1.7">
-    <strong style="color:var(--text)">Versió 2.0</strong> · Suport comercial per a corredoria de seguros<br>
+    <strong style="color:var(--text)">Versió 1.0</strong> · Suport comercial per a corredoria de seguros<br>
     Disseny i desenvolupament: Brokkom amb assistència IA<br>
-    Stack: HTML + JS · localStorage · API Anthropic via Vercel · Proxy serverless<br>
+    Stack: HTML + JavaScript pur · localStorage · API Anthropic<br>
     <br>
-    Properes versions: Supabase (multi-dispositiu), Apollo.io (prospecció), accés multi-usuari.
+    Properes versions: integració Supabase (multi-dispositiu), Apollo.io (prospecció), accés multi-usuari.
   </div>
 </div>
 
@@ -644,7 +685,7 @@
       <option value="linkedin">LinkedIn</option>
       <option value="comercial">Comercial</option>
       <option value="producte">Producte</option>
-      <option value="proces">Procos</option>
+      <option value="proces">Procés</option>
       <option value="altres">Altres</option>
     </select>
     <select id="filter-idees-estat" onchange="renderIdees()">
@@ -665,39 +706,165 @@
   <button class="btn btn-pwa" onclick="showPWAInstructions()">Com fer-ho</button>
   <button class="btn-close" onclick="document.getElementById('pwa-banner').classList.remove('show');localStorage.setItem('pwa_dismissed','1')">✕</button>
 </div>
+<div class="sync-indicator" id="sync-indicator">Sincronitzant</div>
 <div id="modal-container"></div>
 <div id="toast-container"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const STATE_KEY = 'brokkom_crm_v1';
-const DEFAULT_STATE = {
-  clients: [],
-  ofertes: [],
-  consolidats: [],
-  seguiments: [],
-  oportunitats: [],
-  venciments: [],
-  tasques: [],
-  idees: [],
-  asseguradores: [
-    {nom:'Zurich', rams:['Multiriscos','Vehicles','RC'], notes:'Competitiva en pymes industrials'},
-    {nom:'Generali', rams:['Multiriscos','Vehicles','Vida'], notes:''},
-    {nom:'Reale', rams:['Accidents conveni','Vehicles'], notes:''},
-    {nom:'Mapfre', rams:['Vehicles','Multiriscos','Vida'], notes:''},
-    {nom:'Allianz', rams:['Vehicles','RC','Ciber'], notes:''},
-    {nom:'AXA', rams:['Vehicles','Multiriscos','Salut'], notes:''}
-  ],
+// =================================================================
+// CONFIGURACIÓ SUPABASE
+// =================================================================
+const SUPABASE_URL = 'https://ovzvdmxbuoysckprjlej.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_s4ojmx3-jLvBd3gCRtPdyQ_dPS100N9';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Estat en memòria — espill de la BD per renderitzar ràpid
+let state = {
+  clients: [], ofertes: [], consolidats: [], seguiments: [],
+  oportunitats: [], venciments: [], tasques: [], idees: [],
+  asseguradores: [], posts: [],
   mediadors: ['Mediador principal'],
   rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','RC Mediambiental','Mercaderies CMR/ICC','Pèrdua de beneficis','Ciber','Salut col·lectiva','Retribució flexible','Plans de pensions','Vida','Altres'],
-  posts: [],
-  config: {
-    apiKey: '',
-    modelFast: 'claude-haiku-4-5-20251001',
-    modelSmart: 'claude-sonnet-4-6'
-  }
+  config: { modelFast: 'claude-haiku-4-5-20251001', modelSmart: 'claude-sonnet-4-6' }
 };
+let currentUser = null;
 
-let state = loadState();
+// Mapeig camelCase ↔ snake_case
+const COLUMN_MAP = {
+  clientId: 'client_id',
+  dataAlta: 'data_alta',
+  primaActual: 'prima_actual',
+  primaBrokkom: 'prima_brokkom',
+  asseguradoraActual: 'asseguradora_actual',
+  dataOferta: 'data_oferta',
+  primaAnual: 'prima_anual',
+  numPolissa: 'num_polissa',
+  dataTancament: 'data_tancament',
+  properPas: 'proper_pas',
+  ofertaId: 'oferta_id',
+  dataDeteccio: 'data_deteccio',
+  dataVenciment: 'data_venciment',
+  dataLimit: 'data_limit',
+  contacteIntern: 'contacte_intern'
+};
+const REVERSE_MAP = Object.fromEntries(Object.entries(COLUMN_MAP).map(([k,v])=>[v,k]));
+
+function toDb(obj){
+  const out = {};
+  for(const k in obj){
+    if(k === 'id') continue; // l'ID el genera la BD
+    const dbKey = COLUMN_MAP[k] || k;
+    let v = obj[k];
+    if(v === '' || v === undefined) v = null;
+    out[dbKey] = v;
+  }
+  return out;
+}
+function fromDb(obj){
+  if(!obj) return obj;
+  const out = {};
+  for(const k in obj){
+    const jsKey = REVERSE_MAP[k] || k;
+    out[jsKey] = obj[k];
+  }
+  return out;
+}
+
+// Indicador de sincronització
+function showSync(msg='Sincronitzant'){
+  const el = document.getElementById('sync-indicator');
+  if(el){ el.textContent = msg; el.classList.add('show'); }
+}
+function hideSync(){
+  setTimeout(()=>document.getElementById('sync-indicator')?.classList.remove('show'), 400);
+}
+
+// Wrapper genèric per a operacions BD
+async function dbSelect(table){
+  const {data, error} = await sb.from(table).select('*').order('created_at',{ascending:false});
+  if(error){ console.error(`SELECT ${table}:`, error); return []; }
+  return (data||[]).map(fromDb);
+}
+async function dbInsert(table, obj){
+  showSync('Guardant');
+  const payload = toDb({...obj, user_id: currentUser.id});
+  const {data, error} = await sb.from(table).insert(payload).select().single();
+  hideSync();
+  if(error){ console.error(`INSERT ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
+  return fromDb(data);
+}
+async function dbUpdate(table, id, obj){
+  showSync('Actualitzant');
+  const payload = toDb(obj);
+  delete payload.user_id;
+  delete payload.created_at;
+  const {data, error} = await sb.from(table).update(payload).eq('id', id).select().single();
+  hideSync();
+  if(error){ console.error(`UPDATE ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
+  return fromDb(data);
+}
+async function dbDelete(table, id){
+  showSync('Esborrant');
+  const {error} = await sb.from(table).delete().eq('id', id);
+  hideSync();
+  if(error){ console.error(`DELETE ${table}:`, error); toast('Error: '+error.message,'error'); return false; }
+  return true;
+}
+
+// Carregar tot l'estat des de Supabase
+async function loadFromSupabase(){
+  showSync('Carregant');
+  const [clients, ofertes, consolidats, seguiments, oportunitats, venciments, tasques, idees, asseguradores, posts, config] = await Promise.all([
+    dbSelect('clients'),
+    dbSelect('ofertes'),
+    dbSelect('consolidats'),
+    dbSelect('seguiments'),
+    dbSelect('oportunitats'),
+    dbSelect('venciments'),
+    dbSelect('tasques'),
+    sb.from('notes').select('*').eq('tipus','idea').order('created_at',{ascending:false}).then(r=>(r.data||[]).map(n=>({
+      id:n.id, titol:n.titol, contingut:n.contingut, categoria:n.hashtags?.[0]||'altres',
+      estat:'nova', creat:n.created_at, origen:n.hashtags?.includes('IA')?'IA':'manual'
+    }))),
+    dbSelect('asseguradores'),
+    dbSelect('posts'),
+    sb.from('user_config').select('*').eq('user_id', currentUser.id).maybeSingle()
+  ]);
+  state.clients = clients;
+  state.ofertes = ofertes;
+  state.consolidats = consolidats;
+  state.seguiments = seguiments;
+  state.oportunitats = oportunitats;
+  state.venciments = venciments;
+  state.tasques = tasques;
+  state.idees = idees;
+  state.asseguradores = asseguradores;
+  state.posts = posts;
+  if(config.data){
+    state.mediadors = config.data.mediadors || ['Mediador principal'];
+    state.rams = config.data.rams || state.rams;
+    state.config.modelFast = config.data.model_fast || state.config.modelFast;
+    state.config.modelSmart = config.data.model_smart || state.config.modelSmart;
+  }
+  // Seed asseguradores si la cartera està buida
+  if(state.asseguradores.length === 0){
+    const seed = [
+      {nom:'Zurich', rams:['Multiriscos','Vehicles','RC']},
+      {nom:'Generali', rams:['Multiriscos','Vehicles','Vida']},
+      {nom:'Reale', rams:['Accidents conveni','Vehicles']},
+      {nom:'Mapfre', rams:['Vehicles','Multiriscos','Vida']},
+      {nom:'Allianz', rams:['Vehicles','RC','Ciber']},
+      {nom:'AXA', rams:['Vehicles','Multiriscos','Salut']}
+    ];
+    for(const a of seed){ await dbInsert('asseguradores', a); }
+    state.asseguradores = await dbSelect('asseguradores');
+  }
+  hideSync();
+}
+
+// Stub: saveState ja no fa res — escrivim directament via dbInsert/Update
+function saveState(){}
 const TOPICS = [
   {id:'brokkom',i:'🚀',n:'Nova etapa Brokkom',sub:'Post corporatiu',a:['Qui és Brokkom: la corredoria que entén el transport per dins','Per a on va Brokkom: més digital, més proactiu','El que ens diferencia: construïm protecció, no venem pòlisses','Especialització real vs eslògan']},
   {id:'ciber',i:'🔒',n:'Ciber + NIS2',sub:'Risc + obligació legal',a:['El teu camió pot ser hackejat — GPS com a vector d\'atac','NIS2 obliga el transport: saps si compliu?','Ransomware a una flota: qui paga sense ciber?','Multes NIS2: fins al 2% de la facturació']},
@@ -716,7 +883,7 @@ function loadState(){
     const saved = localStorage.getItem(STATE_KEY);
     if(saved){
       const parsed = JSON.parse(saved);
-      return {...DEFAULT_STATE, ...parsed, idees: parsed.idees||[], config: {...DEFAULT_STATE.config, ...parsed.config}};
+      return {...DEFAULT_STATE, ...parsed, config: {...DEFAULT_STATE.config, ...parsed.config}};
     }
   }catch(e){console.error('Error loading state:',e)}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -773,7 +940,7 @@ function updateNavBadges(){
   document.getElementById('nav-tasques').textContent = state.tasques.filter(t=>t.estat==='pendent').length;
   const navIdees = document.getElementById('nav-idees'); if(navIdees) navIdees.textContent = (state.idees||[]).filter(i=>i.estat==='nova').length;
   document.getElementById('api-status').className = 'ok';
-  document.getElementById('api-status').textContent = '✓ clau al servidor';
+  document.getElementById('api-status').textContent = '✓ servidor actiu';
 }
 
 function renderDashboard(){
@@ -1284,11 +1451,6 @@ function selectTopic(id){
 }
 
 async function generatePost(topic){
-  if(!state.config.apiKey){
-    toast('Configura primer la teva API Key d\'Anthropic', 'error');
-    showTab('config');
-    return;
-  }
   const angleIdx = parseInt(document.querySelector('input[name=angle]:checked').value);
   const angle = topic.a[angleIdx];
   const btn = document.getElementById('btn-generate-post');
@@ -1329,11 +1491,11 @@ function copyPost(){
   toast('Copiat al portapapers');
 }
 
-function savePost(){
+async function savePost(){
   const txt = document.getElementById('post-output').value;
   const tema = document.getElementById('post-output').dataset.tema || 'Post';
-  state.posts.unshift({id:uid(), tema, contingut:txt, data:new Date().toISOString()});
-  saveState();
+  const inserted = await dbInsert('posts', {tema, contingut:txt, data:new Date().toISOString()});
+  if(inserted) state.posts.unshift(inserted);
   renderComunicacio();
   toast('Post guardat');
 }
@@ -1351,34 +1513,37 @@ function renderConfig(){
 function renderMediadors(){
   document.getElementById('mediadors-list').innerHTML = state.mediadors.map((m,i)=>`
     <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="text" value="${m}" onchange="state.mediadors[${i}]=this.value;saveState()">
-      <button class="btn btn-sm" onclick="state.mediadors.splice(${i},1);saveState();renderMediadors()" style="color:var(--danger)">🗑</button>
+      <input type="text" value="${m}" onchange="state.mediadors[${i}]=this.value;persistConfig()">
+      <button class="btn btn-sm" onclick="state.mediadors.splice(${i},1);persistConfig();renderMediadors()" style="color:var(--danger)">🗑</button>
     </div>
   `).join('');
+}
+async function persistConfig(){
+  await sb.from('user_config').upsert({user_id:currentUser.id, mediadors:state.mediadors, rams:state.rams, model_fast:state.config.modelFast, model_smart:state.config.modelSmart, updated_at:new Date().toISOString()});
 }
 
 function renderRams(){
   document.getElementById('rams-list').innerHTML = state.rams.map((r,i)=>`
     <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="text" value="${r}" onchange="state.rams[${i}]=this.value;saveState()">
-      <button class="btn btn-sm" onclick="state.rams.splice(${i},1);saveState();renderRams()" style="color:var(--danger)">🗑</button>
+      <input type="text" value="${r}" onchange="state.rams[${i}]=this.value;persistConfig()">
+      <button class="btn btn-sm" onclick="state.rams.splice(${i},1);persistConfig();renderRams()" style="color:var(--danger)">🗑</button>
     </div>
   `).join('');
 }
 
-function addMediador(){state.mediadors.push('Nou mediador');saveState();renderMediadors()}
-function addRam(){state.rams.push('Nou ram');saveState();renderRams()}
+function addMediador(){state.mediadors.push('Nou mediador');persistConfig();renderMediadors()}
+function addRam(){state.rams.push('Nou ram');persistConfig();renderRams()}
 
-function saveConfig(){
+async function saveConfig(){
   state.config.modelFast = document.getElementById('config-model-fast').value;
   state.config.modelSmart = document.getElementById('config-model-smart').value;
-  saveState();
+  await sb.from('user_config').upsert({user_id:currentUser.id, mediadors:state.mediadors, rams:state.rams, model_fast:state.config.modelFast, model_smart:state.config.modelSmart, updated_at:new Date().toISOString()});
   updateNavBadges();
   toast('Preferències guardades');
 }
 
 function renderIA(){
-  document.getElementById('ia-cost-estimate').textContent = '~0,002€ per processament (Haiku) · clau al servidor';
+  document.getElementById('ia-cost-estimate').textContent = '~0,002€ per processament · clau al servidor';
 }
 
 async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='image/jpeg'){
@@ -1402,7 +1567,7 @@ async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='imag
   }
   let data;
   try{ data = JSON.parse(responseText); }
-  catch(e){ throw new Error('Resposta invàlida del servidor: '+responseText.slice(0,100)); }
+  catch(e){ throw new Error('Resposta invàlida: '+responseText.slice(0,100)); }
   if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
   return data.content[0].text;
 }
@@ -1414,7 +1579,6 @@ async function processarIA(){
   const resultDiv = document.getElementById('ia-result-content');
   document.getElementById('ia-result').classList.remove('hidden');
   resultDiv.innerHTML = '<div class="empty-state">🔄 Processant amb IA...</div>';
-  const hashtags = detectHashtags(text);
   const prompt = `Ets el CRM intel·ligent de Brokkom Correduria de Seguros (sector transport). Analitza aquest contingut i extreu de forma estructurada en JSON:
 
 {
@@ -1423,7 +1587,6 @@ async function processarIA(){
   "venciments": [{"empresa":"","ram":"","dataVenciment":"YYYY-MM-DD","primaActual":0,"asseguradora":""}],
   "oportunitats": [{"empresa":"","producte":"","argument":"","prioritat":"Alta|Mitjana|Baixa"}],
   "seguiments": [{"empresa":"","data":"YYYY-MM-DD","canal":"Email|Telèfon|Reunió|WhatsApp","resum":"","properPas":""}],
-  "idees": [{"titol":"idea en 5-8 paraules","contingut":"desenvolupament de la idea","categoria":"linkedin|comercial|producte|proces|altres"}],
   "resum": "resum executiu d'aquesta interacció en 2-3 frases",
   "alertes": ["alertes detectades, dades importants, dades perdudes..."]
 }
@@ -1435,7 +1598,7 @@ Regles importants:
 - Si l'estalvi supera el 30%, marca-ho com a alerta
 - Numbers: només números, sense símbol €
 - Si una dada no apareix, no la inventis (deixa-la buida)
-- Qualsevol observació interessant, reflexió de negoci, idea de post o millora de procés → inclou-la a 'idees'
+- Qualsevol observació interessant, reflexió, idea de post o millora → inclou-la a 'idees' 
 - Empreses: si parla de "ells", "la companyia", etc., busca el context per identificar de quina empresa es tracta
 
 TEXT A ANALITZAR:
@@ -1474,30 +1637,41 @@ Retorna NOMÉS el JSON, sense cap explicació.`;
     });
     resultDiv.innerHTML = html || '<div class="empty-state">No s\'ha detectat cap dada estructurada</div>';
     window._iaParsed = parsed;
-    window._iaImport = (key, idx) => {
+    window._iaImport = async (key, idx) => {
       const item = parsed[key][idx];
       if(key==='clients'){
-        state.clients.push({id:uid(), ...item});
+        const ins = await dbInsert('clients', item);
+        if(ins) state.clients.unshift(ins);
       }else if(key==='ofertes'){
-        let cli = state.clients.find(c=>c.empresa.toLowerCase()===item.empresa?.toLowerCase());
+        let cli = state.clients.find(c=>c.empresa?.toLowerCase()===item.empresa?.toLowerCase());
         if(!cli){
-          cli = {id:uid(), empresa:item.empresa};
-          state.clients.push(cli);
+          cli = await dbInsert('clients', {empresa:item.empresa});
+          if(cli) state.clients.unshift(cli);
         }
-        state.ofertes.push({id:uid(), clientId:cli.id, ...item, dataOferta: new Date().toISOString().slice(0,10)});
+        if(cli){
+          const ins = await dbInsert('ofertes', {clientId:cli.id, ...item, dataOferta: new Date().toISOString().slice(0,10)});
+          if(ins) state.ofertes.unshift(ins);
+        }
       }else if(key==='venciments'){
-        state.venciments.push({id:uid(), ...item});
+        const ins = await dbInsert('venciments', item);
+        if(ins) state.venciments.unshift(ins);
       }else if(key==='oportunitats'){
-        let cli = state.clients.find(c=>c.empresa.toLowerCase()===item.empresa?.toLowerCase());
-        state.oportunitats.push({id:uid(), clientId:cli?.id, ...item, estat:'Detectada', dataDeteccio:new Date().toISOString().slice(0,10)});
+        const cli = state.clients.find(c=>c.empresa?.toLowerCase()===item.empresa?.toLowerCase());
+        const ins = await dbInsert('oportunitats', {clientId:cli?.id, ...item, estat:'Detectada', dataDeteccio:new Date().toISOString().slice(0,10)});
+        if(ins) state.oportunitats.unshift(ins);
       }else if(key==='seguiments'){
-        let cli = state.clients.find(c=>c.empresa.toLowerCase()===item.empresa?.toLowerCase());
-        state.seguiments.push({id:uid(), clientId:cli?.id, ...item});
+        const cli = state.clients.find(c=>c.empresa?.toLowerCase()===item.empresa?.toLowerCase());
+        const ins = await dbInsert('seguiments', {clientId:cli?.id, ...item});
+        if(ins) state.seguiments.unshift(ins);
       }else if(key==='idees'){
-        if(!state.idees) state.idees = [];
-        state.idees.unshift({id:uid(), ...item, estat:'nova', creat:new Date().toISOString(), origen:'IA'});
+        const {data, error} = await sb.from('notes').insert({
+          user_id: currentUser.id, titol:item.titol, contingut:item.contingut,
+          tipus:'idea', hashtags:[item.categoria||'altres','IA']
+        }).select().single();
+        if(!error && data){
+          state.idees.unshift({id:data.id, titol:data.titol, contingut:data.contingut, categoria:item.categoria||'altres', estat:'nova', creat:data.created_at, origen:'IA'});
+        }
       }
-      saveState();
       updateNavBadges();
       toast('Importat al CRM');
     };
@@ -1527,17 +1701,16 @@ Retorna NOMÉS un array JSON:
     const cleaned = result.replace(/```json\n?|\n?```/g,'').trim();
     const opps = JSON.parse(cleaned);
     let added = 0;
-    opps.forEach(o=>{
+    for(const o of opps){
       const cli = state.clients.find(c=>c.empresa.toLowerCase()===o.empresa.toLowerCase());
       if(cli){
         const ja = state.oportunitats.find(x=>x.clientId===cli.id && x.producte===o.producte);
         if(!ja){
-          state.oportunitats.push({id:uid(), clientId:cli.id, ...o, estat:'Detectada', dataDeteccio:new Date().toISOString().slice(0,10)});
-          added++;
+          const ins = await dbInsert('oportunitats', {clientId:cli.id, ...o, estat:'Detectada', dataDeteccio:new Date().toISOString().slice(0,10)});
+          if(ins){ state.oportunitats.unshift(ins); added++; }
         }
       }
-    });
-    saveState();
+    }
     renderOpps();
     toast(`${added} oportunitats noves detectades`);
   }catch(e){
@@ -1712,18 +1885,14 @@ function openModal(type, data={}){
       <div class="modal-title">Nova idea</div>
       <div class="modal-sub">Apunta una idea al vol</div>
       <div class="form-row"><label>Títol / resum *</label><input type="text" id="m-titol" placeholder="Idea en 5-10 paraules..."></div>
-      <div class="form-row"><label>Contingut / detall</label><textarea id="m-contingut" placeholder="Desenvolupa la idea, afegeix context..."></textarea></div>
+      <div class="form-row"><label>Contingut / detall</label><textarea id="m-contingut" placeholder="Desenvolupa la idea..."></textarea></div>
       <div class="form-grid">
         <div class="form-row"><label>Categoria</label><select id="m-categoria">
           <option value="linkedin">LinkedIn</option>
           <option value="comercial">Comercial</option>
           <option value="producte">Producte</option>
-          <option value="proces">Procos</option>
+          <option value="proces">Procés</option>
           <option value="altres" selected>Altres</option>
-        </select></div>
-        <div class="form-row"><label>Estat</label><select id="m-estat">
-          <option value="nova" selected>Nova</option>
-          <option value="desenvolupant">En desenvolupament</option>
         </select></div>
       </div>
       <div class="modal-actions">
@@ -1780,7 +1949,7 @@ function openModal(type, data={}){
 
 function closeModal(){document.getElementById('modal-container').innerHTML = ''}
 
-function saveClient(id){
+async function saveClient(id){
   const empresa = document.getElementById('m-empresa').value.trim();
   if(!empresa){toast('Empresa obligatòria','error');return}
   const data = {
@@ -1797,30 +1966,33 @@ function saveClient(id){
     notes:document.getElementById('m-notes').value.trim()
   };
   if(id){
-    Object.assign(state.clients.find(c=>c.id===id), data);
+    const updated = await dbUpdate('clients', id, data);
+    if(updated) Object.assign(state.clients.find(c=>c.id===id), updated);
   }else{
-    state.clients.push({id:uid(), ...data, dataAlta:new Date().toISOString()});
+    const inserted = await dbInsert('clients', data);
+    if(inserted) state.clients.unshift(inserted);
   }
-  saveState();
   closeModal();
   renderClients();
   updateNavBadges();
   toast('Client guardat');
 }
 
-function deleteClient(id){
+async function deleteClient(id){
   if(!confirm('Esborrar aquest client i totes les seves dades relacionades?')) return;
+  const ok = await dbDelete('clients', id);
+  if(!ok) return;
   state.clients = state.clients.filter(c=>c.id!==id);
+  // ofertes/seguiments/oportunitats les esborra Supabase per ON DELETE CASCADE
   state.ofertes = state.ofertes.filter(o=>o.clientId!==id);
   state.seguiments = state.seguiments.filter(s=>s.clientId!==id);
   state.oportunitats = state.oportunitats.filter(o=>o.clientId!==id);
-  saveState();
   renderClients();
   updateNavBadges();
   toast('Client esborrat');
 }
 
-function saveOferta(id){
+async function saveOferta(id){
   const clientId = document.getElementById('m-clientId').value;
   if(!clientId){toast('Selecciona un client','error');return}
   const cli = state.clients.find(c=>c.id===clientId);
@@ -1835,22 +2007,26 @@ function saveOferta(id){
     primaBrokkom:parseFloat(document.getElementById('m-prima-brokkom').value)||null,
     estat,
     mediador:document.getElementById('m-mediador').value,
-    dataOferta:document.getElementById('m-data-oferta').value,
-    venciment:document.getElementById('m-venciment').value,
+    dataOferta:document.getElementById('m-data-oferta').value||null,
+    venciment:document.getElementById('m-venciment').value||null,
     notes:document.getElementById('m-notes').value
   };
   if(estat === 'Tancada guanyada'){
-    if(id){state.ofertes = state.ofertes.filter(o=>o.id!==id)}
+    if(id){
+      await dbDelete('ofertes', id);
+      state.ofertes = state.ofertes.filter(o=>o.id!==id);
+    }
     closeModal();
-    openModal('consolidat', {...data, id: id||uid(), primaBrokkom:data.primaBrokkom});
+    openModal('consolidat', data);
     return;
   }
   if(id){
-    Object.assign(state.ofertes.find(o=>o.id===id), data);
+    const updated = await dbUpdate('ofertes', id, data);
+    if(updated) Object.assign(state.ofertes.find(o=>o.id===id), updated);
   }else{
-    state.ofertes.push({id:uid(), ...data});
+    const inserted = await dbInsert('ofertes', data);
+    if(inserted) state.ofertes.unshift(inserted);
   }
-  saveState();
   closeModal();
   renderPipeline();
   renderClients();
@@ -1858,14 +2034,13 @@ function saveOferta(id){
   toast('Oferta guardada');
 }
 
-function saveConsolidat(id){
+async function saveConsolidat(id){
   const clientId = document.getElementById('m-clientId').value;
   if(!clientId){toast('Selecciona client','error');return}
   const primaAnual = parseFloat(document.getElementById('m-primaAnual').value);
   if(!primaAnual){toast('Prima obligatòria','error');return}
   const cli = state.clients.find(c=>c.id===clientId);
   const data = {
-    id: id || uid(),
     clientId,
     empresa: cli.empresa,
     ram:document.getElementById('m-ram').value,
@@ -1876,134 +2051,145 @@ function saveConsolidat(id){
     primaAnual,
     notes:document.getElementById('m-notes').value
   };
-  state.consolidats.push(data);
-  saveState();
+  const inserted = await dbInsert('consolidats', data);
+  if(inserted) state.consolidats.unshift(inserted);
   closeModal();
   showTab('consolidats');
   toast('Tancament registrat com a guanyat ✓');
 }
 
-function saveSeguiment(){
+async function saveSeguiment(){
   const clientId = document.getElementById('m-clientId').value;
   if(!clientId){toast('Selecciona client','error');return}
-  state.seguiments.push({
-    id:uid(), clientId,
+  const data = {
+    clientId,
     data:document.getElementById('m-data').value,
     canal:document.getElementById('m-canal').value,
     resum:document.getElementById('m-resum').value,
     properPas:document.getElementById('m-properPas').value
-  });
-  saveState();
+  };
+  const inserted = await dbInsert('seguiments', data);
+  if(inserted) state.seguiments.unshift(inserted);
   closeModal();
   renderSeguiments();
   toast('Seguiment guardat');
 }
 
-function deleteSeguiment(id){
+async function deleteSeguiment(id){
+  const ok = await dbDelete('seguiments', id);
+  if(!ok) return;
   state.seguiments = state.seguiments.filter(s=>s.id!==id);
-  saveState();
   renderSeguiments();
   toast('Esborrat');
 }
 
-function saveVenciment(){
+async function saveVenciment(){
   const empresa = document.getElementById('m-empresa').value.trim();
   const dataV = document.getElementById('m-data').value;
   if(!empresa || !dataV){toast('Empresa i data obligatòries','error');return}
-  state.venciments.push({
-    id:uid(), empresa,
+  const data = {
+    empresa,
     ram:document.getElementById('m-ram').value,
     asseguradora:document.getElementById('m-asseguradora').value,
     dataVenciment:dataV,
     primaActual:parseFloat(document.getElementById('m-prima').value)||null,
     notes:document.getElementById('m-notes').value
-  });
-  saveState();
+  };
+  const inserted = await dbInsert('venciments', data);
+  if(inserted) state.venciments.unshift(inserted);
   closeModal();
   renderVenciments();
   updateNavBadges();
-  toast('Venciment registrat. Crea les alarmes Calendar des de la fitxa.');
+  toast('Venciment registrat');
 }
 
-function deleteVenciment(id){
+async function deleteVenciment(id){
   if(!confirm('Esborrar venciment?'))return;
+  const ok = await dbDelete('venciments', id);
+  if(!ok) return;
   state.venciments = state.venciments.filter(v=>v.id!==id);
-  saveState();
   renderVenciments();
   updateNavBadges();
 }
 
-function saveTasca(){
+async function saveTasca(){
   const titol = document.getElementById('m-titol').value.trim();
   if(!titol){toast('Títol obligatori','error');return}
-  state.tasques.push({
-    id:uid(), titol,
+  const data = {
+    titol,
     descripcio:document.getElementById('m-descripcio').value,
     prioritat:document.getElementById('m-prioritat').value,
     categoria:document.getElementById('m-categoria').value,
-    dataLimit:document.getElementById('m-dataLimit').value,
-    estat:'pendent',
-    creat:new Date().toISOString()
-  });
-  saveState();
+    dataLimit:document.getElementById('m-dataLimit').value||null,
+    estat:'pendent'
+  };
+  const inserted = await dbInsert('tasques', data);
+  if(inserted) state.tasques.unshift(inserted);
   closeModal();
   renderTasques();
   updateNavBadges();
   toast('Tasca creada');
 }
 
-function toggleTasca(id){
+async function toggleTasca(id){
   const t = state.tasques.find(x=>x.id===id);
   if(!t)return;
   t.estat = t.estat==='done' ? 'pendent' : 'done';
-  saveState();
+  await dbUpdate('tasques', id, {estat:t.estat});
   renderTasques();
   updateNavBadges();
 }
 
-function deleteTasca(id){
+async function deleteTasca(id){
+  const ok = await dbDelete('tasques', id);
+  if(!ok) return;
   state.tasques = state.tasques.filter(t=>t.id!==id);
-  saveState();
   renderTasques();
   updateNavBadges();
 }
 
-function saveAsseguradora(){
+async function saveAsseguradora(){
   const nom = document.getElementById('m-nom').value.trim();
   if(!nom){toast('Nom obligatori','error');return}
-  state.asseguradores.push({
+  const data = {
     nom,
     rams:document.getElementById('m-rams').value.split(',').map(s=>s.trim()).filter(Boolean),
     contacteIntern:document.getElementById('m-contacte').value,
     email:document.getElementById('m-email').value,
     telefon:document.getElementById('m-telefon').value,
     notes:document.getElementById('m-notes').value
-  });
-  saveState();
+  };
+  const inserted = await dbInsert('asseguradores', data);
+  if(inserted) state.asseguradores.unshift(inserted);
   closeModal();
   renderAsseguradores();
   toast('Asseguradora guardada');
 }
 
-function deleteAsseguradora(idx){
+async function deleteAsseguradora(idx){
   if(!confirm('Esborrar?'))return;
+  const a = state.asseguradores[idx];
+  if(!a) return;
+  const ok = await dbDelete('asseguradores', a.id);
+  if(!ok) return;
   state.asseguradores.splice(idx,1);
-  saveState();
   renderAsseguradores();
 }
 
-function deletePost(id){
+async function deletePost(id){
+  const ok = await dbDelete('posts', id);
+  if(!ok) return;
   state.posts = state.posts.filter(p=>p.id!==id);
-  saveState();
   renderComunicacio();
 }
 
-function canviarEstatOpp(id){
+async function canviarEstatOpp(id){
   const o = state.oportunitats.find(x=>x.id===id);
+  if(!o) return;
   const estats = ['Detectada','En treball','Presentada','Descartada'];
   const idx = estats.indexOf(o.estat);
   o.estat = estats[(idx+1)%estats.length];
-  saveState();
+  await dbUpdate('oportunitats', id, {estat:o.estat});
   renderOpps();
   updateNavBadges();
 }
@@ -2024,30 +2210,11 @@ function exportData(){
 }
 
 function importData(event){
-  const file = event.target.files[0];
-  if(!file)return;
-  const reader = new FileReader();
-  reader.onload = e=>{
-    try{
-      const imported = JSON.parse(e.target.result);
-      if(confirm('Substituir totes les dades actuals?')){
-        state = {...DEFAULT_STATE, ...imported};
-        saveState();
-        toast('Importat correctament');
-        showTab('dashboard');
-      }
-    }catch(err){toast('Error: format no vàlid','error')}
-  };
-  reader.readAsText(file);
+  toast('Importació JSON desactivada en versió Supabase','error');
 }
 
 function resetData(){
-  if(!confirm('Esborrar totes les dades del CRM? Aquesta acció NO es pot desfer.'))return;
-  if(!confirm('Segur del tot? Es perdran tots els clients, ofertes, seguiments...'))return;
-  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  saveState();
-  toast('Tot esborrat');
-  showTab('dashboard');
+  toast('Reset desactivat. Esborra dades una a una des de cada secció.','error');
 }
 
 function exportConsolidats(){
@@ -2065,7 +2232,7 @@ function exportConsolidats(){
 
 
 // ============================================================
-// MÒDUL IDEES
+// MÒDUL IDEES (a Supabase: taula notes amb tipus='idea')
 // ============================================================
 function renderIdees(){
   const cat = document.getElementById('filter-idees-cat')?.value || '';
@@ -2082,7 +2249,7 @@ function renderIdees(){
     <div class="idea-card ${idea.categoria||'altres'}">
       <div class="card-row">
         <div style="flex:1">
-          <div class="card-title">${idea.titol||'Sense titol'}</div>
+          <div class="card-title">${idea.titol||'Sense títol'}</div>
           <div class="card-sub">${fmtDate(idea.creat)}${idea.origen?' · '+idea.origen:''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end">
@@ -2093,56 +2260,55 @@ function renderIdees(){
       ${idea.contingut?`<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--text-2)">${idea.contingut}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         ${idea.categoria==='linkedin'||idea.categoria==='borrador'?`<button class="btn btn-sm" onclick="convertirIdeaPostLinkedIn('${idea.id}')">Generar post</button>`:''}
-        <button class="btn btn-sm" onclick="canviarEstatIdea('${idea.id}')">Canviar estat</button>
         <button class="btn btn-sm" onclick="deleteIdea('${idea.id}')" style="color:var(--danger)">Esborrar</button>
       </div>
     </div>
   `).join('');
 }
 
-function canviarEstatIdea(id){
-  const idea = (state.idees||[]).find(x=>x.id===id);
-  if(!idea) return;
-  const estats = ['nova','desenvolupant','descartada'];
-  const idx = estats.indexOf(idea.estat||'nova');
-  idea.estat = estats[(idx+1)%estats.length];
-  saveState(); renderIdees(); updateNavBadges();
-}
-
-function deleteIdea(id){
-  state.idees = (state.idees||[]).filter(i=>i.id!==id);
-  saveState(); renderIdees(); updateNavBadges();
-}
-
-function saveIdea(){
+async function saveIdea(){
   const titol = document.getElementById('m-titol').value.trim();
-  if(!titol){toast('Titol obligatori','error');return}
-  if(!state.idees) state.idees = [];
+  if(!titol){toast('Títol obligatori','error');return}
+  const categoria = document.getElementById('m-categoria').value;
+  const contingut = document.getElementById('m-contingut').value;
+  showSync('Guardant');
+  const {data, error} = await sb.from('notes').insert({
+    user_id: currentUser.id,
+    titol, contingut,
+    tipus: 'idea',
+    hashtags: [categoria]
+  }).select().single();
+  hideSync();
+  if(error){ toast('Error: '+error.message,'error'); return; }
   state.idees.unshift({
-    id:uid(), titol,
-    contingut:document.getElementById('m-contingut').value,
-    categoria:document.getElementById('m-categoria').value,
-    estat:document.getElementById('m-estat').value,
-    creat:new Date().toISOString(),
-    origen:'manual'
+    id:data.id, titol:data.titol, contingut:data.contingut,
+    categoria, estat:'nova', creat:data.created_at, origen:'manual'
   });
-  saveState(); closeModal(); renderIdees(); updateNavBadges();
+  closeModal(); renderIdees(); updateNavBadges();
   toast('Idea guardada');
 }
 
+async function deleteIdea(id){
+  const ok = await dbDelete('notes', id);
+  if(!ok) return;
+  state.idees = state.idees.filter(i=>i.id!==id);
+  renderIdees(); updateNavBadges();
+}
+
 async function convertirIdeaPostLinkedIn(id){
-  const idea = (state.idees||[]).find(x=>x.id===id);
+  const idea = state.idees.find(x=>x.id===id);
   if(!idea) return;
   toast('Generant post...');
   const prompt = `Escriu un post professional de LinkedIn per a Brokkom Correduria de Seguros (especialitzada en sector transport).
 Idea base: ${idea.titol}
 Detalls: ${idea.contingut||''}
-Requisits: catala natural i professional, 150-250 paraules, hook potent, estructura problema-context-solucio-CTA, maxim 2 emojis, sense hashtags.
-Retorna nomes el text del post.`;
+Requisits: català natural i professional, 150-250 paraules, hook potent, estructura problema-context-solució-CTA, màxim 2 emojis, sense hashtags.
+Retorna només el text del post.`;
   try{
     const result = await callAnthropicAPI(prompt, state.config.modelSmart);
-    state.posts.unshift({id:uid(), tema:idea.titol, contingut:result, data:new Date().toISOString()});
-    saveState(); showTab('comunicacio');
+    const ins = await dbInsert('posts', {tema:idea.titol, contingut:result, data:new Date().toISOString()});
+    if(ins) state.posts.unshift(ins);
+    showTab('comunicacio');
     toast('Post generat i guardat');
   }catch(e){ toast('Error: '+e.message,'error'); }
 }
@@ -2182,7 +2348,7 @@ function clearImage(){
 function detectHashtags(text){
   const tags = [];
   if(text.includes('#client')) tags.push('client');
-  if(text.includes('#oferta')||text.includes('#cotitzacio')) tags.push('oferta');
+  if(text.includes('#oferta')||text.includes('#cotització')) tags.push('oferta');
   if(text.includes('#idea')) tags.push('idea');
   if(text.includes('#borrador')) tags.push('borrador');
   if(text.includes('#seguiment')) tags.push('seguiment');
@@ -2197,28 +2363,25 @@ function detectHashtags(text){
 function showPWAInstructions(){
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-title">Afegir a la pantalla d'inici</div>
-    <div class="modal-sub">Acces directe com una app nativa</div>
+    <div class="modal-sub">Accés directe com una app nativa</div>
     <div style="margin-bottom:16px">
       <div style="font-weight:600;margin-bottom:8px;font-size:13px">iPhone / iPad — IMPORTANT: cal Safari</div>
       <ol style="font-size:13px;line-height:2;padding-left:20px;color:var(--text-2)">
-        <li>Obre aquesta pagina a <strong>Safari</strong> (no Firefox ni Chrome)</li>
+        <li>Obre aquesta pàgina a <strong>Safari</strong> (no Firefox ni Chrome)</li>
         <li>Toca la icona de <strong>compartir</strong> (quadrat amb fletxa amunt)</li>
         <li>Toca <strong>"Afegir a la pantalla d'inici"</strong></li>
-        <li>Toca <strong>"Afegir"</strong> — apareixera la icona Brokkom</li>
+        <li>Toca <strong>"Afegir"</strong></li>
       </ol>
     </div>
     <div style="margin-bottom:16px">
       <div style="font-weight:600;margin-bottom:8px;font-size:13px">Android (Chrome):</div>
       <ol style="font-size:13px;line-height:2;padding-left:20px;color:var(--text-2)">
-        <li>Toca els <strong>tres punts</strong> (menu)</li>
+        <li>Toca els <strong>tres punts</strong> (menú)</li>
         <li>Toca <strong>"Afegir a la pantalla d'inici"</strong></li>
         <li>Confirma</li>
       </ol>
     </div>
-    <div style="padding:10px;background:var(--info-bg);border-radius:var(--radius);font-size:12px;color:var(--info)">
-      Un cop afegida, s'obre a pantalla completa sense barra del navegador.
-    </div>
-    <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Entes</button></div>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Entès</button></div>
   </div></div>`;
 }
 
@@ -2226,9 +2389,83 @@ function checkPWABanner(){
   const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
   const dismissed = localStorage.getItem('pwa_dismissed');
   if(!isStandalone && !dismissed){
-    setTimeout(()=>document.getElementById('pwa-banner')?.classList.add('show'), 3000);
+    setTimeout(()=>document.getElementById('pwa-banner')?.classList.add('show'), 4000);
   }
 }
+
+// ============================================================
+// AUTENTICACIÓ SUPABASE
+// ============================================================
+let authMode = 'login';
+function switchAuthTab(mode){
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode==='login');
+  document.getElementById('tab-signup').classList.toggle('active', mode==='signup');
+  document.getElementById('auth-submit').textContent = mode==='login' ? 'Entrar' : 'Crear compte';
+  document.getElementById('auth-msg').style.display = 'none';
+}
+function showAuthMsg(text, type='error'){
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.className = 'auth-msg ' + type;
+  el.style.display = 'block';
+}
+async function doAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if(!email || !password){showAuthMsg('Cal email i contrasenya');return}
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = true;
+  btn.textContent = '...';
+  try{
+    if(authMode === 'signup'){
+      const {data, error} = await sb.auth.signUp({email, password});
+      if(error) throw error;
+      if(data.user && !data.session){
+        showAuthMsg('Compte creat. Revisa el teu email per confirmar el compte.', 'success');
+      }else{
+        await onLoginSuccess(data.user);
+      }
+    }else{
+      const {data, error} = await sb.auth.signInWithPassword({email, password});
+      if(error) throw error;
+      await onLoginSuccess(data.user);
+    }
+  }catch(e){
+    showAuthMsg(e.message || 'Error d\'autenticació');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = authMode==='login' ? 'Entrar' : 'Crear compte';
+  }
+}
+async function resetPassword(){
+  const email = document.getElementById('auth-email').value.trim();
+  if(!email){showAuthMsg('Posa primer el teu email');return}
+  const {error} = await sb.auth.resetPasswordForEmail(email);
+  if(error){ showAuthMsg(error.message); return; }
+  showAuthMsg('Et hem enviat un email per restablir la contrasenya', 'success');
+}
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+async function onLoginSuccess(user){
+  currentUser = user;
+  document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('user-menu-block').style.display = 'block';
+  document.getElementById('user-email').textContent = user.email;
+  await loadFromSupabase();
+  renderDashboard();
+  updateNavBadges();
+  checkPWABanner();
+}
+async function bootAuth(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session?.user){
+    await onLoginSuccess(session.user);
+  }
+}
+
 
 document.querySelectorAll('.nav-item').forEach(el=>{
   el.addEventListener('click', ()=>{const tab=el.dataset.tab; if(tab)showTab(tab)});
@@ -2236,7 +2473,6 @@ document.querySelectorAll('.nav-item').forEach(el=>{
 
 renderDashboard();
 updateNavBadges();
-checkPWABanner();
 </script>
 </body>
 </html>
