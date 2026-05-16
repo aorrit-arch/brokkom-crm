@@ -195,6 +195,95 @@ window.openModal = (type, data = {}) => {
         <button class="btn btn-primary" onclick="saveAsseguradora()">Guardar</button>
       </div>
     `;
+  } else if (type === 'nota') {
+    const clientOpts = state.clients.map(c => `<option value="${c.id}" ${c.id===data.client_id?'selected':''}>${c.empresa}</option>`).join('');
+    const hashtagsStr = Array.isArray(data.hashtags) ? data.hashtags.join(', ') : '';
+    html = `
+      <div class="modal-title">${data.id?'Editar':'Nova'} nota</div>
+      <div class="form-row"><label>Títol</label><input type="text" id="m-titol" value="${(data.titol||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
+      <div class="form-row"><label>Contingut *</label><textarea id="m-contingut" style="min-height:160px" placeholder="Escriu aquí...">${data.contingut||''}</textarea></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Client vinculat (opcional)</label><select id="m-client_id"><option value="">— cap —</option>${clientOpts}</select></div>
+        <div class="form-row"><label>Hashtags (separats per coma)</label><input type="text" id="m-hashtags" value="${hashtagsStr}" placeholder="idea, comercial..."></div>
+      </div>
+      <div class="form-row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="m-favorita" ${data.favorita?'checked':''}>
+          <label for="m-favorita">⭐ Marcar com a favorita</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel·lar</button>
+        <button class="btn btn-primary" onclick="saveNota('${data.id||''}','${data._fromInbox||''}')">Guardar</button>
+      </div>
+    `;
+  } else if (type === 'agenda_event') {
+    const clientOpts = state.clients.map(c => `<option value="${c.id}" ${c.id===data.client_id?'selected':''}>${c.empresa}</option>`).join('');
+    const colors = [
+      {v:'blau', n:'Blau', c:'#5BC4BF'},
+      {v:'verd', n:'Verd', c:'#27500A'},
+      {v:'taronja', n:'Taronja', c:'#dd8a1c'},
+      {v:'vermell', n:'Vermell', c:'#791F1F'},
+      {v:'lila', n:'Lila', c:'#3C3489'}
+    ];
+    // Format datetime-local
+    const fmtDT = (s) => {
+      if (!s) return '';
+      const d = new Date(s);
+      const pad = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    html = `
+      <div class="modal-title">${data.id?'Editar':'Nou'} esdeveniment</div>
+      <div class="form-row"><label>Títol *</label><input type="text" id="m-titol" value="${(data.titol||'').replace(/"/g,'&quot;')}"></div>
+      <div class="form-row"><label>Descripció</label><textarea id="m-descripcio">${data.descripcio||''}</textarea></div>
+      <div class="form-row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="m-tot_el_dia" ${data.tot_el_dia?'checked':''} onchange="document.querySelectorAll('.dt-only').forEach(el=>el.style.display=this.checked?'none':'')">
+          <label for="m-tot_el_dia">Tot el dia</label>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Inici *</label><input type="datetime-local" id="m-data_inici" value="${fmtDT(data.data_inici)}"></div>
+        <div class="form-row dt-only" ${data.tot_el_dia?'style="display:none"':''}><label>Final</label><input type="datetime-local" id="m-data_fi" value="${fmtDT(data.data_fi)}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Client vinculat (opcional)</label><select id="m-client_id"><option value="">— cap —</option>${clientOpts}</select></div>
+        <div class="form-row"><label>Color</label><select id="m-color">${colors.map(co=>`<option value="${co.v}" ${data.color===co.v?'selected':''}>${co.n}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row"><label>Ubicació</label><input type="text" id="m-ubicacio" value="${(data.ubicacio||'').replace(/"/g,'&quot;')}" placeholder="Opcional"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel·lar</button>
+        <button class="btn btn-primary" onclick="saveAgendaEvent('${data.id||''}')">Guardar</button>
+      </div>
+    `;
+  } else if (type === 'esborrany') {
+    const clientOpts = state.clients.map(c => `<option value="${c.id}" ${c.id===data.client_id?'selected':''}>${c.empresa}</option>`).join('');
+    const tipusList = (window.TIPUS_ESBORRANY || [{v:'altre',n:'📝 Altre'}]);
+    const estatsList = (window.ESTATS_ESBORRANY || [{v:'en_borrador',n:'En borrador'}]);
+    const fmtDT = (s) => {
+      if (!s) return '';
+      const d = new Date(s);
+      const pad = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    html = `
+      <div class="modal-title">${data.id?'Editar':'Nou'} esborrany</div>
+      <div class="form-row"><label>Títol *</label><input type="text" id="m-titol" value="${(data.titol||'').replace(/"/g,'&quot;')}" placeholder="Ex: Resposta a Benangels sobre flota"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Tipus</label><select id="m-tipus">${tipusList.map(t=>`<option value="${t.v}" ${data.tipus===t.v?'selected':''}>${t.n}</option>`).join('')}</select></div>
+        <div class="form-row"><label>Estat</label><select id="m-estat">${estatsList.map(e=>`<option value="${e.v}" ${data.estat===e.v?'selected':''}>${e.n}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Client vinculat (opcional)</label><select id="m-client_id"><option value="">— cap —</option>${clientOpts}</select></div>
+        <div class="form-row"><label>Data prevista (opcional)</label><input type="datetime-local" id="m-data_prevista" value="${fmtDT(data.data_prevista)}"></div>
+      </div>
+      <div class="form-row"><label>Contingut</label><textarea id="m-contingut" style="min-height:200px;font-family:inherit" placeholder="Escriu aquí l'email, la proposta, el guió de trucada...">${data.contingut||''}</textarea></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel·lar</button>
+        <button class="btn btn-primary" onclick="saveEsborrany('${data.id||''}')">Guardar</button>
+      </div>
+    `;
   }
 
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
@@ -511,4 +600,83 @@ window.iaAccio = async (tipus) => {
   } catch(err) {
     document.getElementById('ia-result-content').innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
   }
+};
+
+// ==================================================================
+// NOTES + AGENDA SAVE FUNCTIONS
+// ==================================================================
+window.saveNota = async (id, fromInbox) => {
+  const contingut = getVal('m-contingut')?.trim();
+  if (!contingut) { toast('Contingut obligatori','error'); return; }
+  const hashtagsRaw = getVal('m-hashtags') || '';
+  const hashtags = hashtagsRaw.split(',').map(s => s.trim().toLowerCase().replace(/^#/,'')).filter(Boolean);
+  const data = {
+    titol: getVal('m-titol') || null,
+    contingut,
+    client_id: getVal('m-client_id') || null,
+    hashtags: hashtags.length ? hashtags : null,
+    favorita: document.getElementById('m-favorita')?.checked || false
+  };
+  let err;
+  if (id) { ({ error: err } = await supabase.from('notes').update(data).eq('id', id)); }
+  else { data.user_id = state.user.id; ({ error: err } = await supabase.from('notes').insert(data)); }
+  if (err) { toast('Error: '+err.message,'error'); return; }
+
+  // Si ve d'un inbox, marcar-lo com processat
+  if (fromInbox) {
+    await supabase.from('inbox_items').update({ estat: 'processat' }).eq('id', fromInbox);
+    await refreshData('inbox');
+  }
+
+  await refreshData('notes');
+  closeModal();
+  showTab(fromInbox ? 'inbox' : 'notes');
+  toast('Nota guardada');
+};
+
+window.saveAgendaEvent = async (id) => {
+  const titol = getVal('m-titol')?.trim();
+  const data_inici = getVal('m-data_inici');
+  if (!titol || !data_inici) { toast('Títol i inici obligatoris','error'); return; }
+  const totElDia = document.getElementById('m-tot_el_dia')?.checked || false;
+  const data = {
+    titol,
+    descripcio: getVal('m-descripcio') || null,
+    data_inici: new Date(data_inici).toISOString(),
+    data_fi: !totElDia && getVal('m-data_fi') ? new Date(getVal('m-data_fi')).toISOString() : null,
+    tot_el_dia: totElDia,
+    client_id: getVal('m-client_id') || null,
+    color: getVal('m-color') || 'blau',
+    ubicacio: getVal('m-ubicacio') || null
+  };
+  let err;
+  if (id) { ({ error: err } = await supabase.from('agenda_events').update(data).eq('id', id)); }
+  else { data.user_id = state.user.id; ({ error: err } = await supabase.from('agenda_events').insert(data)); }
+  if (err) { toast('Error: '+err.message,'error'); return; }
+  await refreshData('agenda');
+  closeModal();
+  showTab('agenda');
+  toast('Esdeveniment guardat');
+};
+
+window.saveEsborrany = async (id) => {
+  const titol = getVal('m-titol')?.trim();
+  if (!titol) { toast('Títol obligatori','error'); return; }
+  const dp = getVal('m-data_prevista');
+  const data = {
+    titol,
+    tipus: getVal('m-tipus') || 'altre',
+    estat: getVal('m-estat') || 'en_borrador',
+    client_id: getVal('m-client_id') || null,
+    data_prevista: dp ? new Date(dp).toISOString() : null,
+    contingut: getVal('m-contingut') || null
+  };
+  let err;
+  if (id) { ({ error: err } = await supabase.from('esborranys').update(data).eq('id', id)); }
+  else { data.user_id = state.user.id; ({ error: err } = await supabase.from('esborranys').insert(data)); }
+  if (err) { toast('Error: '+err.message,'error'); return; }
+  await refreshData('esborranys');
+  closeModal();
+  showTab('esborranys');
+  toast('Esborrany guardat');
 };
