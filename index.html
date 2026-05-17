@@ -299,9 +299,24 @@
   <div class="nav-item" data-tab="ia">🤖 IA assistent</div>
   <div class="nav-item" data-tab="config">⚙️ Configuració</div>
 
+  <div class="nav-divider" id="cartera-divider" style="display:none">Cartera</div>
+  <div id="cartera-selector" style="display:none;padding:4px 4px 0">
+    <select id="cartera-select" onchange="setCarteraMode(this.value)" style="font-size:12px;padding:6px 8px;width:100%">
+      <option value="equip">👥 Tot l'equip</option>
+      <option value="meva">🧑 Cartera meva</option>
+    </select>
+    <div id="cartera-info" style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 4px"></div>
+  </div>
+
   <div class="nav-status">
     <div>IA</div>
     <div id="api-status" class="ok">✓ servidor actiu</div>
+  </div>
+
+  <div class="user-menu" id="user-menu-block" style="display:none">
+    <strong id="user-name-display">—</strong>
+    <span id="user-email-display" style="display:block;color:var(--text-3);margin-bottom:6px"></span>
+    <a onclick="logout()">Tancar sessió</a>
   </div>
 </aside>
 
@@ -781,7 +796,9 @@ const COLUMN_MAP = {
   dataDeteccio: 'data_deteccio',
   dataVenciment: 'data_venciment',
   dataLimit: 'data_limit',
-  contacteIntern: 'contacte_intern'
+  contacteIntern: 'contacte_intern',
+  mediadorId: 'mediador_id',
+  telegramChatId: 'telegram_chat_id'
 };
 const REVERSE_MAP = Object.fromEntries(Object.entries(COLUMN_MAP).map(([k,v])=>[v,k]));
 
@@ -1015,6 +1032,23 @@ async function loadFromSupabase(){
       );
       if(r.error){ const e=new Error(r.error.message||'SELECT user_config failed'); e.code=r.error.code; e.table='user_config'; throw e; }
       return r.data;
+    }},
+    // Mediadors. Si la taula no existeix (migració no aplicada encara),
+    // simplement no carrega res — el CRM seguirà funcionant igual.
+    {key:'mediadors_team', run: async ()=>{
+      const r = await withRetry(()=>
+        sb.from('mediadors').select('*').eq('actiu', true).order('nom', {ascending:true})
+      );
+      if(r.error){
+        // Taula no creada encara → silenciat. Qualsevol altre error es loga.
+        if(r.error.code === '42P01' || /relation .* does not exist/i.test(r.error.message||'')){
+          console.info('[multi-usuari] taula mediadors encara no creada — feature inactiva.');
+          return [];
+        }
+        console.warn('mediadors load:', r.error);
+        return [];
+      }
+      return r.data || [];
     }}
   ];
 
@@ -1044,6 +1078,22 @@ async function loadFromSupabase(){
     state.rams = data.config.rams || state.rams;
     state.config.modelFast = data.config.model_fast || state.config.modelFast;
     state.config.modelSmart = data.config.model_smart || state.config.modelSmart;
+  }
+  if(data.mediadors_team){
+    state.mediadors_team = data.mediadors_team;
+    // Identifica el mediador associat a l'usuari actual.
+    const meu = state.mediadors_team.find(m => m.user_id === currentUser.id);
+    state.mediadorIdMeu = meu?.id || null;
+    // Restaura preferència de carteraMode persistida localment
+    try{
+      const savedMode = localStorage.getItem('brokkom_cartera_mode');
+      const savedMediador = localStorage.getItem('brokkom_cartera_mediador');
+      if(savedMode === 'meva' || savedMode === 'equip' || savedMode === 'mediador'){
+        state.userMode = savedMode;
+        if(savedMode === 'mediador') state.userModeMediadorId = savedMediador;
+      }
+    }catch(_){ }
+    renderCarteraSelector();
   }
 
   hideSync();
@@ -1102,6 +1152,18 @@ const ESTATS_PIPELINE = ['Lead','Qualificat','Cotitzant','Oferta enviada','En ne
 const ESTATS_PERDUDA = 'Tancada perduda';
 
 function uid(){return Date.now().toString(36) + Math.random().toString(36).substr(2,5)}
+
+// Quan creem un registre nou, l'assignem al mediador de l'usuari actual
+// si en té (perquè el filtre "Cartera meva" funcioni a partir d'ara).
+// Si l'usuari encara no està enllaçat a cap mediador, deixem `null` i
+// continua sense propietari (compatible amb com s'usa avui).
+function withMediadorId(obj){
+  if(obj && state.mediadorIdMeu && !obj.mediadorId){
+    return {...obj, mediadorId: state.mediadorIdMeu};
+  }
+  return obj;
+}
+window.withMediadorId = withMediadorId;
 
 // ============================================================
 // Filtre per mediador (helper compartit). Per defecte (userMode='equip')
@@ -1186,24 +1248,30 @@ function renderDashboard(){
   const now = new Date();
   document.getElementById('dashboard-date').textContent = now.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
-  const ofertesObertes = state.ofertes.filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat));
-  const tancMes = state.consolidats.filter(c=>{
+  const baseOfertes = visibleOfertes();
+  const baseConsolidats = visibleConsolidats();
+  const baseClients = visibleClients();
+  const baseOpps = visibleOportunitats();
+  const baseTasques = visibleTasques();
+  const ofertesObertes = baseOfertes.filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat));
+  const tancMes = baseConsolidats.filter(c=>{
     const d = new Date(c.dataTancament);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const primaPipeline = ofertesObertes.reduce((s,o)=>s+(parseFloat(o.primaBrokkom)||0),0);
-  const primaTancMes = tancMes.reduce((s,c)=>s+(parseFloat(c.primaAnual)||0),0);
-  const totalTanc = state.consolidats.length;
-  const totalOfertes = state.ofertes.filter(o=>['Tancada guanyada','Tancada perduda'].includes(o.estat)).length + state.consolidats.length;
+  const primaPipeline = ofertesObertes.reduce((s,o)=>s+(parsePrima(o.primaBrokkom)||0),0);
+  const primaTancMes = tancMes.reduce((s,c)=>s+(parsePrima(c.primaAnual)||0),0);
+  const totalTanc = baseConsolidats.length;
+  const totalOfertes = baseOfertes.filter(o=>['Tancada guanyada','Tancada perduda'].includes(o.estat)).length + baseConsolidats.length;
   const conversio = totalOfertes > 0 ? Math.round((totalTanc/totalOfertes)*100) : 0;
+  const tasquesPend = baseTasques.filter(t=>t.estat==='pendent').length;
 
   document.getElementById('dashboard-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">Pipeline obert</div><div class="metric-value">${ofertesObertes.length}</div><div class="metric-sub">${fmtEur(primaPipeline)} en valor</div></div>
     <div class="metric"><div class="metric-label">Tancaments del mes</div><div class="metric-value">${tancMes.length}</div><div class="metric-sub">${fmtEur(primaTancMes)} primat</div></div>
     <div class="metric"><div class="metric-label">Taxa conversió</div><div class="metric-value">${conversio}%</div><div class="metric-sub">global històrica</div></div>
-    <div class="metric"><div class="metric-label">Clients</div><div class="metric-value">${state.clients.length}</div><div class="metric-sub">a la cartera</div></div>
-    <div class="metric"><div class="metric-label">Oportunitats</div><div class="metric-value">${state.oportunitats.filter(o=>o.estat!=='Descartada').length}</div><div class="metric-sub">detectades</div></div>
-    <div class="metric"><div class="metric-label">Tasques pend.</div><div class="metric-value" style="color:${state.tasques.filter(t=>t.estat==='pendent').length>0?'var(--warning)':'var(--text)'}">${state.tasques.filter(t=>t.estat==='pendent').length}</div><div class="metric-sub">a fer</div></div>
+    <div class="metric"><div class="metric-label">Clients</div><div class="metric-value">${baseClients.length}</div><div class="metric-sub">a la cartera</div></div>
+    <div class="metric"><div class="metric-label">Oportunitats</div><div class="metric-value">${baseOpps.filter(o=>o.estat!=='Descartada').length}</div><div class="metric-sub">detectades</div></div>
+    <div class="metric"><div class="metric-label">Tasques pend.</div><div class="metric-value" style="color:${tasquesPend>0?'var(--warning)':'var(--text)'}">${tasquesPend}</div><div class="metric-sub">a fer</div></div>
   `;
 
   let html = '';
@@ -1297,7 +1365,7 @@ function renderDashboard(){
 function renderClients(){
   const q = (document.getElementById('search-clients')?.value || '').toLowerCase();
   const sector = document.getElementById('filter-clients-sector')?.value || '';
-  const filtered = state.clients.filter(c=>{
+  const filtered = visibleClients().filter(c=>{
     if(sector && c.sector !== sector) return false;
     if(q && !c.empresa.toLowerCase().includes(q) && !(c.cif||'').toLowerCase().includes(q) && !(c.contacte||'').toLowerCase().includes(q)) return false;
     return true;
@@ -1342,7 +1410,8 @@ function renderClients(){
 }
 
 function renderPipeline(){
-  const ofertesActives = state.ofertes.filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat));
+  const baseOfertes = visibleOfertes();
+  const ofertesActives = baseOfertes.filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat));
   const totalValor = ofertesActives.reduce((s,o)=>s+(parseFloat(o.primaBrokkom)||0),0);
   const probabilitats = {'Lead':5,'Qualificat':20,'Cotitzant':40,'Oferta enviada':50,'En negociació':75};
   const valorEsperat = ofertesActives.reduce((s,o)=>{
@@ -1356,7 +1425,7 @@ function renderPipeline(){
   `;
   let html = '';
   ESTATS_PIPELINE.forEach(estat=>{
-    const items = state.ofertes.filter(o=>o.estat===estat);
+    const items = baseOfertes.filter(o=>o.estat===estat);
     html += `<div class="pipeline-col">
       <div class="pipeline-col-title">${estat} <span class="pipeline-col-count">${items.length}</span></div>
       ${items.map(o=>{
@@ -1397,7 +1466,7 @@ function renderConsolidats(){
     sm.innerHTML = '<option value="">Tots els mediadors</option>' + meds.map(m=>`<option ${m===mediador?'selected':''}>${m}</option>`).join('');
   }
 
-  let filtered = [...state.consolidats];
+  let filtered = [...visibleConsolidats()];
   const now = new Date();
   if(periode === 'month'){
     filtered = filtered.filter(c=>{const d=new Date(c.dataTancament); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear()});
@@ -1496,7 +1565,7 @@ function renderConsolidats(){
 function renderSeguiments(){
   const q = (document.getElementById('search-seg')?.value||'').toLowerCase();
   const canal = document.getElementById('filter-seg-canal')?.value || '';
-  let list = [...state.seguiments].sort((a,b)=>new Date(b.data)-new Date(a.data));
+  let list = [...visibleSeguiments()].sort((a,b)=>new Date(b.data)-new Date(a.data));
   if(canal) list = list.filter(s=>s.canal===canal);
   if(q) list = list.filter(s=>{
     const cli = state.clients.find(c=>c.id===s.clientId);
@@ -1528,7 +1597,7 @@ function renderSeguiments(){
 function renderOpps(){
   const prio = document.getElementById('filter-opp-prio')?.value || '';
   const estat = document.getElementById('filter-opp-estat')?.value || '';
-  let list = [...state.oportunitats];
+  let list = [...visibleOportunitats()];
   if(prio) list = list.filter(o=>o.prioritat===prio);
   if(estat) list = list.filter(o=>o.estat===estat);
   list.sort((a,b)=>{
@@ -1562,11 +1631,12 @@ function renderOpps(){
 }
 
 function renderVenciments(){
-  if(state.venciments.length === 0){
+  const base = visibleVenciments();
+  if(base.length === 0){
     document.getElementById('venciments-list').innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📅</div>Cap venciment registrat</div></div>`;
     return;
   }
-  const sorted = [...state.venciments].sort((a,b)=>new Date(a.dataVenciment)-new Date(b.dataVenciment));
+  const sorted = [...base].sort((a,b)=>new Date(a.dataVenciment)-new Date(b.dataVenciment));
   document.getElementById('venciments-list').innerHTML = sorted.map(v=>{
     const dies = daysFromNow(v.dataVenciment);
     const urg = dies <= 7 ? 'p-danger' : dies <= 30 ? 'p-pend' : dies <= 90 ? 'p-info' : 'p-gray';
@@ -1595,12 +1665,13 @@ function renderTasques(){
   const cat = document.getElementById('filter-tasques-cat')?.value || '';
   const estat = document.getElementById('filter-tasques-estat')?.value;
   const filtre = estat === undefined ? 'pendent' : estat;
-  let list = [...state.tasques];
+  const base = visibleTasques();
+  let list = [...base];
   if(cat) list = list.filter(t=>t.categoria===cat);
   if(filtre !== '') list = list.filter(t=>t.estat===filtre);
-  const total = state.tasques.length;
-  const pend = state.tasques.filter(t=>t.estat==='pendent').length;
-  const done = state.tasques.filter(t=>t.estat==='done').length;
+  const total = base.length;
+  const pend = base.filter(t=>t.estat==='pendent').length;
+  const done = base.filter(t=>t.estat==='done').length;
   document.getElementById('tasques-metrics').innerHTML = `
     <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${total}</div></div>
     <div class="metric"><div class="metric-label">Pendents</div><div class="metric-value" style="color:var(--warning)">${pend}</div></div>
@@ -2221,10 +2292,12 @@ async function saveClient(id){
   };
   if(id){
     const updated = await dbUpdate('clients', id, data);
-    if(updated) Object.assign(state.clients.find(c=>c.id===id), updated);
+    if(!updated) return;
+    Object.assign(state.clients.find(c=>c.id===id), updated);
   }else{
-    const inserted = await dbInsert('clients', data);
-    if(inserted) state.clients.unshift(inserted);
+    const inserted = await dbInsert('clients', withMediadorId(data));
+    if(!inserted) return;
+    state.clients.unshift(inserted);
   }
   closeModal();
   renderClients();
@@ -2290,10 +2363,12 @@ async function saveOferta(id){
   }
   if(id){
     const updated = await dbUpdate('ofertes', id, data);
-    if(updated) Object.assign(state.ofertes.find(o=>o.id===id), updated);
+    if(!updated) return;
+    Object.assign(state.ofertes.find(o=>o.id===id), updated);
   }else{
-    const inserted = await dbInsert('ofertes', data);
-    if(inserted) state.ofertes.unshift(inserted);
+    const inserted = await dbInsert('ofertes', withMediadorId(data));
+    if(!inserted) return;
+    state.ofertes.unshift(inserted);
   }
   closeModal();
   renderPipeline();
@@ -2347,8 +2422,9 @@ async function saveSeguiment(){
     resum:document.getElementById('m-resum').value,
     properPas:document.getElementById('m-properPas').value
   };
-  const inserted = await dbInsert('seguiments', data);
-  if(inserted) state.seguiments.unshift(inserted);
+  const inserted = await dbInsert('seguiments', withMediadorId(data));
+  if(!inserted) return;
+  state.seguiments.unshift(inserted);
   closeModal();
   renderSeguiments();
   toast('Seguiment guardat');
@@ -2374,8 +2450,9 @@ async function saveVenciment(){
     primaActual:parsePrima(document.getElementById('m-prima').value),
     notes:document.getElementById('m-notes').value
   };
-  const inserted = await dbInsert('venciments', data);
-  if(inserted) state.venciments.unshift(inserted);
+  const inserted = await dbInsert('venciments', withMediadorId(data));
+  if(!inserted) return;
+  state.venciments.unshift(inserted);
   closeModal();
   renderVenciments();
   updateNavBadges();
@@ -2402,8 +2479,9 @@ async function saveTasca(){
     dataLimit:document.getElementById('m-dataLimit').value||null,
     estat:'pendent'
   };
-  const inserted = await dbInsert('tasques', data);
-  if(inserted) state.tasques.unshift(inserted);
+  const inserted = await dbInsert('tasques', withMediadorId(data));
+  if(!inserted) return;
+  state.tasques.unshift(inserted);
   closeModal();
   renderTasques();
   updateNavBadges();
@@ -2730,6 +2808,71 @@ async function logout(){
   await sb.auth.signOut();
   location.reload();
 }
+// ============================================================
+// SELECTOR DE CARTERA (multi-usuari)
+// ============================================================
+function renderCarteraSelector(){
+  const sel = document.getElementById('cartera-select');
+  const wrap = document.getElementById('cartera-selector');
+  const divider = document.getElementById('cartera-divider');
+  const info = document.getElementById('cartera-info');
+  if(!sel || !wrap) return;
+  const team = state.mediadors_team || [];
+  // Si no hi ha mediadors creats encara, el selector queda amagat (compat enrere).
+  if(team.length === 0){
+    wrap.style.display = 'none';
+    if(divider) divider.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  if(divider) divider.style.display = '';
+  let html = '<option value="equip">👥 Tot l\'equip</option>';
+  if(state.mediadorIdMeu){
+    html += '<option value="meva">🧑 Cartera meva</option>';
+  }
+  team.forEach(m => {
+    if(m.id === state.mediadorIdMeu) return; // ja ha sortit com "meva"
+    html += `<option value="mediador:${m.id}">📂 ${escapeHtml(m.nom)}</option>`;
+  });
+  sel.innerHTML = html;
+  // Selecciona el valor actual
+  let current = state.userMode;
+  if(state.userMode === 'mediador' && state.userModeMediadorId){
+    current = 'mediador:'+state.userModeMediadorId;
+  }
+  sel.value = current;
+  if(info){
+    if(state.userMode === 'meva'){
+      info.textContent = "Veus només els teus registres";
+    } else if(state.userMode === 'mediador'){
+      const m = team.find(x => x.id === state.userModeMediadorId);
+      info.textContent = m ? `Veus els registres de ${m.nom}` : '';
+    } else {
+      info.textContent = `Veus tot l'equip (${team.length} mediador${team.length===1?'':'s'})`;
+    }
+  }
+}
+
+function setCarteraMode(value){
+  if(value === 'equip' || value === 'meva'){
+    state.userMode = value;
+    state.userModeMediadorId = null;
+  } else if(value.startsWith('mediador:')){
+    state.userMode = 'mediador';
+    state.userModeMediadorId = value.slice('mediador:'.length);
+  }
+  try{
+    localStorage.setItem('brokkom_cartera_mode', state.userMode);
+    if(state.userModeMediadorId) localStorage.setItem('brokkom_cartera_mediador', state.userModeMediadorId);
+    else localStorage.removeItem('brokkom_cartera_mediador');
+  }catch(_){ }
+  renderCarteraSelector();
+  renderActiveView();
+  updateNavBadges();
+}
+window.setCarteraMode = setCarteraMode;
+window.renderCarteraSelector = renderCarteraSelector;
+
 // Re-renderitza el tab que estigui actiu — així garantim que després de carregar
 // dades no només el dashboard es refresca, sinó qualsevol vista que vegi l'usuari.
 function renderActiveView(){
@@ -2783,12 +2926,13 @@ function setAuthOverlayLoading(on){
 
 async function onLoginSuccess(user){
   currentUser = user;
-  // Elements opcionals: existien al CSS però no al HTML actual.
-  // Els deixem protegits perquè funcionin automàticament si demà s'afegeixen.
+  // Bloc d'usuari al sidebar
   const userMenu = document.getElementById('user-menu-block');
   if(userMenu) userMenu.style.display = 'block';
-  const userEmailEl = document.getElementById('user-email');
+  const userEmailEl = document.getElementById('user-email-display');
   if(userEmailEl) userEmailEl.textContent = user.email;
+  const userNameEl = document.getElementById('user-name-display');
+  if(userNameEl) userNameEl.textContent = (user.user_metadata?.nom) || (user.email||'').split('@')[0];
   // Mostra "Carregant dades..." mentre baixem l'estat — la UI mai es veu sense
   // dades entre login i loadFromSupabase.
   setAuthOverlayLoading(true);
