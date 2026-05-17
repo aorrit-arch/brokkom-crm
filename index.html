@@ -656,23 +656,17 @@
 
   <div class="section-title" style="margin-top:24px">Dades</div>
   <div class="card">
-    <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Totes les dades es guarden al navegador. Recomanem fer còpia periòdica.</p>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Les dades viuen a Supabase i es sincronitzen entre dispositius automàticament. L'exportació crea una còpia local del que tens carregat.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="exportData()">📥 Exportar tot (JSON)</button>
-      <button class="btn" onclick="document.getElementById('import-file').click()">📤 Importar des de fitxer</button>
-      <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
-      <button class="btn" onclick="resetData()" style="color:var(--danger)">🗑️ Esborrar tot</button>
     </div>
     <div style="margin-top:14px;font-size:11px;color:var(--text-3)" id="data-stats"></div>
   </div>
 
   <div class="section-title" style="margin-top:24px">Sobre BROKKOM CRM</div>
   <div class="card" style="font-size:12px;color:var(--text-2);line-height:1.7">
-    <strong style="color:var(--text)">Versió 1.0</strong> · Suport comercial per a corredoria de seguros<br>
-    Disseny i desenvolupament: Brokkom amb assistència IA<br>
-    Stack: HTML + JavaScript pur · localStorage · API Anthropic<br>
-    <br>
-    Properes versions: integració Supabase (multi-dispositiu), Apollo.io (prospecció), accés multi-usuari.
+    <strong style="color:var(--text)">Versió 2.0</strong> · Suport comercial per a corredoria de seguros · Sector transport<br>
+    Stack: HTML + JavaScript pur · Supabase (BD + Auth + RLS) · Vercel · API Anthropic<br>
   </div>
 </div>
 
@@ -739,9 +733,37 @@ let state = {
   asseguradores: [], posts: [],
   mediadors: ['Mediador principal'],
   rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','RC Mediambiental','Mercaderies CMR/ICC','Pèrdua de beneficis','Ciber','Salut col·lectiva','Retribució flexible','Plans de pensions','Vida','Altres'],
-  config: { modelFast: 'claude-haiku-4-5-20251001', modelSmart: 'claude-sonnet-4-6' }
+  config: { modelFast: 'claude-haiku-4-5-20251001', modelSmart: 'claude-sonnet-4-6' },
+  // Multi-usuari (preparació). userMode: 'meva' | 'equip' | 'mediador'.
+  // mediadors_team conté els mediadors actius (taula `mediadors` a Supabase).
+  userMode: 'equip',
+  userModeMediadorId: null,
+  mediadors_team: []
 };
 let currentUser = null;
+
+// Escape per protegir el HTML inline contra XSS i trencaments d'estructura
+// quan els camps lliures (notes, resum, empresa…) contenen <, >, & o cometes.
+function escapeHtml(s){
+  if(s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
+// Normalitza un valor de prima ("12,50€" → 12.5). Necessari perquè el
+// teclat catalano-espanyol escriu comes i parseFloat les talla.
+function parsePrima(v){
+  if(v === null || v === undefined || v === '') return null;
+  const s = String(v).replace(/[€\s]/g,'').replace(',', '.');
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+window.parsePrima = parsePrima;
 
 // Mapeig camelCase ↔ snake_case
 const COLUMN_MAP = {
@@ -927,37 +949,40 @@ async function dbSelect(table){
 }
 async function dbInsert(table, obj){
   showSync('Guardant');
-  const payload = toDb({...obj, user_id: currentUser.id});
-  const result = await withRetry(()=>
-    sb.from(table).insert(payload).select().single()
-  );
-  const {data, error} = result || {};
-  hideSync();
-  if(error){ console.error(`INSERT ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
-  return fromDb(data);
+  try{
+    const payload = toDb({...obj, user_id: currentUser.id});
+    const result = await withRetry(()=>
+      sb.from(table).insert(payload).select().single()
+    );
+    const {data, error} = result || {};
+    if(error){ console.error(`INSERT ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
+    return fromDb(data);
+  } finally { hideSync(); }
 }
 async function dbUpdate(table, id, obj){
   showSync('Actualitzant');
-  const payload = toDb(obj);
-  delete payload.user_id;
-  delete payload.created_at;
-  const result = await withRetry(()=>
-    sb.from(table).update(payload).eq('id', id).select().single()
-  );
-  const {data, error} = result || {};
-  hideSync();
-  if(error){ console.error(`UPDATE ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
-  return fromDb(data);
+  try{
+    const payload = toDb(obj);
+    delete payload.user_id;
+    delete payload.created_at;
+    const result = await withRetry(()=>
+      sb.from(table).update(payload).eq('id', id).select().single()
+    );
+    const {data, error} = result || {};
+    if(error){ console.error(`UPDATE ${table}:`, error); toast('Error: '+error.message,'error'); return null; }
+    return fromDb(data);
+  } finally { hideSync(); }
 }
 async function dbDelete(table, id){
   showSync('Esborrant');
-  const result = await withRetry(()=>
-    sb.from(table).delete().eq('id', id)
-  );
-  const {error} = result || {};
-  hideSync();
-  if(error){ console.error(`DELETE ${table}:`, error); toast('Error: '+error.message,'error'); return false; }
-  return true;
+  try{
+    const result = await withRetry(()=>
+      sb.from(table).delete().eq('id', id)
+    );
+    const {error} = result || {};
+    if(error){ console.error(`DELETE ${table}:`, error); toast('Error: '+error.message,'error'); return false; }
+    return true;
+  } finally { hideSync(); }
 }
 
 // Carregar tot l'estat des de Supabase. Errors per taula s'aïllen, l'estat
@@ -1062,8 +1087,7 @@ async function loadFromSupabase(){
   }};
 }
 
-// Stub: saveState ja no fa res — escrivim directament via dbInsert/Update
-function saveState(){}
+// Persistència: tot va per dbInsert/dbUpdate — no hi ha cap caché local.
 const TOPICS = [
   {id:'brokkom',i:'🚀',n:'Nova etapa Brokkom',sub:'Post corporatiu',a:['Qui és Brokkom: la corredoria que entén el transport per dins','Per a on va Brokkom: més digital, més proactiu','El que ens diferencia: construïm protecció, no venem pòlisses','Especialització real vs eslògan']},
   {id:'ciber',i:'🔒',n:'Ciber + NIS2',sub:'Risc + obligació legal',a:['El teu camió pot ser hackejat — GPS com a vector d\'atac','NIS2 obliga el transport: saps si compliu?','Ransomware a una flota: qui paga sense ciber?','Multes NIS2: fins al 2% de la facturació']},
@@ -1077,29 +1101,44 @@ const TOPICS = [
 const ESTATS_PIPELINE = ['Lead','Qualificat','Cotitzant','Oferta enviada','En negociació','Tancada guanyada'];
 const ESTATS_PERDUDA = 'Tancada perduda';
 
-function loadState(){
-  try{
-    const saved = localStorage.getItem(STATE_KEY);
-    if(saved){
-      const parsed = JSON.parse(saved);
-      return {...DEFAULT_STATE, ...parsed, config: {...DEFAULT_STATE.config, ...parsed.config}};
-    }
-  }catch(e){console.error('Error loading state:',e)}
-  return JSON.parse(JSON.stringify(DEFAULT_STATE));
-}
-
-function saveState(){
-  localStorage.setItem(STATE_KEY, JSON.stringify(state));
-}
-
 function uid(){return Date.now().toString(36) + Math.random().toString(36).substr(2,5)}
+
+// ============================================================
+// Filtre per mediador (helper compartit). Per defecte (userMode='equip')
+// retorna tot. Quan la taula `mediadors` i la columna `mediador_id` siguin
+// presents, filtra segons l'opció triada al header. Cada vista CRUD ha de
+// fer servir aquests wrappers en comptes de `state.X` directament.
+function applyMediadorFilter(arr, fieldKey){
+  const mode = state.userMode || 'equip';
+  if(mode === 'equip' || !arr || arr.length === 0) return arr || [];
+  const idMeu = state.mediadorIdMeu || null;
+  const target = mode === 'meva' ? idMeu : (state.userModeMediadorId || null);
+  if(!target) return arr;
+  // Si cap registre encara té `mediador_id`, no filtrem (compat enrere).
+  const algunaCosaAssignada = arr.some(r => r && r[fieldKey]);
+  if(!algunaCosaAssignada) return arr;
+  return arr.filter(r => (r && r[fieldKey] === target));
+}
+function visibleClients(){      return applyMediadorFilter(state.clients,      'mediador_id'); }
+function visibleOfertes(){      return applyMediadorFilter(state.ofertes,      'mediador_id'); }
+function visibleConsolidats(){  return applyMediadorFilter(state.consolidats,  'mediador_id'); }
+function visibleSeguiments(){   return applyMediadorFilter(state.seguiments,   'mediador_id'); }
+function visibleOportunitats(){ return applyMediadorFilter(state.oportunitats, 'mediador_id'); }
+function visibleVenciments(){   return applyMediadorFilter(state.venciments,   'mediador_id'); }
+function visibleTasques(){      return applyMediadorFilter(state.tasques,      'mediador_id'); }
+window.applyMediadorFilter = applyMediadorFilter;
 
 function fmt(n){return new Intl.NumberFormat('ca-ES').format(Math.round(n||0))}
 function fmtEur(n){return fmt(n) + '€'}
 function fmtDate(d){if(!d)return '—';const dt = typeof d==='string'?new Date(d):d;return dt.toLocaleDateString('ca-ES')}
 function fmtDateShort(d){if(!d)return '';const dt = typeof d==='string'?new Date(d):d;return dt.toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}
-function daysBetween(d1,d2){return Math.ceil((new Date(d2)-new Date(d1))/86400000)}
-function daysFromNow(d){return daysBetween(new Date(),d)}
+// Comparem a mitjanit perquè "venciment avui a les 23:00" no doni "en 1 dies".
+function daysBetween(d1,d2){
+  const a = new Date(d1); a.setHours(0,0,0,0);
+  const b = new Date(d2); b.setHours(0,0,0,0);
+  return Math.round((b - a) / 86400000);
+}
+function daysFromNow(d){if(!d) return NaN; return daysBetween(new Date(), d)}
 
 function toast(msg, type='success'){
   const t = document.createElement('div');
@@ -1131,15 +1170,16 @@ function showTab(tab){
 }
 
 function updateNavBadges(){
-  document.getElementById('nav-clients').textContent = state.clients.length;
-  document.getElementById('nav-pipeline').textContent = state.ofertes.filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat)).length;
-  document.getElementById('nav-consolidats').textContent = state.consolidats.length;
-  document.getElementById('nav-opps').textContent = state.oportunitats.filter(o=>o.estat!=='Descartada').length;
-  document.getElementById('nav-venc').textContent = state.venciments.length;
-  document.getElementById('nav-tasques').textContent = state.tasques.filter(t=>t.estat==='pendent').length;
-  const navIdees = document.getElementById('nav-idees'); if(navIdees) navIdees.textContent = (state.idees||[]).filter(i=>i.estat==='nova').length;
-  document.getElementById('api-status').className = 'ok';
-  document.getElementById('api-status').textContent = '✓ servidor actiu';
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('nav-clients', visibleClients().length);
+  set('nav-pipeline', visibleOfertes().filter(o=>!['Tancada guanyada','Tancada perduda'].includes(o.estat)).length);
+  set('nav-consolidats', visibleConsolidats().length);
+  set('nav-opps', visibleOportunitats().filter(o=>o.estat!=='Descartada').length);
+  set('nav-venc', visibleVenciments().length);
+  set('nav-tasques', visibleTasques().filter(t=>t.estat==='pendent').length);
+  set('nav-idees', (state.idees||[]).filter(i=>i.estat==='nova').length);
+  const status = document.getElementById('api-status');
+  if(status){ status.className = 'ok'; status.textContent = '✓ servidor actiu'; }
 }
 
 function renderDashboard(){
@@ -1273,8 +1313,8 @@ function renderClients(){
     return `<div class="card">
       <div class="card-row">
         <div style="flex:1">
-          <div class="card-title">${c.empresa}</div>
-          <div class="card-sub">${c.cif||'—'} · ${c.sector||'sense sector'} ${c.treballadors?'· '+c.treballadors+' treballadors':''}</div>
+          <div class="card-title">${escapeHtml(c.empresa)}</div>
+          <div class="card-sub">${escapeHtml(c.cif||'—')} · ${escapeHtml(c.sector||'sense sector')} ${c.treballadors?'· '+escapeHtml(c.treballadors)+' treballadors':''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
           ${ofertes.length>0 ? `<span class="pill p-info">${ofertes.length} ofertes</span>` : ''}
@@ -1283,18 +1323,18 @@ function renderClients(){
         </div>
       </div>
       <div class="info-grid">
-        ${c.contacte ? `<div class="info-row"><span class="info-label">Contacte</span><span class="info-val">${c.contacte}</span></div>`:''}
-        ${c.carrec ? `<div class="info-row"><span class="info-label">Càrrec</span><span class="info-val">${c.carrec}</span></div>`:''}
-        ${c.email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${c.email}</span></div>`:''}
-        ${c.telefon ? `<div class="info-row"><span class="info-label">Telèfon</span><span class="info-val">${c.telefon}</span></div>`:''}
-        ${c.facturacio ? `<div class="info-row"><span class="info-label">Facturació</span><span class="info-val">${c.facturacio}</span></div>`:''}
-        ${c.adreca ? `<div class="info-row"><span class="info-label">Adreça</span><span class="info-val">${c.adreca}</span></div>`:''}
+        ${c.contacte ? `<div class="info-row"><span class="info-label">Contacte</span><span class="info-val">${escapeHtml(c.contacte)}</span></div>`:''}
+        ${c.carrec ? `<div class="info-row"><span class="info-label">Càrrec</span><span class="info-val">${escapeHtml(c.carrec)}</span></div>`:''}
+        ${c.email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${escapeHtml(c.email)}</span></div>`:''}
+        ${c.telefon ? `<div class="info-row"><span class="info-label">Telèfon</span><span class="info-val">${escapeHtml(c.telefon)}</span></div>`:''}
+        ${c.facturacio ? `<div class="info-row"><span class="info-label">Facturació</span><span class="info-val">${escapeHtml(c.facturacio)}</span></div>`:''}
+        ${c.adreca ? `<div class="info-row"><span class="info-label">Adreça</span><span class="info-val">${escapeHtml(c.adreca)}</span></div>`:''}
       </div>
-      ${c.notes ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);line-height:1.6">${c.notes}</div>`:''}
+      ${c.notes ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);line-height:1.6">${escapeHtml(c.notes)}</div>`:''}
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="openModal('oferta',{clientId:'${c.id}'})">+ Oferta</button>
         <button class="btn btn-sm" onclick="openModal('seguiment',{clientId:'${c.id}'})">+ Seguiment</button>
-        <button class="btn btn-sm" onclick="openModal('client',${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️ Editar</button>
+        <button class="btn btn-sm" onclick="editClient('${c.id}')">✏️ Editar</button>
         <button class="btn btn-sm" onclick="deleteClient('${c.id}')" style="color:var(--danger)">🗑</button>
       </div>
     </div>`;
@@ -1321,11 +1361,13 @@ function renderPipeline(){
       <div class="pipeline-col-title">${estat} <span class="pipeline-col-count">${items.length}</span></div>
       ${items.map(o=>{
         const cli = state.clients.find(c=>c.id===o.clientId);
-        const estalvi = (parseFloat(o.primaActual)||0) - (parseFloat(o.primaBrokkom)||0);
-        return `<div class="pipeline-card" onclick="openModal('oferta',${JSON.stringify(o).replace(/"/g,'&quot;')})">
-          <div class="pipeline-card-title">${cli?cli.empresa:o.empresa||'?'}</div>
-          <div class="pipeline-card-sub">${o.ram||''}</div>
-          ${o.primaBrokkom ? `<div class="pipeline-card-amount">${fmtEur(o.primaBrokkom)}${estalvi>0?' · estalvi '+fmtEur(estalvi):''}</div>` : ''}
+        const pa = parsePrima(o.primaActual);
+        const pb = parsePrima(o.primaBrokkom);
+        const estalvi = (pa && pb) ? pa - pb : 0;
+        return `<div class="pipeline-card" onclick="editOferta('${o.id}')">
+          <div class="pipeline-card-title">${escapeHtml(cli?cli.empresa:(o.empresa||'?'))}</div>
+          <div class="pipeline-card-sub">${escapeHtml(o.ram||'')}</div>
+          ${pb ? `<div class="pipeline-card-amount">${fmtEur(pb)}${estalvi>0?' · estalvi '+fmtEur(estalvi):''}</div>` : ''}
         </div>`;
       }).join('')}
     </div>`;
@@ -1469,13 +1511,13 @@ function renderSeguiments(){
     return `<div class="card compact">
       <div class="card-row">
         <div>
-          <div class="card-title">${cli?cli.empresa:'(client esborrat)'}</div>
-          <div class="card-sub">${fmtDate(s.data)} · ${s.canal}${s.responsable?' · '+s.responsable:''}</div>
+          <div class="card-title">${escapeHtml(cli?cli.empresa:'(client esborrat)')}</div>
+          <div class="card-sub">${fmtDate(s.data)} · ${escapeHtml(s.canal||'')}${s.responsable?' · '+escapeHtml(s.responsable):''}</div>
         </div>
-        <span class="pill p-gray">${s.canal}</span>
+        <span class="pill p-gray">${escapeHtml(s.canal||'')}</span>
       </div>
-      ${s.resum ? `<div style="margin-top:8px;font-size:13px;line-height:1.6">${s.resum}</div>`:''}
-      ${s.properPas ? `<div style="margin-top:8px;font-size:12px;color:var(--info)">→ ${s.properPas}</div>`:''}
+      ${s.resum ? `<div style="margin-top:8px;font-size:13px;line-height:1.6">${escapeHtml(s.resum)}</div>`:''}
+      ${s.properPas ? `<div style="margin-top:8px;font-size:12px;color:var(--info)">→ ${escapeHtml(s.properPas)}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px">
         <button class="btn btn-sm" onclick="deleteSeguiment('${s.id}')" style="color:var(--danger)">🗑</button>
       </div>
@@ -1502,15 +1544,15 @@ function renderOpps(){
     return `<div class="opp-card ${o.prioritat?.toLowerCase()||'baixa'}">
       <div class="card-row">
         <div>
-          <div class="card-title">${cli?cli.empresa:o.empresa||'?'}</div>
-          <div class="card-sub">${o.producte}</div>
+          <div class="card-title">${escapeHtml(cli?cli.empresa:(o.empresa||'?'))}</div>
+          <div class="card-sub">${escapeHtml(o.producte||'')}</div>
         </div>
         <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end">
-          <span class="pill ${o.prioritat==='Alta'?'p-danger':o.prioritat==='Mitjana'?'p-pend':'p-success'}">${o.prioritat}</span>
-          <span class="pill p-gray">${o.estat}</span>
+          <span class="pill ${o.prioritat==='Alta'?'p-danger':o.prioritat==='Mitjana'?'p-pend':'p-success'}">${escapeHtml(o.prioritat||'—')}</span>
+          <span class="pill p-gray">${escapeHtml(o.estat||'Detectada')}</span>
         </div>
       </div>
-      ${o.argument ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.5">${o.argument}</div>`:''}
+      ${o.argument ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.5">${escapeHtml(o.argument)}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px">
         <button class="btn btn-sm" onclick="canviarEstatOpp('${o.id}')">Canviar estat</button>
         <button class="btn btn-sm" onclick="convertirOppEnOferta('${o.id}')">→ Crear oferta</button>
@@ -1531,8 +1573,8 @@ function renderVenciments(){
     return `<div class="card">
       <div class="card-row">
         <div>
-          <div class="card-title">${v.empresa}</div>
-          <div class="card-sub">${v.ram}${v.asseguradora?' · '+v.asseguradora:''}</div>
+          <div class="card-title">${escapeHtml(v.empresa)}</div>
+          <div class="card-sub">${escapeHtml(v.ram||'')}${v.asseguradora?' · '+escapeHtml(v.asseguradora):''}</div>
         </div>
         <div style="text-align:right">
           <span class="pill ${urg}">${fmtDate(v.dataVenciment)}</span>
@@ -1540,7 +1582,7 @@ function renderVenciments(){
         </div>
       </div>
       ${v.primaActual ? `<div style="margin-top:8px;font-size:12px"><span class="mini-stat">Prima actual <strong>${fmtEur(v.primaActual)}</strong></span></div>`:''}
-      ${v.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">${v.notes}</div>`:''}
+      ${v.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">${escapeHtml(v.notes)}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px">
         <button class="btn btn-sm" onclick="generarAlarmaCalendar('${v.id}')">📅 Crear esdeveniment Calendar</button>
         <button class="btn btn-sm" onclick="deleteVenciment('${v.id}')" style="color:var(--danger)">🗑</button>
@@ -1751,23 +1793,36 @@ async function callAnthropicAPI(prompt, model, imageBase64=null, imageType='imag
     msgContent.push({type:'image', source:{type:'base64', media_type:imageType, data:imageBase64}});
   }
   msgContent.push({type:'text', text:prompt});
-  const response = await fetch('/api/ai-proxy', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      model: model || state.config.modelFast,
-      max_tokens: 2048,
-      messages: [{role:'user', content:msgContent}]
-    })
-  });
+  // Timeout dur perquè una resposta penjada no deixi la UI bloquejada.
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 60000);
+  let response;
+  try{
+    response = await fetch('/api/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: model || state.config.modelFast,
+        max_tokens: 2048,
+        messages: [{role:'user', content:msgContent}]
+      }),
+      signal: ctrl.signal
+    });
+  }catch(e){
+    if(e.name === 'AbortError') throw new Error("La crida a la IA ha trigat massa (60s). Reintenta-ho.");
+    throw new Error('Xarxa: '+(e.message||'sense connexió'));
+  }finally{
+    clearTimeout(timer);
+  }
   const responseText = await response.text();
   if(!response.ok){
-    throw new Error(`API error ${response.status}: ${responseText}`);
+    throw new Error(`API error ${response.status}: ${responseText.slice(0,200)}`);
   }
   let data;
   try{ data = JSON.parse(responseText); }
   catch(e){ throw new Error('Resposta invàlida: '+responseText.slice(0,100)); }
   if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  if(!data.content || !data.content[0]) throw new Error('Resposta IA sense contingut');
   return data.content[0].text;
 }
 
@@ -2177,6 +2232,11 @@ async function saveClient(id){
   toast('Client guardat');
 }
 
+// Helpers que substitueixen el patró antic d'incrustar JSON.stringify(record)
+// dins l'`onclick` — fràgil amb caràcters especials i obre porta a XSS.
+function editClient(id){ const c = state.clients.find(x=>x.id===id); if(c) openModal('client', c); }
+function editOferta(id){ const o = state.ofertes.find(x=>x.id===id); if(o) openModal('oferta', o); }
+
 async function deleteClient(id){
   if(!confirm('Esborrar aquest client i totes les seves dades relacionades?')) return;
   const ok = await dbDelete('clients', id);
@@ -2202,8 +2262,8 @@ async function saveOferta(id){
     ram:document.getElementById('m-ram').value,
     asseguradoraActual:document.getElementById('m-asseguradora-actual').value,
     asseguradora:document.getElementById('m-asseguradora').value,
-    primaActual:parseFloat(document.getElementById('m-prima-actual').value)||null,
-    primaBrokkom:parseFloat(document.getElementById('m-prima-brokkom').value)||null,
+    primaActual:parsePrima(document.getElementById('m-prima-actual').value),
+    primaBrokkom:parsePrima(document.getElementById('m-prima-brokkom').value),
     estat,
     mediador:document.getElementById('m-mediador').value,
     dataOferta:document.getElementById('m-data-oferta').value||null,
@@ -2211,11 +2271,20 @@ async function saveOferta(id){
     notes:document.getElementById('m-notes').value
   };
   if(estat === 'Tancada guanyada'){
+    // Mantenim l'oferta amb estat 'Tancada guanyada' fins que el consolidat
+    // estigui guardat. Si l'usuari cancel·la, no perdem la dada.
+    let ofertaId = id;
     if(id){
-      await dbDelete('ofertes', id);
-      state.ofertes = state.ofertes.filter(o=>o.id!==id);
+      const upd = await dbUpdate('ofertes', id, {...data, estat:'Tancada guanyada'});
+      if(upd) Object.assign(state.ofertes.find(o=>o.id===id), upd);
+    } else {
+      const ins = await dbInsert('ofertes', {...data, estat:'Tancada guanyada'});
+      if(!ins){ return; }
+      state.ofertes.unshift(ins);
+      ofertaId = ins.id;
     }
     closeModal();
+    window._pendingOfertaTancament = ofertaId;
     openModal('consolidat', data);
     return;
   }
@@ -2236,9 +2305,10 @@ async function saveOferta(id){
 async function saveConsolidat(id){
   const clientId = document.getElementById('m-clientId').value;
   if(!clientId){toast('Selecciona client','error');return}
-  const primaAnual = parseFloat(document.getElementById('m-primaAnual').value);
+  const primaAnual = parsePrima(document.getElementById('m-primaAnual').value);
   if(!primaAnual){toast('Prima obligatòria','error');return}
   const cli = state.clients.find(c=>c.id===clientId);
+  if(!cli){toast('Client inexistent','error');return}
   const data = {
     clientId,
     empresa: cli.empresa,
@@ -2251,9 +2321,19 @@ async function saveConsolidat(id){
     notes:document.getElementById('m-notes').value
   };
   const inserted = await dbInsert('consolidats', data);
-  if(inserted) state.consolidats.unshift(inserted);
+  if(!inserted) return; // dbInsert ja ha avisat — no esborrem la font.
+  state.consolidats.unshift(inserted);
+  // Si veníem d'una oferta marcada com a "Tancada guanyada", ara la podem
+  // esborrar amb seguretat — la dada ja viu al consolidat.
+  const ofertaId = window._pendingOfertaTancament;
+  if(ofertaId){
+    const ok = await dbDelete('ofertes', ofertaId);
+    if(ok) state.ofertes = state.ofertes.filter(o=>o.id!==ofertaId);
+    window._pendingOfertaTancament = null;
+  }
   closeModal();
   showTab('consolidats');
+  updateNavBadges();
   toast('Tancament registrat com a guanyat ✓');
 }
 
@@ -2291,7 +2371,7 @@ async function saveVenciment(){
     ram:document.getElementById('m-ram').value,
     asseguradora:document.getElementById('m-asseguradora').value,
     dataVenciment:dataV,
-    primaActual:parseFloat(document.getElementById('m-prima').value)||null,
+    primaActual:parsePrima(document.getElementById('m-prima').value),
     notes:document.getElementById('m-notes').value
   };
   const inserted = await dbInsert('venciments', data);
@@ -2408,14 +2488,6 @@ function exportData(){
   toast('Exportat');
 }
 
-function importData(event){
-  toast('Importació JSON desactivada en versió Supabase','error');
-}
-
-function resetData(){
-  toast('Reset desactivat. Esborra dades una a una des de cada secció.','error');
-}
-
 function exportConsolidats(){
   const headers = ['Data','Empresa','Ram','Asseguradora','Núm. pòlissa','Mediador','Prima'];
   const rows = state.consolidats.map(c=>[c.dataTancament, c.empresa, c.ram||'', c.asseguradora||'', c.numPolissa||'', c.mediador||'', c.primaAnual||0]);
@@ -2448,15 +2520,15 @@ function renderIdees(){
     <div class="idea-card ${idea.categoria||'altres'}">
       <div class="card-row">
         <div style="flex:1">
-          <div class="card-title">${idea.titol||'Sense títol'}</div>
-          <div class="card-sub">${fmtDate(idea.creat)}${idea.origen?' · '+idea.origen:''}</div>
+          <div class="card-title">${escapeHtml(idea.titol||'Sense títol')}</div>
+          <div class="card-sub">${fmtDate(idea.creat)}${idea.origen?' · '+escapeHtml(idea.origen):''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end">
-          <span class="pill ${idea.categoria==='linkedin'?'p-info':idea.categoria==='comercial'?'p-success':idea.categoria==='proces'?'p-pend':'p-purple'}">${idea.categoria||'altres'}</span>
-          <span class="pill p-gray">${idea.estat||'nova'}</span>
+          <span class="pill ${idea.categoria==='linkedin'?'p-info':idea.categoria==='comercial'?'p-success':idea.categoria==='proces'?'p-pend':'p-purple'}">${escapeHtml(idea.categoria||'altres')}</span>
+          <span class="pill p-gray">${escapeHtml(idea.estat||'nova')}</span>
         </div>
       </div>
-      ${idea.contingut?`<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--text-2)">${idea.contingut}</div>`:''}
+      ${idea.contingut?`<div style="margin-top:8px;font-size:13px;line-height:1.6;color:var(--text-2)">${escapeHtml(idea.contingut)}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         ${idea.categoria==='linkedin'||idea.categoria==='borrador'?`<button class="btn btn-sm" onclick="convertirIdeaPostLinkedIn('${idea.id}')">Generar post</button>`:''}
         <button class="btn btn-sm" onclick="deleteIdea('${idea.id}')" style="color:var(--danger)">Esborrar</button>
