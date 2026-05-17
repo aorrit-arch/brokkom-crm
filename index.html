@@ -622,6 +622,13 @@
     <button class="btn" onclick="iaAccio('proposar-seguiments')" style="text-align:left;padding:14px">📞 Proposar pròxims seguiments</button>
     <button class="btn" onclick="iaAccio('clients-fred')" style="text-align:left;padding:14px">🥶 Clients sense contacte 15+ dies</button>
   </div>
+
+  <div class="section-title" style="margin-top:24px">Telegram</div>
+  <div class="card">
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Si el bot està configurat (TELEGRAM_BOT_TOKEN a Vercel), pots enviar el resum diari manualment per provar.</p>
+    <button class="btn" onclick="enviarResumTelegram()">📲 Enviar resum diari al bot</button>
+    <span id="telegram-status" style="margin-left:10px;font-size:12px;color:var(--text-3)"></span>
+  </div>
 </div>
 
 <div id="tab-config" class="tab-content hidden">
@@ -2078,6 +2085,34 @@ Seguiments recents: ${JSON.stringify(state.seguiments.slice(0,20))}`;
 }
 
 function openIAImport(type){showTab('ia')}
+
+// ============================================================
+// TELEGRAM — botó per provar el resum diari des del CRM.
+// Compat enrere: si el bot no està configurat al servidor, mostra missatge.
+// ============================================================
+async function enviarResumTelegram(){
+  const status = document.getElementById('telegram-status');
+  if(status){ status.textContent = 'Enviant...'; status.style.color = ''; }
+  try{
+    const resp = await fetch('/api/telegram-daily-summary', {method:'POST'});
+    const data = await resp.json().catch(()=>({}));
+    if(data.reason === 'not-configured'){
+      if(status){ status.textContent = 'Bot no configurat (vegeu /docs/telegram.md)'; status.style.color = 'var(--warning)'; }
+      toast('Telegram no està configurat al servidor','error');
+      return;
+    }
+    if(!resp.ok || !data.ok){
+      throw new Error(data.error || resp.statusText);
+    }
+    const sent = data.sent ?? (data.results?.length || 0);
+    if(status){ status.textContent = `✓ Enviat (${sent})`; status.style.color = 'var(--success)'; }
+    toast('Resum enviat per Telegram');
+  }catch(e){
+    if(status){ status.textContent = 'Error: '+e.message; status.style.color = 'var(--danger)'; }
+    toast('Error: '+e.message, 'error');
+  }
+}
+window.enviarResumTelegram = enviarResumTelegram;
 
 function generarAlarmaCalendar(vencId){
   const v = state.venciments.find(x=>x.id===vencId);
