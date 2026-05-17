@@ -7,13 +7,16 @@
 
 import { sbAdmin } from './_lib/supabase.js';
 
-const EMAIL = 'aorrit@gmail.com';
+const DEFAULT_EMAIL = 'aorrit@brokkom.com';
 const NOM = 'Albert Orrit';
 const CHAT_ID = '8683292744';
 
 export default async function handler(req, res) {
   try {
     const sb = sbAdmin();
+    // Accepta ?email=... per cobrir varis correus de prova sense redeployar.
+    const url = new URL(req.url, 'https://x');
+    const EMAIL = (url.searchParams.get('email') || DEFAULT_EMAIL).toLowerCase().trim();
 
     // 1) auth.users → user_id
     let authUid = null;
