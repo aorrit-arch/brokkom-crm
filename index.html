@@ -273,49 +273,27 @@
 <body>
 <div class="auth-overlay" id="auth-overlay">
   <div class="auth-box">
-    <div class="auth-logo" style="background:transparent;width:140px;height:120px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center">
-      <svg width="140" height="110" viewBox="0 0 170 130" xmlns="http://www.w3.org/2000/svg" class="brokk-svg">
-        <path fill="#0D9488" fill-rule="evenodd" d="
-          M 12 70
-          Q 8 55 18 50
-          L 20 42 Q 18 35 24 38 L 27 30
-          Q 28 22 33 28 L 36 22
-          Q 39 16 43 22 L 47 18
-          Q 51 14 54 20 L 58 16
-          Q 62 13 64 19 L 69 16
-          Q 74 14 76 20 L 82 18
-          Q 88 16 90 23 L 96 21
-          Q 103 20 104 27 L 110 27
-          Q 118 28 118 35 L 124 38
-          Q 132 42 130 50 L 136 56
-          Q 142 62 138 68
-          L 145 75
-          Q 152 78 156 84
-          Q 160 88 156 92
-          L 152 92
-          L 156 100 L 152 102 L 146 96
-          L 144 102 L 140 100 L 142 92
-          L 134 90
-          Q 128 89 124 94
-          L 124 112
-          Q 124 118 119 118
-          L 117 118
-          Q 113 118 113 112
-          L 113 100
-          L 100 98
-          L 85 98
-          L 70 96
-          L 57 100
-          L 57 112
-          Q 57 118 53 118
-          L 50 118
-          Q 46 118 46 112
-          L 46 102
-          Q 36 100 28 94
-          Q 22 90 18 84
-          Q 12 78 12 70 Z"/>
-        <!-- Ull (un punt blanc petit) -->
-        <circle cx="135" cy="58" r="1.8" fill="#fff" class="brokk-eye"/>
+    <div class="auth-logo" style="background:transparent;width:180px;height:180px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center">
+      <svg width="180" height="180" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" class="brokk-svg">
+        <!-- Cap forma pera -->
+        <path d="M 80 35 Q 30 35 22 85 Q 18 130 50 158 Q 80 175 110 158 Q 142 130 138 85 Q 130 35 80 35 Z" fill="#0D9488"/>
+        <!-- Orelles triangulars -->
+        <path d="M 35 50 L 22 28 L 45 42 Z" fill="#0D9488"/>
+        <path d="M 125 50 L 138 28 L 115 42 Z" fill="#0D9488"/>
+        <!-- Crinera pèls al damunt del cap -->
+        <path d="M 38 38 L 42 22 L 50 36 L 60 16 L 72 34 L 80 12 L 88 34 L 100 16 L 110 36 L 118 22 L 122 38" stroke="#0F766E" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <!-- Morro -->
+        <ellipse cx="80" cy="145" rx="28" ry="18" fill="#fff"/>
+        <ellipse cx="70" cy="143" rx="4" ry="5" fill="#0F766E"/>
+        <ellipse cx="90" cy="143" rx="4" ry="5" fill="#0F766E"/>
+        <!-- Ullals corbats laterals (opció 1) -->
+        <path d="M 60 154 Q 48 162 50 174 Q 56 172 60 166 Q 64 160 64 156 Z" fill="#fff" stroke="#0F766E" stroke-width="1.2"/>
+        <path d="M 100 154 Q 112 162 110 174 Q 104 172 100 166 Q 96 160 96 156 Z" fill="#fff" stroke="#0F766E" stroke-width="1.2"/>
+        <!-- Ulls grans estil Octocat -->
+        <circle cx="58" cy="95" r="13" fill="#fff"/>
+        <circle cx="102" cy="95" r="13" fill="#fff"/>
+        <g class="brokk-eye"><circle cx="62" cy="96" r="7" fill="#1F2937"/><circle cx="64" cy="93" r="2.5" fill="#fff"/></g>
+        <g class="brokk-eye"><circle cx="106" cy="96" r="7" fill="#1F2937"/><circle cx="108" cy="93" r="2.5" fill="#fff"/></g>
       </svg>
     </div>
     <div class="auth-title">Brokkom CRM</div>
@@ -639,6 +617,13 @@
   </div>
   <div class="metrics" id="tasques-metrics"></div>
   <div class="toolbar">
+    <select id="filter-tasques-assign" onchange="renderTasques()">
+      <option value="rellevants">Rellevants per a mi</option>
+      <option value="meves">Creades per mi</option>
+      <option value="assignades">Assignades a algú</option>
+      <option value="equip">Per a tot l'equip</option>
+      <option value="totes">Totes</option>
+    </select>
     <select id="filter-tasques-cat" onchange="renderTasques()">
       <option value="">Totes les categories</option>
       <option value="comercial">Comercial</option>
@@ -1013,6 +998,8 @@ const COLUMN_MAP = {
   contacteIntern: 'contacte_intern',
   mediadorId: 'mediador_id',
   telegramChatId: 'telegram_chat_id',
+  // Tasques
+  assignatA: 'assignat_a',
   // Agenda
   dataInici: 'data_inici',
   dataFi: 'data_fi',
@@ -1965,10 +1952,33 @@ function renderTasques(){
   const cat = document.getElementById('filter-tasques-cat')?.value || '';
   const estat = document.getElementById('filter-tasques-estat')?.value;
   const filtre = estat === undefined ? 'pendent' : estat;
-  const base = visibleTasques();
+  const assignFilter = document.getElementById('filter-tasques-assign')?.value || 'rellevants';
+
+  // Cartera-aware: si la vista és "tot l'equip", veiem totes; si és la meva, només les que m'incumbeixen.
+  // assignFilter:
+  //   'rellevants' = meves o assignades a mi o a equip
+  //   'meves' = només les que he creat jo
+  //   'assignades' = assignades a algú concret
+  //   'equip' = assignades a EQUIP
+  //   'totes' = sense filtre
+  let base = visibleTasques();
+  if(assignFilter !== 'totes' && state.mediadorIdMeu){
+    const meu = state.mediadorIdMeu;
+    if(assignFilter === 'rellevants'){
+      base = base.filter(t => !t.assignat_a || t.assignat_a === 'EQUIP' || t.assignat_a === meu || t.mediador_id === meu);
+    } else if(assignFilter === 'meves'){
+      base = base.filter(t => t.mediador_id === meu);
+    } else if(assignFilter === 'assignades'){
+      base = base.filter(t => t.assignat_a && t.assignat_a !== 'EQUIP' && t.assignat_a !== meu);
+    } else if(assignFilter === 'equip'){
+      base = base.filter(t => t.assignat_a === 'EQUIP');
+    }
+  }
+
   let list = [...base];
   if(cat) list = list.filter(t=>t.categoria===cat);
   if(filtre !== '') list = list.filter(t=>t.estat===filtre);
+
   const total = base.length;
   const pend = base.filter(t=>t.estat==='pendent').length;
   const done = base.filter(t=>t.estat==='done').length;
@@ -1985,19 +1995,37 @@ function renderTasques(){
     const ord = {'Alta':3,'Mitjana':2,'Baixa':1};
     return (ord[b.prioritat]||0) - (ord[a.prioritat]||0);
   });
+
+  // Helper per saber qui té assignada
+  const team = state.mediadors_team || [];
+  const assignBadge = (t) => {
+    if(!t.assignat_a) return '';
+    if(t.assignat_a === 'EQUIP') return '<span class="pill p-purple">👥 Equip</span>';
+    const m = team.find(x => x.id === t.assignat_a);
+    if(m){
+      const isMe = m.id === state.mediadorIdMeu;
+      return `<span class="pill ${isMe ? 'p-info' : 'p-pend'}">${isMe?'🧑':'👤'} ${escapeHtml(m.nom||m.email||'')}</span>`;
+    }
+    return '<span class="pill p-gray">👤 (mediador esborrat)</span>';
+  };
+
   document.getElementById('tasques-list').innerHTML = `<ul class="checklist">${list.map(t=>`
     <li>
       <div class="check ${t.estat==='done'?'done':''}" onclick="toggleTasca('${t.id}')"></div>
       <div style="flex:1">
-        <div class="text ${t.estat==='done'?'done':''}">${t.titol}</div>
-        ${t.descripcio?`<div style="font-size:11px;color:var(--text-3);margin-top:2px">${t.descripcio}</div>`:''}
+        <div class="text ${t.estat==='done'?'done':''}">${escapeHtml(t.titol||'')}</div>
+        ${t.descripcio?`<div style="font-size:11px;color:var(--text-3);margin-top:2px">${escapeHtml(t.descripcio)}</div>`:''}
         <div class="text-meta">
-          ${t.prioritat?`<span class="pill ${t.prioritat==='Alta'?'p-danger':t.prioritat==='Mitjana'?'p-pend':'p-success'}">${t.prioritat}</span>`:''}
-          ${t.categoria?`<span class="pill p-gray">${t.categoria}</span>`:''}
-          ${t.dataLimit?`<span class="pill p-info">${fmtDate(t.dataLimit)}</span>`:''}
+          ${assignBadge(t)}
+          ${t.prioritat?`<span class="pill ${t.prioritat==='Alta'?'p-danger':t.prioritat==='Mitjana'?'p-pend':'p-success'}">${escapeHtml(t.prioritat)}</span>`:''}
+          ${t.categoria?`<span class="pill p-gray">${escapeHtml(t.categoria)}</span>`:''}
+          ${t.data_limit?`<span class="pill p-info">${fmtDate(t.data_limit)}</span>`:''}
         </div>
       </div>
-      <button class="btn btn-sm" onclick="deleteTasca('${t.id}')" style="color:var(--danger)">🗑</button>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="editTasca('${t.id}')">✏️</button>
+        <button class="btn btn-sm" onclick="deleteTasca('${t.id}')" style="color:var(--danger)">🗑</button>
+      </div>
     </li>
   `).join('')}</ul>`;
 }
@@ -2435,9 +2463,11 @@ Retorna NOMÉS el JSON, sense cap explicació, sense markdown.`;
           if(ins) state.oportunitats.unshift(ins);
         }else if(key==='seguiments'){
           const cli = findClientByName(item.empresa);
-          const payload = {...item, clientId:cli?.id};
-          // Si no troba client, guardem com a seguiment lliure amb empresa al camp responsable
-          if(!cli && item.empresa) payload.responsable = item.empresa;
+          // Extreure 'empresa' del payload — la taula seguiments NO té columna 'empresa'.
+          // Si no troba client al CRM, guardem el nom d'empresa al camp 'responsable'.
+          const {empresa, ...resta} = item;
+          const payload = {...resta, clientId:cli?.id};
+          if(!cli && empresa) payload.responsable = empresa;
           const ins = await dbInsert('seguiments', withMediadorId(payload));
           if(ins) state.seguiments.unshift(ins);
         }else if(key==='idees'){
@@ -3249,18 +3279,45 @@ function openModal(type, data={}){
       </div>
     `;
   }else if(type === 'tasca'){
+    // Construir opcions d'assignació: equip (tots) + jo + cada mediador actiu
+    const team = state.mediadors_team || [];
+    let assignOptions = '<option value="">— Per a mi (privada) —</option>';
+    assignOptions += '<option value="EQUIP">👥 Tot l\'equip</option>';
+    team.forEach(m => {
+      const isMe = m.id === state.mediadorIdMeu;
+      const label = (isMe ? '🧑 ' : '👤 ') + (m.nom || m.email);
+      assignOptions += `<option value="${m.id}" ${data.assignat_a === m.id ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+    });
+    // Marcar EQUIP si correspon
+    if(data.assignat_a === 'EQUIP'){
+      assignOptions = assignOptions.replace('value="EQUIP"', 'value="EQUIP" selected');
+    }
     html = `
-      <div class="modal-title">Nova tasca</div>
-      <div class="form-row"><label>Títol *</label><input type="text" id="m-titol"></div>
-      <div class="form-row"><label>Descripció</label><textarea id="m-descripcio"></textarea></div>
+      <div class="modal-title">${data.id ? 'Editar' : 'Nova'} tasca</div>
+      <div class="form-row"><label>Títol *</label><input type="text" id="m-titol" value="${escapeHtml(data.titol||'')}"></div>
+      <div class="form-row"><label>Descripció</label><textarea id="m-descripcio">${escapeHtml(data.descripcio||'')}</textarea></div>
+      <div class="form-row">
+        <label>Assignat a</label>
+        <select id="m-assignat-a">${assignOptions}</select>
+      </div>
       <div class="form-grid-3">
-        <div class="form-row"><label>Prioritat</label><select id="m-prioritat"><option>Alta</option><option selected>Mitjana</option><option>Baixa</option></select></div>
-        <div class="form-row"><label>Categoria</label><select id="m-categoria"><option value="comercial">Comercial</option><option value="comunicacio">Comunicació</option><option value="admin">Admin</option><option value="seguiment">Seguiment</option></select></div>
-        <div class="form-row"><label>Data límit</label><input type="date" id="m-dataLimit"></div>
+        <div class="form-row"><label>Prioritat</label><select id="m-prioritat">
+          <option ${data.prioritat==='Alta'?'selected':''}>Alta</option>
+          <option ${(data.prioritat==='Mitjana'||!data.prioritat)?'selected':''}>Mitjana</option>
+          <option ${data.prioritat==='Baixa'?'selected':''}>Baixa</option>
+        </select></div>
+        <div class="form-row"><label>Categoria</label><select id="m-categoria">
+          <option value="comercial" ${data.categoria==='comercial'?'selected':''}>Comercial</option>
+          <option value="comunicacio" ${data.categoria==='comunicacio'?'selected':''}>Comunicació</option>
+          <option value="admin" ${data.categoria==='admin'?'selected':''}>Admin</option>
+          <option value="seguiment" ${data.categoria==='seguiment'?'selected':''}>Seguiment</option>
+        </select></div>
+        <div class="form-row"><label>Data límit</label><input type="date" id="m-dataLimit" value="${data.data_limit || ''}"></div>
       </div>
       <div class="modal-actions">
+        ${data.id ? `<button class="btn" onclick="deleteTasca('${data.id}');closeModal()" style="color:var(--danger)">Esborrar</button>` : ''}
         <button class="btn" onclick="closeModal()">Cancel·lar</button>
-        <button class="btn btn-primary" onclick="saveTasca()">Guardar</button>
+        <button class="btn btn-primary" onclick="saveTasca('${data.id||''}')">Guardar</button>
       </div>
     `;
   }else if(type === 'idea'){
@@ -3674,25 +3731,51 @@ async function deleteVenciment(id){
   updateNavBadges();
 }
 
-async function saveTasca(){
+async function saveTasca(id){
   const titol = document.getElementById('m-titol').value.trim();
   if(!titol){toast('Títol obligatori','error');return}
-  const data = {
+  const assignVal = document.getElementById('m-assignat-a').value;
+  // Convertim a valor BD: '' = privada del meu mediador, 'EQUIP' o un mediador_id
+  const payload = {
     titol,
-    descripcio:document.getElementById('m-descripcio').value,
-    prioritat:document.getElementById('m-prioritat').value,
-    categoria:document.getElementById('m-categoria').value,
-    dataLimit:document.getElementById('m-dataLimit').value||null,
-    estat:'pendent'
+    descripcio: document.getElementById('m-descripcio').value,
+    prioritat: document.getElementById('m-prioritat').value,
+    categoria: document.getElementById('m-categoria').value,
+    dataLimit: document.getElementById('m-dataLimit').value || null,
+    assignatA: assignVal || null,
+    estat: 'pendent'
   };
-  const inserted = await dbInsert('tasques', withMediadorId(data));
-  if(!inserted) return;
-  state.tasques.unshift(inserted);
-  closeModal();
-  renderTasques();
-  updateNavBadges();
-  toast('Tasca creada');
+  try{
+    if(id){
+      const updated = await dbUpdate('tasques', id, payload);
+      if(updated){
+        const idx = state.tasques.findIndex(t => t.id === id);
+        if(idx >= 0) state.tasques[idx] = updated;
+      }
+    } else {
+      // Per a noves tasques: si està assignada a algú concret o a EQUIP,
+      // hem de tenir cura amb mediador_id (qui en "té propietat"):
+      //   - "Per a mi" (vbuit) → mediador_id = el meu
+      //   - "Tot l'equip" → mediador_id = el meu (creador), però assignat_a = 'EQUIP'
+      //   - "Algú concret" → mediador_id = el meu (creador), assignat_a = id de l'altre
+      const inserted = await dbInsert('tasques', withMediadorId(payload));
+      if(!inserted) return;
+      state.tasques.unshift(inserted);
+    }
+    closeModal();
+    renderTasques();
+    updateNavBadges();
+    toast('Tasca guardada');
+  }catch(e){
+    toast('Error: '+(e.message||e), 'error');
+  }
 }
+
+function editTasca(id){
+  const t = state.tasques.find(x => x.id === id);
+  if(t) openModal('tasca', t);
+}
+window.editTasca = editTasca;
 
 async function toggleTasca(id){
   const t = state.tasques.find(x=>x.id===id);
