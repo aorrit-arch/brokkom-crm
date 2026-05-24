@@ -706,12 +706,9 @@
       <div class="page-title">Bústia <span class="ai-chip">IA</span></div>
       <div class="page-sub">Tot el que arriba i cal processar — Telegram, fotos, notes enganxades</div>
     </div>
-    <div class="topbar-actions">
-      <button class="btn" onclick="document.getElementById('busti-input-wrap').classList.toggle('hidden')">+ Afegir manualment</button>
-    </div>
   </div>
 
-  <div id="busti-input-wrap" class="ai-input-area hidden">
+  <div id="busti-input-wrap" class="ai-input-area">
     <div class="ai-input-title">📋 Enganxa text o puja una foto</div>
     <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Es desa a la Bústia. Després el podràs processar amb IA per extreure clients, ofertes, etc.</p>
     <div class="hashtag-helper">
@@ -2010,20 +2007,94 @@ function renderAsseguradores(){
     document.getElementById('asseguradores-list').innerHTML = '<div class="card"><div class="empty-state">Cap asseguradora registrada</div></div>';
     return;
   }
-  document.getElementById('asseguradores-list').innerHTML = state.asseguradores.map((a,i)=>`
-    <div class="card">
-      <div class="card-row">
-        <div>
-          <div class="card-title">${a.nom}</div>
-          ${a.contacteIntern?`<div class="card-sub">Contacte: ${a.contacteIntern}${a.email?' · '+a.email:''}${a.telefon?' · '+a.telefon:''}</div>`:''}
+  // Iconos per tipus de contacte
+  const ICON_CONTACTE = {
+    comercial: '💼', sinistres: '⚠️', admin: '🧾', informatic: '💻', direccio: '👔', altre: '👤'
+  };
+  const LABEL_CONTACTE = {
+    comercial: 'Comercial', sinistres: 'Sinistres', admin: 'Administratiu',
+    informatic: 'Informàtic', direccio: 'Direcció', altre: 'Altre'
+  };
+
+  document.getElementById('asseguradores-list').innerHTML = state.asseguradores.map((a,i)=>{
+    const contactes = Array.isArray(a.contactes) ? a.contactes : [];
+    const comercial = contactes.find(c => c.tipus === 'comercial');
+    const altresContactes = contactes.filter(c => c.tipus !== 'comercial');
+    const campsExtra = a.camps_extra && typeof a.camps_extra === 'object' ? a.camps_extra : {};
+    const numAltres = altresContactes.length;
+    const numExtra = Object.keys(campsExtra).length;
+
+    return `
+      <div class="card">
+        <div class="card-row">
+          <div style="flex:1">
+            <div class="card-title">${escapeHtml(a.nom||'')}</div>
+            <div class="card-sub">
+              ${a.codi_mediador ? `Codi mediador: <strong>${escapeHtml(a.codi_mediador)}</strong>` : ''}
+              ${a.codi_mediador && a.url_portal ? ' · ' : ''}
+              ${a.url_portal ? `<a href="${escapeHtml(a.url_portal)}" target="_blank" rel="noopener" style="color:var(--info);text-decoration:none">🔗 Portal</a>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm" onclick="editAsseguradora(${i})">✏️</button>
+            <button class="btn btn-sm" onclick="deleteAsseguradora(${i})" style="color:var(--danger)">🗑</button>
+          </div>
         </div>
-        <button class="btn btn-sm" onclick="deleteAsseguradora(${i})" style="color:var(--danger)">🗑</button>
+
+        ${comercial ? `
+          <div style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:var(--radius);font-size:13px">
+            <strong>${ICON_CONTACTE.comercial} Comercial${comercial.nom ? ': '+escapeHtml(comercial.nom) : ''}</strong>
+            ${comercial.carrec ? `<span style="font-size:11px;color:var(--text-3);margin-left:6px">${escapeHtml(comercial.carrec)}</span>` : ''}
+            <div style="font-size:12px;color:var(--text-2);margin-top:3px">
+              ${comercial.telefon ? `📞 <a href="tel:${escapeHtml(comercial.telefon)}" style="color:var(--text-2);text-decoration:none">${escapeHtml(comercial.telefon)}</a> ` : ''}
+              ${comercial.email ? `· ✉ <a href="mailto:${escapeHtml(comercial.email)}" style="color:var(--text-2);text-decoration:none">${escapeHtml(comercial.email)}</a>` : ''}
+            </div>
+            ${comercial.notes ? `<div style="font-size:11px;color:var(--text-3);margin-top:3px">${escapeHtml(comercial.notes)}</div>` : ''}
+          </div>
+        ` : ''}
+
+        ${numAltres > 0 ? `
+          <details style="margin-top:8px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--info);padding:4px 0">▶ ${numAltres} contacte${numAltres===1?'':'s'} més (sinistres, admin, informàtic...)</summary>
+            <div style="margin-top:6px">
+              ${altresContactes.map(c => `
+                <div style="padding:8px;background:var(--surface-2);border-radius:var(--radius);font-size:13px;margin-bottom:4px">
+                  <strong>${ICON_CONTACTE[c.tipus]||'👤'} ${escapeHtml(LABEL_CONTACTE[c.tipus]||c.tipus)}${c.nom ? ': '+escapeHtml(c.nom) : ''}</strong>
+                  ${c.carrec ? `<span style="font-size:11px;color:var(--text-3);margin-left:6px">${escapeHtml(c.carrec)}</span>` : ''}
+                  <div style="font-size:12px;color:var(--text-2);margin-top:2px">
+                    ${c.telefon ? `📞 <a href="tel:${escapeHtml(c.telefon)}" style="color:var(--text-2);text-decoration:none">${escapeHtml(c.telefon)}</a> ` : ''}
+                    ${c.email ? `· ✉ <a href="mailto:${escapeHtml(c.email)}" style="color:var(--text-2);text-decoration:none">${escapeHtml(c.email)}</a>` : ''}
+                  </div>
+                  ${c.notes ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${escapeHtml(c.notes)}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        ` : ''}
+
+        ${numExtra > 0 ? `
+          <details style="margin-top:6px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--purple);padding:4px 0">▶ ${numExtra} camp${numExtra===1?'':'s'} extra</summary>
+            <div style="margin-top:6px;padding:8px;background:var(--surface-2);border-radius:var(--radius);font-size:12px">
+              ${Object.entries(campsExtra).map(([k,v]) => `
+                <div style="margin-bottom:3px"><strong style="color:var(--text-2)">${escapeHtml(k)}:</strong> ${escapeHtml(String(v||''))}</div>
+              `).join('')}
+            </div>
+          </details>
+        ` : ''}
+
+        ${a.rams?.length>0 ? `<div style="margin-top:8px">${a.rams.map(r=>`<span class="pill p-info" style="margin-right:4px">${escapeHtml(r)}</span>`).join('')}</div>`:''}
+        ${a.notes?`<div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.6">${escapeHtml(a.notes)}</div>`:''}
       </div>
-      ${a.rams?.length>0 ? `<div style="margin-top:8px">${a.rams.map(r=>`<span class="pill p-info" style="margin-right:4px">${r}</span>`).join('')}</div>`:''}
-      ${a.notes?`<div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.6">${a.notes}</div>`:''}
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
+function editAsseguradora(idx){
+  const a = state.asseguradores[idx];
+  if(a) openModal('asseguradora', {...a, _idx: idx});
+}
+window.editAsseguradora = editAsseguradora;
 
 function renderComunicacio(){
   document.getElementById('comm-metrics').innerHTML = `
@@ -2519,7 +2590,6 @@ Seguiments recents: ${JSON.stringify(state.seguiments.slice(0,20))}`;
 
 function openIAImport(type){
   showTab('busti');
-  document.getElementById('busti-input-wrap')?.classList.remove('hidden');
   setTimeout(() => document.getElementById('ia-input')?.focus(), 100);
 }
 
@@ -2643,7 +2713,6 @@ window.guardarABusti = guardarABusti;
 function processarBustiItem(id){
   const item = state.busti.find(b => b.id === id);
   if(!item) return;
-  document.getElementById('busti-input-wrap')?.classList.remove('hidden');
   document.getElementById('ia-input').value = item.contingut || '';
   window._processarBustiId = id;
   // Scroll cap al formulari
@@ -3215,19 +3284,44 @@ function openModal(type, data={}){
       </div>
     `;
   }else if(type === 'asseguradora'){
+    const idx = data._idx;
+    const isEdit = (idx !== undefined && idx !== null);
+    const contactes = Array.isArray(data.contactes) ? data.contactes : [];
+    // Si no hi ha comercial, l'afegim buit perquè la fila comercial sempre aparegui
+    if(!contactes.find(c => c.tipus === 'comercial')) contactes.unshift({tipus:'comercial', nom:'', carrec:'', telefon:'', email:'', notes:''});
+    const campsExtra = (data.camps_extra && typeof data.camps_extra === 'object') ? data.camps_extra : {};
+    const campsExtraArr = Object.entries(campsExtra);
+
+    // Inicialitzar estat temporal per gestió dinàmica
+    window._modalAsseg = { contactes: JSON.parse(JSON.stringify(contactes)), camps: campsExtraArr.map(([k,v])=>({k,v: String(v||'')})) };
+
+    const ramsStr = Array.isArray(data.rams) ? data.rams.join(', ') : (data.rams || '');
+
     html = `
-      <div class="modal-title">Nova asseguradora</div>
-      <div class="form-row"><label>Nom *</label><input type="text" id="m-nom"></div>
-      <div class="form-row"><label>Rams (separats per coma)</label><input type="text" id="m-rams" placeholder="Multiriscos, Vehicles, RC..."></div>
-      <div class="form-grid-3">
-        <div class="form-row"><label>Contacte intern</label><input type="text" id="m-contacte"></div>
-        <div class="form-row"><label>Email</label><input type="email" id="m-email"></div>
-        <div class="form-row"><label>Telèfon</label><input type="tel" id="m-telefon"></div>
+      <div class="modal-title">${isEdit ? 'Editar' : 'Nova'} asseguradora</div>
+      <div class="modal-sub">Catàleg de companyies · contactes per rol + camps lliures</div>
+
+      <div class="form-grid">
+        <div class="form-row"><label>Nom *</label><input type="text" id="m-asseg-nom" value="${escapeHtml(data.nom||'')}" placeholder="Zurich, Generali..."></div>
+        <div class="form-row"><label>Codi de mediador</label><input type="text" id="m-asseg-codi" value="${escapeHtml(data.codi_mediador||'')}" placeholder="12345"></div>
       </div>
-      <div class="form-row"><label>Notes</label><textarea id="m-notes" placeholder="Competitivitat, particularitats..."></textarea></div>
+      <div class="form-row"><label>URL portal mediador</label><input type="url" id="m-asseg-url" value="${escapeHtml(data.url_portal||'')}" placeholder="https://..."></div>
+      <div class="form-row"><label>Rams treballats (separats per coma)</label><input type="text" id="m-asseg-rams" value="${escapeHtml(ramsStr)}" placeholder="Multiriscos, Vehicles, RC..."></div>
+
+      <div class="section-title" style="margin-top:14px">Contactes per rol</div>
+      <div id="m-asseg-contactes-list"></div>
+      <button class="btn btn-sm" type="button" onclick="addContacteAsseg()" style="margin-bottom:14px">+ Afegir contacte</button>
+
+      <div class="section-title">Camps lliures</div>
+      <p style="font-size:11px;color:var(--text-3);margin-bottom:6px">Per particularitats de cada companyia: "Codi WS", "Email factures", "Núm. client OPM"...</p>
+      <div id="m-asseg-camps-list"></div>
+      <button class="btn btn-sm" type="button" onclick="addCampAsseg()" style="margin-bottom:14px">+ Afegir camp lliure</button>
+
+      <div class="form-row"><label>Notes generals</label><textarea id="m-asseg-notes" placeholder="Competitivitat, particularitats...">${escapeHtml(data.notes||'')}</textarea></div>
+
       <div class="modal-actions">
         <button class="btn" onclick="closeModal()">Cancel·lar</button>
-        <button class="btn btn-primary" onclick="saveAsseguradora()">Guardar</button>
+        <button class="btn btn-primary" onclick="saveAsseguradora(${isEdit ? idx : 'null'})">Guardar</button>
       </div>
     `;
   }else if(type === 'consolidat'){
@@ -3330,9 +3424,18 @@ function openModal(type, data={}){
     `;
   }
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+
+  // Inicialitzar parts dinàmiques del modal d'asseguradora
+  if(type === 'asseguradora'){
+    renderContactesAsseg();
+    renderCampsAsseg();
+  }
 }
 
-function closeModal(){document.getElementById('modal-container').innerHTML = ''}
+function closeModal(){
+  document.getElementById('modal-container').innerHTML = '';
+  window._modalAsseg = null;
+}
 
 async function saveClient(id){
   const empresa = document.getElementById('m-empresa').value.trim();
@@ -3608,32 +3711,155 @@ async function deleteTasca(id){
   updateNavBadges();
 }
 
-async function saveAsseguradora(){
-  const nom = document.getElementById('m-nom').value.trim();
-  if(!nom){toast('Nom obligatori','error');return}
-  const data = {
+// ============================================================
+// ASSEGURADORES — gestió dinàmica de contactes i camps lliures
+// ============================================================
+
+const TIPUS_CONTACTE = [
+  ['comercial','💼 Comercial'],
+  ['sinistres','⚠️ Sinistres'],
+  ['admin','🧾 Administratiu'],
+  ['informatic','💻 Informàtic'],
+  ['direccio','👔 Direcció'],
+  ['altre','👤 Altre']
+];
+
+function renderContactesAsseg(){
+  const cont = document.getElementById('m-asseg-contactes-list');
+  if(!cont || !window._modalAsseg) return;
+  const contactes = window._modalAsseg.contactes;
+  cont.innerHTML = contactes.map((c, i) => {
+    const opts = TIPUS_CONTACTE.map(([v,l]) => `<option value="${v}" ${c.tipus===v?'selected':''}>${l}</option>`).join('');
+    return `
+      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;background:var(--surface-2)">
+        <div class="form-grid">
+          <div class="form-row"><label>Tipus</label><select onchange="updateContacteAsseg(${i},'tipus',this.value)">${opts}</select></div>
+          <div class="form-row"><label>Nom</label><input type="text" value="${escapeHtml(c.nom||'')}" oninput="updateContacteAsseg(${i},'nom',this.value)" placeholder="Nom de la persona"></div>
+        </div>
+        <div class="form-row"><label>Càrrec</label><input type="text" value="${escapeHtml(c.carrec||'')}" oninput="updateContacteAsseg(${i},'carrec',this.value)" placeholder="Responsable comarca Catalunya..."></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Telèfon</label><input type="tel" value="${escapeHtml(c.telefon||'')}" oninput="updateContacteAsseg(${i},'telefon',this.value)"></div>
+          <div class="form-row"><label>Email</label><input type="email" value="${escapeHtml(c.email||'')}" oninput="updateContacteAsseg(${i},'email',this.value)"></div>
+        </div>
+        <div class="form-row"><label>Notes</label><input type="text" value="${escapeHtml(c.notes||'')}" oninput="updateContacteAsseg(${i},'notes',this.value)" placeholder="Particularitats..."></div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-sm" type="button" onclick="removeContacteAsseg(${i})" style="color:var(--danger)">🗑 Treure contacte</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addContacteAsseg(){
+  if(!window._modalAsseg) window._modalAsseg = {contactes:[], camps:[]};
+  window._modalAsseg.contactes.push({tipus:'sinistres', nom:'', carrec:'', telefon:'', email:'', notes:''});
+  renderContactesAsseg();
+}
+window.addContacteAsseg = addContacteAsseg;
+
+function updateContacteAsseg(i, field, value){
+  if(!window._modalAsseg) return;
+  window._modalAsseg.contactes[i][field] = value;
+}
+window.updateContacteAsseg = updateContacteAsseg;
+
+function removeContacteAsseg(i){
+  if(!window._modalAsseg) return;
+  window._modalAsseg.contactes.splice(i,1);
+  renderContactesAsseg();
+}
+window.removeContacteAsseg = removeContacteAsseg;
+
+function renderCampsAsseg(){
+  const cont = document.getElementById('m-asseg-camps-list');
+  if(!cont || !window._modalAsseg) return;
+  const camps = window._modalAsseg.camps;
+  if(camps.length === 0){
+    cont.innerHTML = '<div style="font-size:11px;color:var(--text-3);padding:4px 0;font-style:italic">Cap camp extra. Afegeix-ne si aquesta companyia té dades particulars.</div>';
+    return;
+  }
+  cont.innerHTML = camps.map((c, i) => `
+    <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+      <input type="text" value="${escapeHtml(c.k||'')}" oninput="updateCampAsseg(${i},'k',this.value)" placeholder="Nom del camp" style="flex:0 0 40%">
+      <input type="text" value="${escapeHtml(c.v||'')}" oninput="updateCampAsseg(${i},'v',this.value)" placeholder="Valor" style="flex:1">
+      <button class="btn btn-sm" type="button" onclick="removeCampAsseg(${i})" style="color:var(--danger)">🗑</button>
+    </div>
+  `).join('');
+}
+
+function addCampAsseg(){
+  if(!window._modalAsseg) window._modalAsseg = {contactes:[], camps:[]};
+  window._modalAsseg.camps.push({k:'', v:''});
+  renderCampsAsseg();
+}
+window.addCampAsseg = addCampAsseg;
+
+function updateCampAsseg(i, field, value){
+  if(!window._modalAsseg) return;
+  window._modalAsseg.camps[i][field] = value;
+}
+window.updateCampAsseg = updateCampAsseg;
+
+function removeCampAsseg(i){
+  if(!window._modalAsseg) return;
+  window._modalAsseg.camps.splice(i,1);
+  renderCampsAsseg();
+}
+window.removeCampAsseg = removeCampAsseg;
+
+async function saveAsseguradora(idx){
+  const nom = document.getElementById('m-asseg-nom').value.trim();
+  if(!nom){ toast('Nom obligatori','error'); return; }
+
+  const contactes = (window._modalAsseg?.contactes || [])
+    .filter(c => c.tipus && (c.nom || c.telefon || c.email || c.carrec || c.notes)); // descartem buits
+
+  const campsArr = (window._modalAsseg?.camps || []).filter(c => c.k.trim());
+  const camps_extra = {};
+  campsArr.forEach(c => { camps_extra[c.k.trim()] = c.v || ''; });
+
+  const payload = {
     nom,
-    rams:document.getElementById('m-rams').value.split(',').map(s=>s.trim()).filter(Boolean),
-    contacteIntern:document.getElementById('m-contacte').value,
-    email:document.getElementById('m-email').value,
-    telefon:document.getElementById('m-telefon').value,
-    notes:document.getElementById('m-notes').value
+    codi_mediador: document.getElementById('m-asseg-codi').value.trim() || null,
+    url_portal: document.getElementById('m-asseg-url').value.trim() || null,
+    rams: document.getElementById('m-asseg-rams').value.split(',').map(s=>s.trim()).filter(Boolean),
+    contactes,
+    camps_extra,
+    notes: document.getElementById('m-asseg-notes').value.trim() || null
   };
-  const inserted = await dbInsert('asseguradores', data);
-  if(inserted) state.asseguradores.unshift(inserted);
-  closeModal();
-  renderAsseguradores();
-  toast('Asseguradora guardada');
+
+  try{
+    if(idx !== null && idx !== undefined){
+      // Edit
+      const existing = state.asseguradores[idx];
+      if(!existing){ toast('Asseguradora no trobada','error'); return; }
+      const {data, error} = await sb.from('asseguradores').update(payload).eq('id', existing.id).select().single();
+      if(error) throw error;
+      state.asseguradores[idx] = data;
+    } else {
+      // Nou
+      const inserted = await dbInsert('asseguradores', payload);
+      if(inserted) state.asseguradores.unshift(inserted);
+    }
+    window._modalAsseg = null;
+    closeModal();
+    renderAsseguradores();
+    toast('Asseguradora guardada');
+  }catch(e){
+    console.error('saveAsseguradora:', e);
+    toast('Error: '+(e.message||e),'error');
+  }
 }
 
 async function deleteAsseguradora(idx){
-  if(!confirm('Esborrar?'))return;
+  if(!confirm('Esborrar aquesta asseguradora? Es perdran tots els contactes i camps associats.'))return;
   const a = state.asseguradores[idx];
   if(!a) return;
   const ok = await dbDelete('asseguradores', a.id);
   if(!ok) return;
   state.asseguradores.splice(idx,1);
   renderAsseguradores();
+  toast('Esborrat');
 }
 
 async function deletePost(id){
