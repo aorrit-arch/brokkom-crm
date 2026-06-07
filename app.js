@@ -1,27 +1,23 @@
 // ==================================================================
 // BROKKOM CRM · app.js
-// Base: auth, càrrega de dades, helpers globals
+// Base: auth, càrrega de dades, helpers
 // ==================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Config Supabase (clau pública, protegida per RLS)
 const SUPABASE_URL = 'https://ovzvdmxbuoysckprjlej.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_s4ojmx3-jLvBd3gCRtPdyQ_dPS100N9';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabase;
 
 // ==================================================================
-// Estat global
+// State
 // ==================================================================
 window.state = {
-  // Sessió i perfil
-  user: null,           // auth user (session.user)
-  mediador: null,       // registre a taula mediadors (incl. rol)
-  profile: null,        // ALIAS de mediador (per compatibilitat amb codi vell)
-  config: null,         // user_config
-
-  // Dades
+  user: null,
+  mediador: null,
+  profile: null,
+  config: null,
   clients: [],
   ofertes: [],
   consolidats: [],
@@ -37,12 +33,8 @@ window.state = {
   esborranys: [],
   vinculacions: [],
   comparticions: [],
-
-  // Llistat d'usuaris/mediadors (per a noms, avatars, comparticions)
-  usuaris: [],          // alias antic
-  mediadors: [],        // nom nou (mateix contingut)
-
-  // UI
+  usuaris: [],
+  mediadors: [],
   currentTab: 'dashboard'
 };
 
@@ -66,11 +58,9 @@ const ESTATS_PERDUDA = 'Tancada perduda';
 window.ESTATS_PIPELINE = ESTATS_PIPELINE;
 window.ESTATS_PERDUDA = ESTATS_PERDUDA;
 
-// Sectors i origens comuns
 window.SECTORS = ['Transport mercaderies','Logística','Transport viatgers','ADR / mercaderies perilloses','Construcció','Comerç','Hostaleria','Serveis professionals','Indústria','Sanitat','Educació','Tecnologia','Altres'];
 window.ORIGENS = ['Recomanació','Campanya','Web','LinkedIn','Cold call','Networking','ERP existent','Reactivació ex-client','Altres'];
 
-// Paleta avatars (per a generació determinista)
 const AVATAR_COLORS = ['#2B2926','#5F5E5A','#908E89','#0F766E','#4A6FA5','#B07B3E','#5B4B9C','#2C7A5E'];
 
 // ==================================================================
@@ -96,35 +86,32 @@ window.toast = (msg, type = 'success') => {
   const t = document.createElement('div');
   t.className = 'toast ' + type;
   t.textContent = msg;
-  document.getElementById('toast-container').appendChild(t);
+  const container = document.getElementById('toast-container');
+  if (container) container.appendChild(t);
   setTimeout(() => t.remove(), 4000);
 };
 
 window.isAdmin = () => state.mediador?.rol === 'admin';
 
-// Genera inicials d'un nom o email
 window.getInitials = (nomOrEmail) => {
   if (!nomOrEmail) return '?';
-  const s = nomOrEmail.split('@')[0];
+  const s = String(nomOrEmail).split('@')[0];
   const parts = s.split(/[\s._-]+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return s.slice(0, 2).toUpperCase();
 };
 
-// Color d'avatar determinista
 window.getAvatarColor = (id) => {
   if (!id) return AVATAR_COLORS[0];
   const hash = String(id).split('').reduce((h, c) => h + c.charCodeAt(0), 0);
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 };
 
-// Cerca el mediador per user_id
 window.getMediadorByUserId = (userId) => {
   if (!userId) return null;
   return state.mediadors.find(m => m.user_id === userId) || null;
 };
 
-// HTML d'avatar (per a renders)
 window.renderAvatar = (userId, size = 'sm') => {
   const m = getMediadorByUserId(userId);
   const nom = m?.nom || m?.email || '?';
@@ -133,19 +120,17 @@ window.renderAvatar = (userId, size = 'sm') => {
   return `<span class="avatar ${size}" style="background:${color}" title="${nom}">${initials}</span>`;
 };
 
-// Comprovar si l'usuari actual pot editar un recurs (propietari, admin, o editor compartit)
 window.canEditClient = (clientId) => {
   if (isAdmin()) return true;
   const c = state.clients.find(x => x.id === clientId);
   if (!c) return false;
-  if (c.user_id === state.user.id) return true;
+  if (c.user_id === state.user?.id) return true;
   return state.comparticions.some(s =>
     s.recurs_tipus === 'client' && s.recurs_id === clientId &&
-    s.compartit_amb_id === state.user.id && s.permis === 'editor'
+    s.compartit_amb_id === state.user?.id && s.permis === 'editor'
   );
 };
 
-// Obtenir els mediadors que tenen accés a un recurs
 window.getSharedWith = (recursTipus, recursId) => {
   return state.comparticions
     .filter(s => s.recurs_tipus === recursTipus && s.recurs_id === recursId)
@@ -156,41 +141,34 @@ window.getSharedWith = (recursTipus, recursId) => {
 };
 
 // ==================================================================
-// API call amb retry (per a errors 429/529 d'Anthropic)
+// API call amb retry per a errors 429/529
 // ==================================================================
 window.apiCallWithRetry = async (url, options, maxRetries = 3) => {
-  const delays = [2000, 5000, 10000]; // backoff: 2s, 5s, 10s
+  const delays = [2000, 5000, 10000];
   let lastError = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, options);
-
-      // 429 (rate limit) o 529 (overloaded) → reintentar
       if ((response.status === 429 || response.status === 529) && attempt < maxRetries) {
         const delay = delays[attempt] || 10000;
         console.warn(`API ${response.status}, reintentant en ${delay}ms (intent ${attempt + 1}/${maxRetries + 1})`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
-
       if (!response.ok) {
         const txt = await response.text();
         let parsedErr;
         try { parsedErr = JSON.parse(txt); } catch (e) {}
         const errMsg = parsedErr?.error?.message || txt;
-
-        // Errors finals 429/529 → missatge amistós
         if (response.status === 429 || response.status === 529) {
-          throw new Error("Els servidors d'IA estan saturats ara mateix. Torna a provar d'aquí a un minut.");
+          throw new Error("Els servidors d'IA estan saturats. Torna a provar en un moment.");
         }
         throw new Error(errMsg);
       }
-
       return response;
     } catch (err) {
       lastError = err;
-      // Si és un error de xarxa i ens queden intents, reintentar
       if (attempt < maxRetries && err.name === 'TypeError') {
         const delay = delays[attempt] || 10000;
         console.warn(`Error de xarxa, reintentant en ${delay}ms`);
@@ -204,7 +182,7 @@ window.apiCallWithRetry = async (url, options, maxRetries = 3) => {
 };
 
 // ==================================================================
-// Autenticació
+// Auth
 // ==================================================================
 window.switchAuthTab = (tab) => {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -245,18 +223,14 @@ window.doSignup = async (e) => {
     if (error) throw error;
     if (data.user) {
       await new Promise(r => setTimeout(r, 500));
-      // Inserir/actualitzar a mediadors (si el trigger no ho fa)
       const { data: existing } = await supabase.from('mediadors').select('id').eq('user_id', data.user.id).maybeSingle();
       if (!existing) {
         await supabase.from('mediadors').insert({
           user_id: data.user.id,
-          nom,
-          email,
+          nom, email,
           rol: 'agent',
           actiu: true
         });
-      } else {
-        await supabase.from('mediadors').update({ nom, email }).eq('user_id', data.user.id);
       }
     }
     toast('Compte creat! Inicia sessió');
@@ -290,59 +264,96 @@ window.doLogout = async () => {
 };
 
 // ==================================================================
-// Càrrega de dades
+// Carregar dades (robust — no bloqueja si manca el mediador)
 // ==================================================================
 async function loadMediador() {
-  // El registre del propi mediador (incloent rol)
-  const { data, error } = await supabase
-    .from('mediadors')
-    .select('*')
-    .eq('user_id', state.user.id)
-    .maybeSingle();
-  if (error) {
-    console.error('Error carregant mediador:', error);
-    throw error;
+  try {
+    const { data, error } = await supabase
+      .from('mediadors')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Error carregant mediador:', error);
+      // Fallback: crear un objecte mínim perquè l'app no es bloquegi
+      state.mediador = {
+        user_id: state.user.id,
+        email: state.user.email,
+        nom: state.user.email,
+        rol: 'agent',
+        actiu: true
+      };
+    } else if (!data) {
+      console.warn('Mediador no trobat per a user_id', state.user.id);
+      // Fallback també — possible problema de RLS o no creat encara
+      state.mediador = {
+        user_id: state.user.id,
+        email: state.user.email,
+        nom: state.user.email,
+        rol: 'agent',
+        actiu: true
+      };
+      toast("Sense perfil de mediador. Contacta l'administrador.", 'warning');
+    } else {
+      state.mediador = data;
+    }
+    state.profile = state.mediador;
+  } catch (err) {
+    console.error('Error fatal carregant mediador:', err);
+    state.mediador = {
+      user_id: state.user.id,
+      email: state.user.email,
+      nom: state.user.email,
+      rol: 'agent',
+      actiu: true
+    };
+    state.profile = state.mediador;
   }
-  if (!data) {
-    throw new Error("No s'ha trobat el teu perfil de mediador. Contacta l'administrador.");
-  }
-  state.mediador = data;
-  state.profile = data; // alias per compatibilitat amb codi vell
 }
 
 async function loadUserConfig() {
-  const { data, error } = await supabase
-    .from('user_config')
-    .select('*')
-    .eq('user_id', state.user.id)
-    .maybeSingle();
-  if (error && error.code !== 'PGRST116') console.warn('Config:', error);
-  state.config = data || {
-    mediadors: ['Brokkom'],
-    rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','RC Mediambiental','Mercaderies CMR/ICC','Pèrdua de beneficis','Ciber','Salut col·lectiva','Retribució flexible','Plans de pensions','Vida','Altres'],
-    model_fast: 'claude-haiku-4-5-20251001',
-    model_smart: 'claude-haiku-4-5-20251001',
-    llindar_contacte_dies: 21,
-    llindar_oferta_sense_resposta_dies: 14
-  };
+  try {
+    const { data, error } = await supabase
+      .from('user_config')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .maybeSingle();
+    if (error && error.code !== 'PGRST116') console.warn('Config:', error);
+    state.config = data || {
+      mediadors: ['Brokkom'],
+      rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','RC Mediambiental','Mercaderies CMR/ICC','Pèrdua de beneficis','Ciber','Salut col·lectiva','Retribució flexible','Plans de pensions','Vida','Altres'],
+      model_fast: 'claude-haiku-4-5-20251001',
+      model_smart: 'claude-haiku-4-5-20251001',
+      llindar_contacte_dies: 21,
+      llindar_oferta_sense_resposta_dies: 14
+    };
+  } catch (err) {
+    console.error('Error config:', err);
+    state.config = {
+      rams: ['Multiriscos','Vehicles','RC','Vida','Salut','Altres'],
+      model_fast: 'claude-haiku-4-5-20251001',
+      model_smart: 'claude-haiku-4-5-20251001'
+    };
+  }
 }
 
 async function loadAllData() {
   const fetchAll = async (table) => {
-    const { data, error } = await supabase.from(table).select('*');
-    if (error) {
-      console.warn(`Error loading ${table}:`, error.message);
+    try {
+      const { data, error } = await supabase.from(table).select('*');
+      if (error) {
+        console.warn(`Error loading ${table}:`, error.message);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.warn(`Error loading ${table}:`, err.message);
       return [];
     }
-    return data || [];
   };
 
-  const [
-    clients, ofertes, consolidats, seguiments, oportunitats,
-    venciments, tasques, asseguradores, posts,
-    inbox, notes, agenda, esborranys,
-    vinculacions, comparticions, mediadors
-  ] = await Promise.all([
+  const results = await Promise.all([
     fetchAll('clients'),
     fetchAll('ofertes'),
     fetchAll('consolidats'),
@@ -361,29 +372,33 @@ async function loadAllData() {
     fetchAll('mediadors')
   ]);
 
-  state.clients = clients;
-  state.ofertes = ofertes;
-  state.consolidats = consolidats;
-  state.seguiments = seguiments;
-  state.oportunitats = oportunitats;
-  state.venciments = venciments;
-  state.tasques = tasques;
-  state.asseguradores = asseguradores;
-  state.posts = posts;
-  state.inbox = inbox;
-  state.notes = notes;
-  state.agenda = agenda;
-  state.esborranys = esborranys;
-  state.vinculacions = vinculacions;
-  state.comparticions = comparticions;
-  state.mediadors = mediadors;
-  state.usuaris = mediadors; // alias
+  state.clients = results[0];
+  state.ofertes = results[1];
+  state.consolidats = results[2];
+  state.seguiments = results[3];
+  state.oportunitats = results[4];
+  state.venciments = results[5];
+  state.tasques = results[6];
+  state.asseguradores = results[7];
+  state.posts = results[8];
+  state.inbox = results[9];
+  state.notes = results[10];
+  state.agenda = results[11];
+  state.esborranys = results[12];
+  state.vinculacions = results[13];
+  state.comparticions = results[14];
+  state.mediadors = results[15];
+  state.usuaris = state.mediadors;
 }
 
 window.refreshData = async (only) => {
   const reload = async (table, key) => {
-    const { data } = await supabase.from(table).select('*');
-    state[key] = data || [];
+    try {
+      const { data } = await supabase.from(table).select('*');
+      state[key] = data || [];
+    } catch (err) {
+      console.warn('refresh ' + table + ':', err.message);
+    }
   };
   if (!only || only === 'clients') await reload('clients', 'clients');
   if (!only || only === 'ofertes') await reload('ofertes', 'ofertes');
@@ -411,52 +426,52 @@ window.refreshData = async (only) => {
 // Startup
 // ==================================================================
 async function startApp() {
-  document.getElementById('app-loading').classList.add('hidden');
-  document.getElementById('auth-page').classList.add('hidden');
-  document.getElementById('main-app').classList.remove('hidden');
-
-  // Pintat usuari al sidebar
-  const m = state.mediador;
-  const nomMostrar = m.nom || m.email;
-  const initials = getInitials(nomMostrar);
-  const avatarColor = getAvatarColor(m.user_id);
-
-  document.getElementById('user-info-block').innerHTML = `
-    <div class="user-avatar" style="background:${avatarColor}">${initials}</div>
-    <div class="user-info">
-      <div class="user-name">${nomMostrar}</div>
-      <div class="user-role">
-        <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
-      </div>
-    </div>
-    <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
-  `;
-
-  // Mostrar/amagar pestanyes d'admin
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.classList.toggle('hidden', !isAdmin());
-  });
-
-  // Carregar dades
   try {
-    await loadAllData();
-  } catch (err) {
-    toast('Error carregant dades: ' + err.message, 'error');
-  }
+    document.getElementById('app-loading').classList.add('hidden');
+    document.getElementById('auth-page').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
 
-  // Listener navegació
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const tab = el.dataset.tab;
-      if (tab) showTab(tab);
+    const m = state.mediador;
+    const nomMostrar = m?.nom || m?.email || 'Usuari';
+    const initials = getInitials(nomMostrar);
+    const avatarColor = getAvatarColor(m?.user_id || state.user?.id);
+
+    document.getElementById('user-info-block').innerHTML = `
+      <div class="user-avatar" style="background:${avatarColor}">${initials}</div>
+      <div class="user-info">
+        <div class="user-name">${nomMostrar}</div>
+        <div class="user-role">
+          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m?.rol || 'agent'}</span>
+        </div>
+      </div>
+      <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
+    `;
+
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.classList.toggle('hidden', !isAdmin());
     });
-  });
 
-  // Render inicial
-  if (typeof showTab === 'function') {
-    showTab('dashboard');
-  } else {
-    console.error('showTab no està definit — modules.js no s\'ha carregat');
+    await loadAllData();
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const tab = el.dataset.tab;
+        if (tab) showTab(tab);
+      });
+    });
+
+    if (typeof showTab === 'function') {
+      showTab('dashboard');
+    } else {
+      console.error('showTab no està definit — modules.js no carregat');
+      document.getElementById('tab-content').innerHTML = '<div class="empty-state">Error: modules.js no carregat</div>';
+    }
+  } catch (err) {
+    console.error('Error a startApp:', err);
+    toast('Error: ' + err.message, 'error');
+    document.getElementById('app-loading').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    document.getElementById('tab-content').innerHTML = '<div class="empty-state">Error carregant: ' + err.message + '</div>';
   }
 }
 
@@ -466,7 +481,6 @@ function showLogin() {
   document.getElementById('main-app').classList.add('hidden');
 }
 
-// Listener canvis d'autenticació
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session?.user) {
     state.user = session.user;
@@ -475,8 +489,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       await loadUserConfig();
       await startApp();
     } catch (err) {
+      console.error('Error en SIGNED_IN:', err);
       toast("Error en arrencar: " + err.message, 'error');
-      console.error(err);
     }
   } else if (event === 'SIGNED_OUT') {
     state.user = null;
@@ -486,21 +500,19 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// Verificar sessió inicial
 (async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    state.user = session.user;
-    try {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      state.user = session.user;
       await loadMediador();
       await loadUserConfig();
       await startApp();
-    } catch (err) {
-      console.error(err);
-      toast("Error d'inici: " + err.message, 'error');
+    } else {
       showLogin();
     }
-  } else {
+  } catch (err) {
+    console.error('Error inicial:', err);
     showLogin();
   }
 })();
