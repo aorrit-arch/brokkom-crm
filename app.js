@@ -1,6 +1,5 @@
 // ==================================================================
-// BROKKOM CRM · app.js v3 — AUTOSUFICIENT
-// Funciona sense modules.js ni modals.js (per ara)
+// BROKKOM CRM · app.js v4 — DIAGNÒSTIC + TIMEOUTS
 // ==================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -10,7 +9,19 @@ const SUPABASE_ANON_KEY = 'sb_publishable_s4ojmx3-jLvBd3gCRtPdyQ_dPS100N9';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabase;
 
-console.log('🚀 app.js carregat — Brokkom CRM v3');
+console.log('🚀 [1] app.js v4 carregat');
+
+// Funció helper: query amb timeout
+async function withTimeout(promise, ms, label) {
+  console.log(`⏱️ [TIMEOUT] Iniciant: ${label} (timeout: ${ms}ms)`);
+  return Promise.race([
+    promise.then(r => { console.log(`✅ [TIMEOUT] Acabat: ${label}`); return r; }),
+    new Promise((_, reject) => setTimeout(() => {
+      console.error(`⏰ [TIMEOUT] FALLAT: ${label} (després de ${ms}ms)`);
+      reject(new Error(`Timeout: ${label}`));
+    }, ms))
+  ]);
+}
 
 // State global
 window.state = {
@@ -58,15 +69,12 @@ window.toast = (msg, type = 'success') => {
   setTimeout(() => t.remove(), 4000);
 };
 
-// ==================================================================
 // AUTH
-// ==================================================================
 window.switchAuthTab = (tab) => {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
   document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
 };
-
 window.doLogin = async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btn-login');
@@ -84,7 +92,6 @@ window.doLogin = async (e) => {
     btn.textContent = 'Iniciar sessió';
   }
 };
-
 window.doSignup = async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btn-signup');
@@ -96,18 +103,8 @@ window.doSignup = async (e) => {
     const password = document.getElementById('signup-password').value;
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { nom } } });
     if (error) throw error;
-    if (data.user) {
-      await new Promise(r => setTimeout(r, 500));
-      const { data: existing } = await supabase.from('mediadors').select('id').eq('user_id', data.user.id).maybeSingle();
-      if (!existing) {
-        await supabase.from('mediadors').insert({
-          user_id: data.user.id, nom, email, rol: 'agent', actiu: true
-        });
-      }
-    }
     toast('Compte creat! Inicia sessió');
     switchAuthTab('login');
-    document.getElementById('login-email').value = email;
   } catch (err) {
     toast('Error: ' + err.message, 'error');
   } finally {
@@ -115,7 +112,6 @@ window.doSignup = async (e) => {
     btn.textContent = 'Crear compte';
   }
 };
-
 window.recoverPassword = async (e) => {
   if (e?.preventDefault) e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
@@ -127,92 +123,90 @@ window.recoverPassword = async (e) => {
     toast('Error: ' + err.message, 'error');
   }
 };
-
 window.doLogout = async () => {
   if (!confirm('Tancar sessió?')) return;
   await supabase.auth.signOut();
   location.reload();
 };
 
-// ==================================================================
-// CÀRREGA DE DADES (robust)
-// ==================================================================
+// CARREGAR MEDIADOR — amb timeout obligatori
 async function loadMediador() {
-  console.log('📥 Carregant mediador per a user_id:', state.user.id);
+  console.log('📥 [2] loadMediador() iniciat per user_id:', state.user.id);
+
+  // Fallback per defecte — si tot falla, l'app segueix
+  state.mediador = {
+    user_id: state.user.id,
+    email: state.user.email,
+    nom: state.user.email,
+    rol: 'agent',
+    actiu: true
+  };
+  state.profile = state.mediador;
+
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('mediadors')
       .select('*')
       .eq('user_id', state.user.id)
       .maybeSingle();
 
-    if (error) {
-      console.warn('⚠️ Error mediador:', error.message);
-    }
+    const result = await withTimeout(query, 5000, 'consulta mediadors');
+    const { data, error } = result;
 
-    state.mediador = data || {
-      user_id: state.user.id,
-      email: state.user.email,
-      nom: state.user.email,
-      rol: 'agent',
-      actiu: true
-    };
-    state.profile = state.mediador;
-    console.log('✅ Mediador carregat:', state.mediador.nom, '· rol:', state.mediador.rol);
+    if (error) {
+      console.warn('⚠️ [2] Error consulta mediadors:', error);
+    } else if (data) {
+      state.mediador = data;
+      state.profile = data;
+      console.log('✅ [2] Mediador trobat:', data.nom, '· rol:', data.rol);
+    } else {
+      console.warn('⚠️ [2] Mediador no trobat — fallback agent');
+    }
   } catch (err) {
-    console.error('❌ Error fatal mediador:', err);
-    state.mediador = {
-      user_id: state.user.id,
-      email: state.user.email,
-      nom: state.user.email,
-      rol: 'agent',
-      actiu: true
-    };
-    state.profile = state.mediador;
+    console.error('❌ [2] Excepció loadMediador:', err.message);
+    console.warn('🔧 [2] Continuant amb mediador fictici (rol: agent)');
   }
 }
 
 async function loadUserConfig() {
+  console.log('📥 [3] loadUserConfig() iniciat');
+  state.config = {
+    rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','Mercaderies CMR/ICC','Ciber','Salut col·lectiva','Vida','Altres'],
+    model_fast: 'claude-haiku-4-5-20251001',
+    model_smart: 'claude-haiku-4-5-20251001'
+  };
   try {
-    const { data } = await supabase
-      .from('user_config').select('*')
-      .eq('user_id', state.user.id).maybeSingle();
-    state.config = data || {
-      rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','Mercaderies CMR/ICC','Ciber','Salut col·lectiva','Vida','Altres'],
-      model_fast: 'claude-haiku-4-5-20251001',
-      model_smart: 'claude-haiku-4-5-20251001'
-    };
+    const query = supabase.from('user_config').select('*').eq('user_id', state.user.id).maybeSingle();
+    const { data } = await withTimeout(query, 3000, 'consulta user_config');
+    if (data) state.config = { ...state.config, ...data };
+    console.log('✅ [3] Config carregat');
   } catch (err) {
-    console.warn('Config error:', err.message);
-    state.config = { rams: ['Multiriscos','Vehicles','Vida','Altres'], model_fast: 'claude-haiku-4-5-20251001', model_smart: 'claude-haiku-4-5-20251001' };
+    console.warn('⚠️ [3] user_config:', err.message, '— usant defaults');
   }
 }
 
 async function loadAllData() {
-  console.log('📥 Carregant totes les dades...');
+  console.log('📥 [4] loadAllData() iniciat');
   const fetchAll = async (table) => {
     try {
-      const { data, error } = await supabase.from(table).select('*');
+      const query = supabase.from(table).select('*');
+      const { data, error } = await withTimeout(query, 5000, `select ${table}`);
       if (error) {
-        console.warn(`⚠️ ${table}:`, error.message);
+        console.warn(`⚠️ [4] ${table} error:`, error.message);
         return [];
       }
       return data || [];
     } catch (err) {
-      console.warn(`⚠️ ${table}:`, err.message);
+      console.warn(`⚠️ [4] ${table} timeout o error:`, err.message);
       return [];
     }
   };
-
   const tables = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox_items','notes','agenda_events','esborranys','vinculacions','comparticions','mediadors'];
   const stateKeys = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox','notes','agenda','esborranys','vinculacions','comparticions','mediadors'];
-
   const results = await Promise.all(tables.map(t => fetchAll(t)));
-  tables.forEach((t, i) => {
-    state[stateKeys[i]] = results[i];
-  });
+  tables.forEach((t, i) => { state[stateKeys[i]] = results[i]; });
   state.usuaris = state.mediadors;
-  console.log('✅ Dades carregades:', tables.map((t,i) => `${t}:${results[i].length}`).join(' · '));
+  console.log('✅ [4] Dades:', tables.map((t,i) => `${t}:${results[i].length}`).join(' '));
 }
 
 window.refreshData = async (only) => {
@@ -225,9 +219,14 @@ window.refreshData = async (only) => {
     comparticions: 'comparticions', mediadors: 'mediadors'
   };
   if (only && map[only]) {
-    const { data } = await supabase.from(map[only]).select('*');
-    state[only] = data || [];
-    if (only === 'mediadors') state.usuaris = state.mediadors;
+    try {
+      const query = supabase.from(map[only]).select('*');
+      const { data } = await withTimeout(query, 5000, `refresh ${only}`);
+      state[only] = data || [];
+      if (only === 'mediadors') state.usuaris = state.mediadors;
+    } catch (err) {
+      console.warn('refresh error:', err.message);
+    }
   } else {
     await loadAllData();
   }
@@ -235,9 +234,6 @@ window.refreshData = async (only) => {
   if (typeof renderCurrentTab === 'function') renderCurrentTab();
 };
 
-// ==================================================================
-// NAVEGACIÓ I RENDER BÀSIC (autosuficient)
-// ==================================================================
 window.updateNavBadges = () => {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('nav-clients', state.clients.length);
@@ -267,8 +263,6 @@ window.renderCurrentTab = () => {
   const c = document.getElementById('tab-content');
   if (!c) return;
   c.innerHTML = '';
-
-  // Si modules.js està carregat i té el render, l'usem
   const renderers = {
     dashboard: window.renderDashboard,
     clients: window.renderClients,
@@ -288,81 +282,56 @@ window.renderCurrentTab = () => {
     agenda: window.renderAgenda,
     esborranys: window.renderEsborranys
   };
-
   if (typeof renderers[tab] === 'function') {
-    try {
-      renderers[tab]();
-      return;
-    } catch (err) {
-      console.error(`Error render ${tab}:`, err);
-    }
+    try { renderers[tab](); return; }
+    catch (err) { console.error(`Render ${tab}:`, err); }
   }
-
-  // Fallback: render bàsic intern
   renderBasicTab(tab);
 };
 
-// Render bàsic per quan modules.js falla o no hi és
 function renderBasicTab(tab) {
   const c = document.getElementById('tab-content');
   const titulars = {
     dashboard: ['🏠 Tauler', "Resum comercial d'avui"],
-    clients: ['👥 Clients', `${state.clients.length} clients a la cartera`],
+    clients: ['👥 Clients', `${state.clients.length} clients`],
     pipeline: ['🎯 Pipeline', "Ofertes actives"],
-    consolidats: ['🏆 Consolidats', "Tancaments guanyats"],
-    seguiments: ['📞 Seguiments', "Historial d'interaccions"],
-    oportunitats: ['💡 Oportunitats', "Cross-selling i upselling"],
-    venciments: ['📆 Venciments', "Sistema 90/30/7"],
-    tasques: ['✓ Tasques', "Pendents i fetes"],
+    consolidats: ['🏆 Consolidats', "Tancaments"],
+    seguiments: ['📞 Seguiments', "Interaccions"],
+    oportunitats: ['💡 Oportunitats', "Cross-selling"],
+    venciments: ['📆 Venciments', "90/30/7"],
+    tasques: ['✓ Tasques', "Pendents"],
     asseguradores: ['🛡️ Asseguradores', "Catàleg"],
-    comunicacio: ['📰 Posts LinkedIn', "Calendari editorial"],
-    usuaris: ['👤 Usuaris', "Mediadors registrats"],
-    ia: ['🤖 IA assistent', "Processament intel·ligent"],
-    config: ['⚙️ Configuració', "Preferències i dades"],
-    inbox: ['📥 Bústia', "Captura ràpida"],
-    notes: ['💭 Notes', "Idees i comentaris"],
+    comunicacio: ['📰 Posts', "LinkedIn"],
+    usuaris: ['👤 Usuaris', "Mediadors"],
+    ia: ['🤖 IA', "Assistent"],
+    config: ['⚙️ Configuració', "Preferències"],
+    inbox: ['📥 Bústia', "Captura"],
+    notes: ['💭 Notes', "Idees"],
     agenda: ['📅 Agenda', "Esdeveniments"],
     esborranys: ['📝 Esborranys', "A mig fer"]
   };
   const [tit, sub] = titulars[tab] || [tab, ''];
-
   let preview = '';
   if (tab === 'dashboard') {
     const ofertesObertes = state.ofertes.filter(o => !['Tancada guanyada','Tancada perduda'].includes(o.estat));
+    const now = new Date();
     const tancMes = state.consolidats.filter(c => {
       const d = new Date(c.data_tancament);
-      const now = new Date();
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
     preview = `
       <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">Pipeline</div>
-          <div class="metric-value">${ofertesObertes.length}</div>
-          <div class="metric-sub">ofertes obertes</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Tancaments mes</div>
-          <div class="metric-value">${tancMes.length}</div>
-          <div class="metric-sub">guanyats</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Clients</div>
-          <div class="metric-value">${state.clients.length}</div>
-          <div class="metric-sub">a la cartera</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Oportunitats</div>
-          <div class="metric-value">${state.oportunitats.filter(o => o.estat !== 'Descartada').length}</div>
-          <div class="metric-sub">detectades</div>
-        </div>
+        <div class="metric"><div class="metric-label">Pipeline</div><div class="metric-value">${ofertesObertes.length}</div><div class="metric-sub">ofertes obertes</div></div>
+        <div class="metric"><div class="metric-label">Tancaments mes</div><div class="metric-value">${tancMes.length}</div><div class="metric-sub">guanyats</div></div>
+        <div class="metric"><div class="metric-label">Clients</div><div class="metric-value">${state.clients.length}</div><div class="metric-sub">a la cartera</div></div>
+        <div class="metric"><div class="metric-label">Oportunitats</div><div class="metric-value">${state.oportunitats.filter(o => o.estat !== 'Descartada').length}</div><div class="metric-sub">detectades</div></div>
       </div>
     `;
   } else if (tab === 'clients' && state.clients.length > 0) {
     preview = `
       <div class="card">
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Últims clients afegits:</div>
-        ${state.clients.slice(0, 10).map(c => `
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Clients de la cartera:</div>
+        ${state.clients.slice(0, 20).map(c => `
           <div style="padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
             <span style="font-weight:500">${c.empresa || c.nom || '?'}</span>
             <span style="color:var(--text-3);font-size:11px">${c.cif || c.email || ''}</span>
@@ -376,35 +345,21 @@ function renderBasicTab(tab) {
         <table class="table">
           <thead><tr><th>Nom</th><th>Email</th><th>Rol</th><th>Actiu</th></tr></thead>
           <tbody>${state.mediadors.map(u => `
-            <tr>
-              <td><strong>${u.nom || '—'}</strong></td>
-              <td>${u.email}</td>
-              <td><span class="role-badge ${u.rol === 'admin' ? 'role-admin' : 'role-agent'}">${u.rol}</span></td>
-              <td>${u.actiu ? '✓' : '✗'}</td>
-            </tr>
+            <tr><td><strong>${u.nom || '—'}</strong></td><td>${u.email}</td><td><span class="role-badge ${u.rol === 'admin' ? 'role-admin' : 'role-agent'}">${u.rol}</span></td><td>${u.actiu ? '✓' : '✗'}</td></tr>
           `).join('')}</tbody>
         </table>
       </div>
     `;
   }
-
   c.innerHTML = `
-    <div class="topbar">
-      <div>
-        <div class="page-title">${tit}</div>
-        <div class="page-sub">${sub}</div>
-      </div>
-    </div>
+    <div class="topbar"><div><div class="page-title">${tit}</div><div class="page-sub">${sub}</div></div></div>
     ${preview}
-    ${!preview ? `<div class="card"><div class="empty-state"><div class="empty-icon">🚧</div>Aquesta secció està en construcció<br><br><span style="font-size:11px;color:var(--text-3)">L'estètica nova s'aplicarà al següent pas.<br>De moment podeu veure el tauler i clients funcionant.</span></div></div>` : ''}
+    ${!preview ? `<div class="card"><div class="empty-state"><div class="empty-icon">🚧</div>En construcció</div></div>` : ''}
   `;
 }
 
-// ==================================================================
-// STARTUP
-// ==================================================================
 async function startApp() {
-  console.log('🚀 startApp iniciat');
+  console.log('🚀 [5] startApp() iniciat');
   try {
     document.getElementById('app-loading').classList.add('hidden');
     document.getElementById('auth-page').classList.add('hidden');
@@ -429,7 +384,16 @@ async function startApp() {
       el.classList.toggle('hidden', !isAdmin());
     });
 
-    await loadAllData();
+    console.log('🎨 [5] UI base pintada, ara carregant dades...');
+
+    // Carregar dades en paral·lel (no bloqueja UI inicial)
+    loadAllData().then(() => {
+      console.log('🎉 [6] Dades carregades, refrescant tab');
+      if (state.currentTab) renderCurrentTab();
+      updateNavBadges();
+    }).catch(err => {
+      console.error('⚠️ loadAllData error (no bloqueja):', err);
+    });
 
     document.querySelectorAll('.nav-item').forEach(el => {
       el.addEventListener('click', () => {
@@ -439,25 +403,18 @@ async function startApp() {
     });
 
     showTab('dashboard');
-    console.log('✅ App iniciada correctament');
+    console.log('✅ [5] startApp acabat (dades carregant en segon pla)');
   } catch (err) {
-    console.error('❌ Error startApp:', err);
+    console.error('❌ [5] Error startApp:', err);
     document.getElementById('app-loading').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
-    document.getElementById('tab-content').innerHTML = `
-      <div class="card">
-        <div class="empty-state">
-          <div class="empty-icon">⚠️</div>
-          <strong>Error al carregar:</strong><br>
-          ${err.message}<br><br>
-          <button class="btn btn-primary" onclick="location.reload()">Tornar a provar</button>
-        </div>
-      </div>
-    `;
+    const c = document.getElementById('tab-content');
+    if (c) c.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><strong>Error:</strong><br>${err.message}<br><br><button class="btn btn-primary" onclick="location.reload()">Tornar a provar</button></div></div>`;
   }
 }
 
 function showLogin() {
+  console.log('🔓 [-] showLogin()');
   document.getElementById('app-loading').classList.add('hidden');
   document.getElementById('auth-page').classList.remove('hidden');
   document.getElementById('main-app').classList.add('hidden');
@@ -485,20 +442,38 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 // Init
 (async () => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('🔍 [INIT] Verificant sessió...');
+    const sessionResult = await withTimeout(supabase.auth.getSession(), 5000, 'getSession');
+    const session = sessionResult?.data?.session;
+
     if (session?.user) {
-      console.log('🔐 Sessió activa:', session.user.email);
+      console.log('🔐 [INIT] Sessió activa:', session.user.email);
       state.user = session.user;
+
+      // Carregar mediador i config (amb timeouts)
       await loadMediador();
       await loadUserConfig();
+
+      // Mostrar UI base RÀPIDAMENT (sense esperar dades)
       await startApp();
     } else {
-      console.log('🔐 Sense sessió, mostrant login');
+      console.log('🔐 [INIT] Sense sessió');
       showLogin();
     }
   } catch (err) {
-    console.error('❌ Error inicial:', err);
+    console.error('❌ [INIT] Error:', err.message);
     document.getElementById('app-loading').classList.add('hidden');
-    showLogin();
+
+    // Si arribem aquí amb sessió però sense poder carregar tot, anem cap a l'app igualment
+    if (state.user) {
+      console.warn('🆘 [INIT] Tot i l\'error, mostrem main app');
+      try {
+        await startApp();
+      } catch (e) {
+        showLogin();
+      }
+    } else {
+      showLogin();
+    }
   }
 })();
