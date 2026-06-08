@@ -206,6 +206,17 @@ async function loadAllData() {
   const results = await Promise.all(tables.map(t => fetchAll(t)));
   tables.forEach((t, i) => { state[stateKeys[i]] = results[i]; });
   state.usuaris = state.mediadors;
+
+  // FIX admin: actualitzar mediador amb dades reals si el fallback no és correcte
+  if (state.mediadors && state.user) {
+    const real = state.mediadors.find(m => m.user_id === state.user.id);
+    if (real) {
+      console.log('🔧 [4] Mediador real trobat:', real.nom, '· rol:', real.rol);
+      state.mediador = real;
+      state.profile = real;
+    }
+  }
+
   console.log('✅ [4] Dades:', tables.map((t,i) => `${t}:${results[i].length}`).join(' '));
 }
 
