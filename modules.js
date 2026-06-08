@@ -7,14 +7,14 @@ console.log('📦 modules.js carregat');
 // HELPERS COMUNS
 // ==================================================================
 function renderUserAvatar(userId, size='sm') {
-  const m = window.getMediadorByUserId ? getMediadorByUserId(userId) : null;
+  const m = window.getMediadorByUserId ? window.getMediadorByUserId(userId) : null;
   const nom = m?.nom || m?.email || '?';
-  const initials = window.getInitials ? getInitials(nom) : '?';
-  const color = window.getAvatarColor ? getAvatarColor(userId) : '#0F766E';
+  const initials = window.getInitials ? window.getInitials(nom) : '?';
+  const color = window.getAvatarColor ? window.getAvatarColor(userId) : '#0F766E';
   return `<span class="avatar ${size}" style="background:${color}" title="${nom}">${initials}</span>`;
 }
 function renderMediadorCell(userId) {
-  const m = getMediadorByUserId(userId);
+  const m = window.getMediadorByUserId(userId);
   const nom = m?.nom || (userId === state.user?.id ? 'Tu' : '?');
   return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)">
     ${renderUserAvatar(userId)}
@@ -22,7 +22,7 @@ function renderMediadorCell(userId) {
   </div>`;
 }
 function renderSharedAvatars(recursTipus, recursId) {
-  const shares = getSharedWith(recursTipus, recursId);
+  const shares = window.getSharedWith(recursTipus, recursId);
   if (shares.length === 0) return '';
   return `<div class="avatar-stack" style="margin-left:4px">
     ${shares.slice(0,3).map(s => renderUserAvatar(s.compartit_amb_id, 'sm')).join('')}
@@ -218,7 +218,7 @@ window.renderClients = function() {
       <button class="btn btn-pill ${tipusF==='empresa'?'active':''}" onclick="state._filterClientsTipus='empresa';renderClients()">🏢 Empreses</button>
       <button class="btn btn-pill ${tipusF==='particular'?'active':''}" onclick="state._filterClientsTipus='particular';renderClients()">👤 Particulars</button>
 
-      ${isAdmin() ? `
+      ${window.isAdmin() ? `
         <select onchange="state._filterClientsMediador=this.value;renderClients()" style="flex:0 1 auto">
           <option value="">Tots mediadors</option>
           ${state.mediadors.map(m => `<option value="${m.user_id}" ${mediadorF===m.user_id?'selected':''}>${m.nom||m.email}</option>`).join('')}
@@ -234,11 +234,11 @@ window.renderClients = function() {
       </div></div>
     ` : `
       <div class="db-table">
-        <div class="db-header" style="grid-template-columns:24px 2fr 1.2fr ${isAdmin()?'1fr':''} 90px 70px">
+        <div class="db-header" style="grid-template-columns:24px 2fr 1.2fr ${window.isAdmin()?'1fr':''} 90px 70px">
           <span></span>
           <span>Empresa / Nom</span>
           <span>Contacte</span>
-          ${isAdmin() ? '<span>Mediador</span>' : ''}
+          ${window.isAdmin() ? '<span>Mediador</span>' : ''}
           <span>Tipus</span>
           <span>Estat</span>
         </div>
@@ -253,7 +253,7 @@ window.renderClients = function() {
           const contacteVal = c.tipus === 'particular' ? (c.email || c.telefon || '') : (c.contacte || c.email || '—');
           const subVal = c.tipus === 'particular' ? (c.professio || '') : (c.cif || c.sector || '');
 
-          return `<div class="db-row" style="grid-template-columns:24px 2fr 1.2fr ${isAdmin()?'1fr':''} 90px 70px" onclick="state._clientObert='${c.id}';renderClients()">
+          return `<div class="db-row" style="grid-template-columns:24px 2fr 1.2fr ${window.isAdmin()?'1fr':''} 90px 70px" onclick="state._clientObert='${c.id}';renderClients()">
             <span>${ic}</span>
             <div>
               <div style="color:var(--text);display:flex;align-items:center;gap:6px">
@@ -264,7 +264,7 @@ window.renderClients = function() {
               <div style="font-size:11px;color:var(--text-3);margin-top:1px">${subVal}</div>
             </div>
             <div style="font-size:12px;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${contacteVal}</div>
-            ${isAdmin() ? `<div>${renderMediadorCell(c.user_id)}${renderSharedAvatars('client', c.id)}</div>` : ''}
+            ${window.isAdmin() ? `<div>${renderMediadorCell(c.user_id)}${renderSharedAvatars('client', c.id)}</div>` : ''}
             <span class="pill ${c.tipus==='particular'?'p-info':'p-gray'}" style="justify-self:start">${c.tipus==='particular'?'particular':'empresa'}</span>
             <span class="pill ${estatPill}" style="justify-self:start">${estat}</span>
           </div>`;
@@ -318,7 +318,7 @@ function renderFitxaClient(clientId) {
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
           <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface-2);border-radius:5px">
             ${renderUserAvatar(cli.user_id, 'sm')}
-            ${(getSharedWith('client', cli.id) || []).slice(0,3).map(s => renderUserAvatar(s.compartit_amb_id, 'sm')).join('')}
+            ${(window.getSharedWith('client', cli.id) || []).slice(0,3).map(s => renderUserAvatar(s.compartit_amb_id, 'sm')).join('')}
           </div>
           <button class="btn btn-sm" onclick="openShareModal('client','${cli.id}')">↗ Compartir</button>
           <button class="btn btn-sm" onclick="openModal('client',${JSON.stringify(cli).replace(/"/g,'&quot;')})">✏️ Editar</button>
@@ -352,8 +352,8 @@ function renderFitxaClient(clientId) {
           <div class="key">Mediador</div>
           <div class="val" style="display:flex;align-items:center;gap:6px">
             ${renderUserAvatar(cli.user_id, 'sm')}
-            ${(getMediadorByUserId(cli.user_id)?.nom || 'Tu')}
-            ${(getSharedWith('client', cli.id) || []).length > 0 ? `<span style="color:var(--text-3);font-size:11.5px;margin-left:6px">· compartit amb ${(getSharedWith('client', cli.id)||[]).map(s => s.mediador?.nom || '?').join(', ')}</span>` : ''}
+            ${(window.getMediadorByUserId(cli.user_id)?.nom || 'Tu')}
+            ${(window.getSharedWith('client', cli.id) || []).length > 0 ? `<span style="color:var(--text-3);font-size:11.5px;margin-left:6px">· compartit amb ${(window.getSharedWith('client', cli.id)||[]).map(s => s.mediador?.nom || '?').join(', ')}</span>` : ''}
           </div>
         </div>
 
@@ -461,7 +461,7 @@ function renderFitxaClient(clientId) {
               <div class="doc-list-item">
                 <div class="doc-list-meta" style="min-width:54px;font-size:11.5px;color:var(--text-3)">${fmtDate(s.data)}</div>
                 <div class="doc-list-main">
-                  <div class="doc-list-title">${renderUserAvatar(s.user_id,'sm')} <strong style="font-weight:500">${getMediadorByUserId(s.user_id)?.nom || 'Tu'}</strong> · ${s.canal||''}${s.resum ? ' — '+s.resum : ''}</div>
+                  <div class="doc-list-title">${renderUserAvatar(s.user_id,'sm')} <strong style="font-weight:500">${window.getMediadorByUserId(s.user_id)?.nom || 'Tu'}</strong> · ${s.canal||''}${s.resum ? ' — '+s.resum : ''}</div>
                   ${s.proper_pas ? `<div class="doc-list-sub" style="color:var(--info)">→ ${s.proper_pas}</div>` : ''}
                 </div>
               </div>
@@ -483,7 +483,7 @@ function renderFitxaClient(clientId) {
 
 // Edit notes inline
 window.editNotaInline = function(clientId) {
-  if (!canEditClient(clientId)) { toast('No tens permís per editar aquest client','error'); return; }
+  if (!window.canEditClient(clientId)) { toast('No tens permís per editar aquest client','error'); return; }
   const cli = state.clients.find(c => c.id === clientId);
   const block = document.getElementById('notes-block-' + clientId);
   if (!block) return;
@@ -703,7 +703,7 @@ window.renderConsolidats = function() {
     <div class="card" style="padding:0;overflow-x:auto">
       ${filtered.length === 0 ? '<div class="empty-state">Cap tancament encara</div>' :
         `<table class="table">
-          <thead><tr><th>Data</th><th>Empresa</th><th>Ram</th><th>Asseguradora</th><th>Núm. pòlissa</th>${isAdmin()?'<th>Mediador</th>':''}<th class="num">Prima</th></tr></thead>
+          <thead><tr><th>Data</th><th>Empresa</th><th>Ram</th><th>Asseguradora</th><th>Núm. pòlissa</th>${window.isAdmin()?'<th>Mediador</th>':''}<th class="num">Prima</th></tr></thead>
           <tbody>${filtered.sort((a,b) => new Date(b.data_tancament) - new Date(a.data_tancament)).map(co => `
             <tr>
               <td>${fmtDate(co.data_tancament)}</td>
@@ -711,7 +711,7 @@ window.renderConsolidats = function() {
               <td>${co.ram||'—'}</td>
               <td>${co.asseguradora||'—'}</td>
               <td style="font-family:monospace;font-size:12px">${co.num_polissa||'—'}</td>
-              ${isAdmin() ? `<td>${renderMediadorCell(co.user_id)}</td>` : ''}
+              ${window.isAdmin() ? `<td>${renderMediadorCell(co.user_id)}</td>` : ''}
               <td class="num"><strong>${fmtEur(co.prima_anual)}</strong></td>
             </tr>
           `).join('')}</tbody>
@@ -739,7 +739,7 @@ window.renderSeguiments = function() {
           <div class="card-row">
             <div>
               <div class="card-title">${cli ? getClientNom(cli) : '(client esborrat)'}</div>
-              <div class="card-sub">${fmtDate(s.data)} · ${s.canal||''} ${isAdmin() && s.user_id ? '· '+(getMediadorByUserId(s.user_id)?.nom||'?') : ''}</div>
+              <div class="card-sub">${fmtDate(s.data)} · ${s.canal||''} ${window.isAdmin() && s.user_id ? '· '+(window.getMediadorByUserId(s.user_id)?.nom||'?') : ''}</div>
             </div>
             <span class="pill p-gray">${s.canal||''}</span>
           </div>
@@ -846,7 +846,7 @@ window.renderTasques = function() {
               ${t.prioritat ? `<span class="pill ${t.prioritat==='Alta'?'p-danger':t.prioritat==='Mitjana'?'p-warning':'p-success'}">${t.prioritat}</span>` : ''}
               ${t.categoria ? `<span class="pill p-gray">${t.categoria}</span>` : ''}
               ${t.data_limit ? `<span class="pill p-info">${fmtDate(t.data_limit)}</span>` : ''}
-              ${isAdmin() && t.user_id ? renderUserAvatar(t.user_id,'sm') : ''}
+              ${window.isAdmin() && t.user_id ? renderUserAvatar(t.user_id,'sm') : ''}
             </div>
           </div>
           <button class="btn btn-sm" onclick="deleteRecord('tasques','${t.id}')" style="color:var(--danger)">🗑</button>
@@ -862,7 +862,7 @@ window.renderAsseguradores = function() {
   c.innerHTML = `
     <div class="topbar">
       <div><div class="page-title">Asseguradores</div><div class="page-sub">Catàleg Brokkom</div></div>
-      ${isAdmin() ? '<div class="topbar-actions"><button class="btn btn-primary" onclick="openModal(\'asseguradora\')">+ Nova</button></div>' : ''}
+      ${window.isAdmin() ? '<div class="topbar-actions"><button class="btn btn-primary" onclick="openModal(\'asseguradora\')">+ Nova</button></div>' : ''}
     </div>
     ${state.asseguradores.length === 0 ? '<div class="card"><div class="empty-state">Cap asseguradora</div></div>' :
       state.asseguradores.map(a => `
@@ -872,7 +872,7 @@ window.renderAsseguradores = function() {
               <div class="card-title">${a.nom}</div>
               ${a.contacte_intern ? `<div class="card-sub">${a.contacte_intern}${a.email?' · '+a.email:''}${a.telefon?' · '+a.telefon:''}</div>` : ''}
             </div>
-            ${isAdmin() ? `<button class="btn btn-sm" onclick="deleteRecord('asseguradores','${a.id}')" style="color:var(--danger)">🗑</button>` : ''}
+            ${window.isAdmin() ? `<button class="btn btn-sm" onclick="deleteRecord('asseguradores','${a.id}')" style="color:var(--danger)">🗑</button>` : ''}
           </div>
           ${(a.rams||[]).length>0 ? `<div style="margin-top:8px">${(a.rams||[]).map(r => `<span class="pill p-info" style="margin-right:4px">${r}</span>`).join('')}</div>` : ''}
           ${a.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">${a.notes}</div>` : ''}
@@ -897,7 +897,7 @@ window.renderUsuaris = function() {
             <td><strong>${u.nom||'—'}</strong></td>
             <td>${u.email}</td>
             <td>
-              ${isAdmin() && u.user_id !== state.user.id ? `
+              ${window.isAdmin() && u.user_id !== state.user.id ? `
                 <select onchange="canviarRol('${u.user_id}',this.value)" style="font-size:11px;padding:3px 6px">
                   <option value="agent" ${u.rol==='agent'?'selected':''}>agent</option>
                   <option value="admin" ${u.rol==='admin'?'selected':''}>admin</option>
@@ -1014,7 +1014,7 @@ Retorna NOMÉS el JSON.`;
 };
 
 window.callAnthropicAPI = async function(prompt, model) {
-  const response = await apiCallWithRetry('/api/ai-proxy', {
+  const response = await window.apiCallWithRetry('/api/ai-proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1087,7 +1087,7 @@ window.renderConfig = function() {
     <div class="section-title" style="margin-top:24px">Compte</div>
     <div class="card">
       <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">Connectat com a: <strong>${state.mediador?.email}</strong></div>
-      <div style="font-size:13px;color:var(--text-2);margin-bottom:14px">Rol: <span class="role-badge ${isAdmin()?'role-admin':'role-agent'}">${state.mediador?.rol||'agent'}</span></div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:14px">Rol: <span class="role-badge ${window.isAdmin()?'role-admin':'role-agent'}">${state.mediador?.rol||'agent'}</span></div>
       <button class="btn" onclick="doLogout()">Tancar sessió</button>
     </div>
 

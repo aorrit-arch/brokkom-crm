@@ -543,7 +543,7 @@ window.openShareModal = function(recursTipus, recursId) {
     ? (recurs.empresa || recurs.nom || '?')
     : recurs.titol;
 
-  const shares = getSharedWith(recursTipus, recursId);
+  const shares = window.getSharedWith(recursTipus, recursId);
   const sharedUserIds = new Set(shares.map(s => s.compartit_amb_id));
   sharedUserIds.add(recurs.user_id);
 
@@ -556,17 +556,17 @@ window.openShareModal = function(recursTipus, recursId) {
     <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;margin-bottom:8px">Amb accés</div>
 
     <div class="share-row">
-      ${window.renderAvatar ? renderAvatar(recurs.user_id,'md') : ''}
+      ${window.renderAvatar ? window.renderAvatar(recurs.user_id,'md') : ''}
       <div class="share-info">
-        <div class="share-name">${getMediadorByUserId(recurs.user_id)?.nom || 'Tu'}</div>
-        <div class="share-email">${getMediadorByUserId(recurs.user_id)?.email || ''}</div>
+        <div class="share-name">${window.getMediadorByUserId(recurs.user_id)?.nom || 'Tu'}</div>
+        <div class="share-email">${window.getMediadorByUserId(recurs.user_id)?.email || ''}</div>
       </div>
       <span style="font-size:11px;color:var(--text-3)">Propietari</span>
     </div>
 
     ${shares.map(s => `
       <div class="share-row">
-        ${window.renderAvatar ? renderAvatar(s.compartit_amb_id,'md') : ''}
+        ${window.renderAvatar ? window.renderAvatar(s.compartit_amb_id,'md') : ''}
         <div class="share-info">
           <div class="share-name">${s.mediador?.nom || s.mediador?.email || '?'}</div>
           <div class="share-email">${s.mediador?.email || ''}</div>
@@ -583,7 +583,7 @@ window.openShareModal = function(recursTipus, recursId) {
       <div style="font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;margin:14px 0 8px">Disponibles</div>
       ${altresMediadors.map(m => `
         <div class="share-row">
-          ${window.renderAvatar ? renderAvatar(m.user_id,'md') : ''}
+          ${window.renderAvatar ? window.renderAvatar(m.user_id,'md') : ''}
           <div class="share-info">
             <div class="share-name">${m.nom || m.email}</div>
             <div class="share-email">${m.email}</div>
