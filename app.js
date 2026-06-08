@@ -9,7 +9,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabase;
 
-console.log('🚀 [1] app.js v6 — JWT key');
+console.log('🚀 [1] app.js v7 — fix admin + no double exec');
 
 // Funció helper: query amb timeout
 async function withTimeout(promise, ms, label) {
@@ -150,7 +150,7 @@ async function loadMediador() {
       .eq('user_id', state.user.id)
       .maybeSingle();
 
-    const result = await withTimeout(query, 5000, 'consulta mediadors');
+    const result = await withTimeout(query, 8000, 'consulta mediadors');
     const { data, error } = result;
 
     if (error) {
@@ -389,6 +389,38 @@ async function startApp() {
     // Carregar dades en paral·lel (no bloqueja UI inicial)
     loadAllData().then(() => {
       console.log('🎉 [6] Dades carregades, refrescant tab');
+
+      // FIX admin: si vam caure al fallback per timeout però ara tenim mediadors carregats,
+      // reactualitzem state.mediador amb la dada real
+      if (state.mediadors && state.mediadors.length > 0) {
+        const real = state.mediadors.find(m => m.user_id === state.user.id);
+        if (real && state.mediador?.rol !== real.rol) {
+          console.log('🔧 [6] Actualitzant rol de fallback a real:', real.rol);
+          state.mediador = real;
+          state.profile = real;
+          // Refrescar UI admin
+          document.querySelectorAll('.admin-only').forEach(el => {
+            el.classList.toggle('hidden', !isAdmin());
+          });
+          // Refrescar avatar/nom al sidebar
+          const userBlock = document.getElementById('user-info-block');
+          if (userBlock) {
+            const m = state.mediador;
+            const initials = getInitials(m.nom || m.email);
+            userBlock.innerHTML = `
+              <div class="user-avatar" style="background:#0F766E">${initials}</div>
+              <div class="user-info">
+                <div class="user-name">${m.nom || m.email}</div>
+                <div class="user-role">
+                  <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
+                </div>
+              </div>
+              <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
+            `;
+          }
+        }
+      }
+
       if (state.currentTab) renderCurrentTab();
       updateNavBadges();
     }).catch(err => {
@@ -420,9 +452,12 @@ function showLogin() {
   document.getElementById('main-app').classList.add('hidden');
 }
 
+let _appStarted = false;
+
 supabase.auth.onAuthStateChange(async (event, session) => {
   console.log('🔐 Auth event:', event);
-  if (event === 'SIGNED_IN' && session?.user) {
+  if (event === 'SIGNED_IN' && session?.user && !_appStarted) {
+    _appStarted = true;
     state.user = session.user;
     try {
       await loadMediador();
@@ -432,6 +467,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       console.error('Error SIGNED_IN:', err);
     }
   } else if (event === 'SIGNED_OUT') {
+    _appStarted = false;
     state.user = null;
     state.mediador = null;
     state.profile = null;
@@ -446,33 +482,29 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     const sessionResult = await withTimeout(supabase.auth.getSession(), 5000, 'getSession');
     const session = sessionResult?.data?.session;
 
-    if (session?.user) {
+    if (session?.user && !_appStarted) {
+      _appStarted = true;
       console.log('🔐 [INIT] Sessió activa:', session.user.email);
       state.user = session.user;
-
-      // Carregar mediador i config (amb timeouts)
       await loadMediador();
       await loadUserConfig();
-
-      // Mostrar UI base RÀPIDAMENT (sense esperar dades)
       await startApp();
-    } else {
+    } else if (!session?.user) {
       console.log('🔐 [INIT] Sense sessió');
       showLogin();
     }
   } catch (err) {
     console.error('❌ [INIT] Error:', err.message);
     document.getElementById('app-loading').classList.add('hidden');
-
-    // Si arribem aquí amb sessió però sense poder carregar tot, anem cap a l'app igualment
-    if (state.user) {
+    if (state.user && !_appStarted) {
+      _appStarted = true;
       console.warn('🆘 [INIT] Tot i l\'error, mostrem main app');
       try {
         await startApp();
       } catch (e) {
         showLogin();
       }
-    } else {
+    } else if (!state.user) {
       showLogin();
     }
   }
