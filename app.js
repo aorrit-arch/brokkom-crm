@@ -2,14 +2,14 @@
 // BROKKOM CRM · app.js v4 — DIAGNÒSTIC + TIMEOUTS
 // ==================================================================
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 const SUPABASE_URL = 'https://ovzvdmxbuoysckprjlej.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_s4ojmx3-jLvBd3gCRtPdyQ_dPS100N9';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92enZkbXhidW95c2NrcHJqbGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjMxMjEsImV4cCI6MjA5NDM5OTEyMX0.lKCJRod0cwckd6BPBq546NHEbQtQoxv7OJzprvM3MSE';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabase;
 
-console.log('🚀 [1] app.js v4 carregat');
+console.log('🚀 [1] app.js v6 — JWT key');
 
 // Funció helper: query amb timeout
 async function withTimeout(promise, ms, label) {
