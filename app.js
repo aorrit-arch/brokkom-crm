@@ -9,7 +9,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabase = supabase;
 
-console.log('🚀 [1] app.js v7 — fix admin + no double exec');
+console.log('🚀 [1] app.js v8 — refreshUserUI on every tab');
 
 // Funció helper: query amb timeout
 async function withTimeout(promise, ms, label) {
@@ -260,11 +260,47 @@ window.updateNavBadges = () => {
   set('nav-agenda', state.agenda.filter(e => new Date(e.data_inici) >= now).length);
 };
 
+// Refresca la UI de l'usuari al sidebar (rol, avatar, admin badges)
+window.refreshUserUI = function() {
+  // Si hi ha mediadors carregats, prendre el real
+  if (state.mediadors && state.user) {
+    const real = state.mediadors.find(m => m.user_id === state.user.id);
+    if (real) {
+      state.mediador = real;
+      state.profile = real;
+    }
+  }
+  const m = state.mediador;
+  if (!m) return;
+
+  const nomMostrar = m.nom || m.email || 'Usuari';
+  const initials = getInitials(nomMostrar);
+
+  const userBlock = document.getElementById('user-info-block');
+  if (userBlock) {
+    userBlock.innerHTML = `
+      <div class="user-avatar" style="background:#0F766E">${initials}</div>
+      <div class="user-info">
+        <div class="user-name">${nomMostrar}</div>
+        <div class="user-role">
+          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
+        </div>
+      </div>
+      <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
+    `;
+  }
+
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.classList.toggle('hidden', !isAdmin());
+  });
+};
+
 window.showTab = (tab) => {
   state.currentTab = tab;
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
+  refreshUserUI(); // ← refrescar usuari sempre
   renderCurrentTab();
   updateNavBadges();
 };
@@ -399,39 +435,8 @@ async function startApp() {
 
     // Carregar dades en paral·lel (no bloqueja UI inicial)
     loadAllData().then(() => {
-      console.log('🎉 [6] Dades carregades, refrescant tab');
-
-      // FIX admin: si vam caure al fallback per timeout però ara tenim mediadors carregats,
-      // reactualitzem state.mediador amb la dada real
-      if (state.mediadors && state.mediadors.length > 0) {
-        const real = state.mediadors.find(m => m.user_id === state.user.id);
-        if (real && state.mediador?.rol !== real.rol) {
-          console.log('🔧 [6] Actualitzant rol de fallback a real:', real.rol);
-          state.mediador = real;
-          state.profile = real;
-          // Refrescar UI admin
-          document.querySelectorAll('.admin-only').forEach(el => {
-            el.classList.toggle('hidden', !isAdmin());
-          });
-          // Refrescar avatar/nom al sidebar
-          const userBlock = document.getElementById('user-info-block');
-          if (userBlock) {
-            const m = state.mediador;
-            const initials = getInitials(m.nom || m.email);
-            userBlock.innerHTML = `
-              <div class="user-avatar" style="background:#0F766E">${initials}</div>
-              <div class="user-info">
-                <div class="user-name">${m.nom || m.email}</div>
-                <div class="user-role">
-                  <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
-                </div>
-              </div>
-              <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
-            `;
-          }
-        }
-      }
-
+      console.log('🎉 [6] Dades carregades, refrescant UI');
+      refreshUserUI();
       if (state.currentTab) renderCurrentTab();
       updateNavBadges();
     }).catch(err => {
