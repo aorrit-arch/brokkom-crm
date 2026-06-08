@@ -1172,4 +1172,64 @@ window.generatePost = () => {};
 window.iaAccio = () => {};
 window.openIAImport = () => showTab('ia');
 
+// ==================================================================
+// PATCH 08/06/2026 — apiCallWithRetry (faltava)
+// Afegir al final de modules.js, just abans de l'últim console.log
+// ==================================================================
+
+window.apiCallWithRetry = async function(url, options = {}, maxRetries = 3) {
+  const delays = [2000, 5000, 10000];
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const headers = { ...(options.headers || {}) };
+
+      // Adjuntar JWT de Supabase a crides a /api/* (per autenticar a ai-proxy)
+      if (url.startsWith('/api/') && window.supabase) {
+        try {
+          const { data: { session } } = await window.supabase.auth.getSession();
+          if (session?.access_token && !headers.Authorization) {
+            headers.Authorization = `Bearer ${session.access_token}`;
+          }
+        } catch (e) { /* segueix sense token */ }
+      }
+
+      const response = await fetch(url, { ...options, headers });
+
+      // Retry per saturació
+      if (response.status === 429 || response.status === 529) {
+        if (attempt < maxRetries) {
+          if (typeof toast === 'function') {
+            toast(`Servidors saturats, reintentant en ${delays[attempt]/1000}s...`, 'warning');
+          }
+          await new Promise(r => setTimeout(r, delays[attempt]));
+          continue;
+        }
+        throw new Error("Servidors d'IA saturats. Torna a provar en un minut.");
+      }
+
+      if (!response.ok) {
+        const txt = await response.text();
+        let msg = `Error ${response.status}`;
+        try {
+          const j = JSON.parse(txt);
+          msg = j.error?.message || j.error || msg;
+        } catch (e) {}
+        throw new Error(msg);
+      }
+
+      return response;
+
+    } catch (err) {
+      if (attempt < maxRetries && /fetch|network|Failed to fetch/i.test(err.message)) {
+        await new Promise(r => setTimeout(r, delays[attempt]));
+        continue;
+      }
+      throw err;
+    }
+  }
+};
+
+console.log('✅ apiCallWithRetry definit');
+
 console.log('✅ modules.js carregat correctament');
