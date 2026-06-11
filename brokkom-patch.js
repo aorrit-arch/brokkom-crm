@@ -215,7 +215,10 @@ function _patchRenderIAResult(parsed) {
   resDiv.innerHTML = html || '<div class="empty-state">No s\'ha detectat informació estructurada</div>';
 }
 
-// Importa UN element sense re-renderitzar tota la pestanya
+// Importa UN element sense re-renderitzar tota la pestanya.
+// IMPORTANT: comprovem SEMPRE l'error de Supabase — si l'RLS o un camp
+// invàlid rebutgen la fila, ho hem de saber (abans es marcava "Importat"
+// encara que la inserció hagués fallat).
 window._iaImport = async function(key, idx) {
   const parsed = window._iaParsed;
   if (!parsed || !parsed[key] || !parsed[key][idx]) return;
@@ -224,52 +227,54 @@ window._iaImport = async function(key, idx) {
   const card = document.getElementById(`ia-item-${key}-${idx}`);
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
 
+  const mustOk = ({ error }) => { if (error) throw new Error(error.message); };
+
   try {
     if (key === 'clients') {
       const payload = { ...item, user_id: state.user.id };
       if (!payload.tipus) payload.tipus = 'empresa';
-      await supabase.from('clients').insert(payload);
+      mustOk(await supabase.from('clients').insert(payload));
 
     } else if (key === 'venciments') {
       const cid = await _patchTrobaOCreaClient(item.empresa);
-      await supabase.from('venciments').insert({ ...item, client_id: cid, user_id: state.user.id });
+      mustOk(await supabase.from('venciments').insert({ ...item, client_id: cid, user_id: state.user.id }));
 
     } else if (key === 'ofertes') {
       const cid = await _patchTrobaOCreaClient(item.empresa);
-      await supabase.from('ofertes').insert({
+      mustOk(await supabase.from('ofertes').insert({
         ...item, client_id: cid, user_id: state.user.id,
         estat: item.estat || 'Lead'
-      });
+      }));
 
     } else if (key === 'seguiments') {
       const cid = await _patchTrobaOCreaClient(item.empresa);
-      await supabase.from('seguiments').insert({
+      mustOk(await supabase.from('seguiments').insert({
         client_id: cid, user_id: state.user.id,
         data: item.data || new Date().toISOString().slice(0, 10),
         canal: item.canal, resum: item.resum, proper_pas: item.proper_pas
-      });
+      }));
 
     } else if (key === 'oportunitats') {
       const cid = await _patchTrobaOCreaClient(item.empresa);
-      await supabase.from('oportunitats').insert({
+      mustOk(await supabase.from('oportunitats').insert({
         client_id: cid, empresa: item.empresa, user_id: state.user.id,
         producte: item.producte, argument: item.argument,
         prioritat: item.prioritat, estat: 'Detectada'
-      });
+      }));
     }
 
-    // marcar com importat SENSE refrescar la pantalla
+    // marcar com importat — el card es manté a pantalla
     if (card) card.classList.add('imported');
     if (btn) { btn.textContent = '✓ Importat'; btn.disabled = true; }
 
-    // refrescar només l'estat intern + badges (no re-render de la pestanya IA)
-    await refreshData(key === 'clients' ? 'clients' : key);
-    if (typeof updateNavBadges === 'function') updateNavBadges();
+    // refresc SILENCIÓS: actualitza estat + badges sense re-renderitzar la
+    // pestanya (re-renderitzar esborrava les fitxes pendents d'importar)
+    await refreshData(key, { silent: true });
     toast('Importat al CRM');
 
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '+ Importar'; }
-    toast('Error: ' + e.message, 'error');
+    toast('Error important: ' + e.message, 'error');
   }
 };
 
