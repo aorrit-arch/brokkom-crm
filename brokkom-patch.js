@@ -216,9 +216,12 @@ function _patchRenderIAResult(parsed) {
 }
 
 // Importa UN element sense re-renderitzar tota la pestanya.
-// IMPORTANT: comprovem SEMPRE l'error de Supabase — si l'RLS o un camp
-// invàlid rebutgen la fila, ho hem de saber (abans es marcava "Importat"
-// encara que la inserció hagués fallat).
+// FIX 11/06/2026:
+//   1. Comprovem l'error de CADA insert (abans es marcava "Importat"
+//      encara que Supabase hagués rebutjat la fila).
+//   2. Refresc SILENCIÓS: actualitzem l'estat directament des de Supabase
+//      sense cridar refreshData(), que re-renderitzava la pestanya i feia
+//      desaparèixer les fitxes pendents d'importar.
 window._iaImport = async function(key, idx) {
   const parsed = window._iaParsed;
   if (!parsed || !parsed[key] || !parsed[key][idx]) return;
@@ -263,13 +266,16 @@ window._iaImport = async function(key, idx) {
       }));
     }
 
-    // marcar com importat — el card es manté a pantalla
+    // marcar com importat — la fitxa es queda a pantalla
     if (card) card.classList.add('imported');
     if (btn) { btn.textContent = '✓ Importat'; btn.disabled = true; }
 
-    // refresc SILENCIÓS: actualitza estat + badges sense re-renderitzar la
-    // pestanya (re-renderitzar esborrava les fitxes pendents d'importar)
-    await refreshData(key, { silent: true });
+    // refresc silenciós de l'estat (sense refreshData → sense re-render)
+    try {
+      const { data } = await supabase.from(key).select('*');
+      if (data) state[key] = data;
+    } catch (e) { /* l'import ja és fet; el refresc pot esperar */ }
+    if (typeof updateNavBadges === 'function') updateNavBadges();
     toast('Importat al CRM');
 
   } catch (e) {
