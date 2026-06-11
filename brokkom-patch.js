@@ -7,6 +7,36 @@
 console.log('🩹 brokkom-patch.js carregant...');
 
 // ------------------------------------------------------------------
+// FIX CRÍTIC 11/06/2026 — funcions auxiliars que FALTAVEN
+// modules.js crida getMediadorByUserId() i getSharedWith() des de
+// Clients, Seguiments, fitxa client i el modal de compartir, però
+// no estaven definides ENLLOC. Resultat: el renderitzador bo petava
+// amb TypeError, app.js capturava l'error en silenci i mostrava el
+// "pla B" (renderBasicTab) — la llista plana sense editar/eliminar.
+// Definir-les desbloqueja els mòduls complets.
+// ------------------------------------------------------------------
+if (!window.getMediadorByUserId) {
+  window.getMediadorByUserId = function(userId) {
+    return (state.mediadors || []).find(m => m.user_id === userId) || null;
+  };
+}
+if (!window.getSharedWith) {
+  window.getSharedWith = function(recursTipus, recursId) {
+    return (state.comparticions || [])
+      .filter(c => c.recurs_tipus === recursTipus && c.recurs_id === recursId)
+      .map(c => ({ ...c, mediador: window.getMediadorByUserId(c.compartit_amb_id) }));
+  };
+}
+if (!window.getAvatarColor) {
+  window.getAvatarColor = function(userId) {
+    const colors = ['#0F766E','#1D4ED8','#7C3AED','#B45309','#BE123C','#15803D'];
+    let h = 0;
+    for (const ch of String(userId || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return colors[h % colors.length];
+  };
+}
+
+// ------------------------------------------------------------------
 // HELPER: vincular o crear client per nom (empresa o particular)
 // ------------------------------------------------------------------
 async function _patchTrobaOCreaClient(nom) {
