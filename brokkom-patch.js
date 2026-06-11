@@ -536,4 +536,17 @@ window.renderUsuaris = function() {
   `;
 };
 
-console.log('✅ brokkom-patch.js carregat (IA + Notes + fixes)');
+// ------------------------------------------------------------------
+// BÚSTIA = IA ASSISTENT (11/06/2026)
+// La pestanya 📥 Bústia mostrava un stub ("Mòdul disponible al següent
+// sprint") perquè la taula inbox_items no la fa servir res encara.
+// A la pràctica, la "bústia" de Brokkom és l'assistent IA: enganxar
+// text → processar → importar. Fem que la pestanya obri directament
+// aquesta funcionalitat. Aquesta línia s'executa l'última i guanya
+// sobre l'stub de modules.js.
+// ------------------------------------------------------------------
+window.renderInbox = function() {
+  window.renderIA();
+};
+
+console.log('✅ brokkom-patch.js carregat (IA + Notes + Bústia + fixes)');
