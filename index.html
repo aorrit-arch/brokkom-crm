@@ -3,1026 +3,132 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COVERA — Corredoria d'assegurances especialista | Salut, Vida, Empreses, Autònoms</title>
-<meta name="description" content="COVERA ordena la protecció personal, familiar i empresarial. Assegurances de salut, vida, baixa laboral, accidents i beneficis per empreses. Corredoria independent a Catalunya.">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://covera.es/">
-<link rel="alternate" hreflang="ca" href="https://covera.es/">
-<link rel="alternate" hreflang="es" href="https://covera.es/es/">
-<link rel="alternate" hreflang="x-default" href="https://covera.es/">
-<meta property="og:title" content="COVERA — La majoria compara assegurances. Nosaltres ordenem la teva protecció.">
-<meta property="og:description" content="Corredoria especialista en salut, vida, autònoms, empreses i previsió. Sense comparadors, sense bancs. Amb criteri assegurador independent.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://covera.es/">
-<meta property="og:image" content="https://covera.es/assets/og-covera.jpg">
-<meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": ["InsuranceAgency","LocalBusiness"],
-      "@id": "https://covera.es/#org",
-      "name": "COVERA",
-      "description": "Corredoria d'assegurances especialista en protecció personal, familiar i empresarial.",
-      "url": "https://covera.es",
-      "logo": "https://covera.es/assets/logo-horitzontal.png",
-      "areaServed": {"@type":"State","name":"Catalunya"},
-      "knowsLanguage": ["ca","es"],
-      "serviceType": ["Assegurances de salut","Assegurances de vida","Baixa laboral autònoms","Beneficis empresarials","Previsió social empresarial"]
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://covera.es/#website",
-      "url": "https://covera.es",
-      "name": "COVERA",
-      "publisher": {"@id":"https://covera.es/#org"},
-      "inLanguage": ["ca","es"]
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Què fa diferent COVERA d'un comparador d'assegurances?",
-          "acceptedAnswer": {"@type":"Answer","text":"Un comparador dona preus. COVERA analitza la teva situació real —ingressos, família, empresa, riscos— i proposa les cobertures que té sentit tenir, les que falten i les que estàs pagant de més."}
-        },
-        {
-          "@type": "Question",
-          "name": "Un PPE pot tenir un cost net mínim per a l'empresa?",
-          "acceptedAnswer": {"@type":"Answer","text":"Depèn del cas. Les aportacions al PPE són deduïbles en l'Impost de Societats. Per a una empresa amb tipus impositiu del 25%, una aportació de 1.000€ té un cost net d'aproximadament 750€. En alguns casos, la deducció fiscal compensa pràcticament tot el cost de l'aportació."}
-        },
-        {
-          "@type": "Question",
-          "name": "Com funciona la baixa laboral per a autònoms?",
-          "acceptedAnswer": {"@type":"Answer","text":"La ILT (Incapacitat Laboral Transitòria) per a autònoms paga una indemnització diària mentre dura la baixa per malaltia o accident. Tu tries l'import diari i la franquícia. La Seguretat Social té prestació pública però sovint insuficient per cobrir les despeses fixes d'un autònom."}
-        }
-      ]
-    }
-  ]
-}
+<title>Brokkom · CRM</title>
+<meta name="description" content="CRM comercial Brokkom · sector transport">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%230F766E'/><text x='12' y='16' font-family='system-ui' font-size='9' font-weight='700' fill='%23fff' text-anchor='middle' letter-spacing='-0.5'>BKK</text></svg>">
+<link rel="stylesheet" href="styles.css">
+<script>
+// Silencia els logs de diagnòstic sorollosos (⏱️ [TIMEOUT], etc.)
+// sense tocar app.js. Els errors i warnings es mantenen.
+(function () {
+  var _log = console.log.bind(console);
+  var soroll = /^(⏱️|✅|🔧|📦|🎉|🔐|🩹)/;
+  console.log = function () {
+    if (arguments.length && typeof arguments[0] === 'string' && soroll.test(arguments[0])) return;
+    _log.apply(console, arguments);
+  };
+})();
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --cobalt:#0A2D56;--cobalt2:#0d3a6b;
-  --mint:#6FB7AE;--mint2:#8fcdc5;--mint-bg:#E6F2EF;
-  --arena:#F7F3EF;--arena2:#ede8e2;
-  --niebla:#8FA3B3;--gris:#2B2F33;--gris2:#5a6370;
-  --font-h:'Montserrat',sans-serif;--font-b:'Inter',sans-serif;
-}
-html{scroll-behavior:smooth}
-body{font-family:var(--font-b);color:var(--gris);background:white;line-height:1.6}
-
-/* ── NAV ── */
-nav{
-  position:sticky;top:0;z-index:200;
-  background:white;border-bottom:1px solid var(--arena2);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 40px;height:64px;
-}
-.nav-logo img{height:32px;width:auto;display:block}
-.nav-links{display:flex;align-items:center;gap:4px}
-.nav-link{
-  font-family:var(--font-h);font-size:12px;font-weight:600;letter-spacing:.3px;
-  color:var(--gris2);text-decoration:none;padding:7px 12px;border-radius:6px;
-  transition:all .15s;white-space:nowrap;
-}
-.nav-link:hover{background:var(--arena);color:var(--cobalt)}
-.nav-link.active{color:var(--cobalt)}
-.nav-right{display:flex;align-items:center;gap:10px}
-.lang-toggle{display:flex;gap:2px;background:var(--arena);padding:2px;border-radius:5px}
-.lb{font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:.8px;padding:4px 8px;border:none;cursor:pointer;border-radius:3px;background:transparent;color:var(--niebla);transition:all .15s}
-.lb.active{background:var(--cobalt);color:white}
-.nav-cta{
-  font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.3px;
-  padding:9px 18px;background:var(--cobalt);color:white;
-  border:none;border-radius:7px;cursor:pointer;text-decoration:none;
-  transition:background .15s;white-space:nowrap;
-}
-.nav-cta:hover{background:var(--cobalt2)}
-.nav-mob{display:none;background:none;border:none;cursor:pointer;padding:8px}
-
-/* ── HERO ── */
-.hero{
-  background:var(--cobalt);
-  padding:80px 40px 72px;
-  position:relative;overflow:hidden;
-  min-height:520px;display:flex;align-items:center;
-}
-.hero::before{
-  content:'';position:absolute;right:-100px;top:-100px;
-  width:600px;height:600px;border-radius:50%;
-  background:radial-gradient(circle,rgba(111,183,174,.16) 0%,transparent 65%);
-}
-.hero::after{
-  content:'';position:absolute;left:-60px;bottom:-80px;
-  width:400px;height:400px;border-radius:50%;
-  background:radial-gradient(circle,rgba(111,183,174,.08) 0%,transparent 70%);
-}
-.hero-inner{
-  max-width:1100px;margin:0 auto;position:relative;z-index:1;
-  display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;
-  width:100%;
-}
-.hero-tag{
-  display:inline-block;font-family:var(--font-h);font-size:11px;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;color:var(--mint);
-  border:1px solid rgba(111,183,174,.35);padding:5px 13px;border-radius:4px;
-  margin-bottom:20px;
-}
-.hero h1{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(28px,3.5vw,46px);
-  color:white;line-height:1.1;margin-bottom:18px;
-}
-.hero h1 em{color:var(--mint);font-style:normal}
-.hero-sub{
-  font-size:17px;color:rgba(255,255,255,.72);
-  max-width:520px;line-height:1.65;margin-bottom:32px;
-}
-.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:36px}
-.btn-hero-p{
-  font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:.3px;
-  padding:14px 28px;background:var(--mint);color:var(--cobalt);
-  border:none;border-radius:8px;cursor:pointer;text-decoration:none;
-  transition:background .15s;display:inline-block;
-}
-.btn-hero-p:hover{background:var(--mint2)}
-.btn-hero-s{
-  font-family:var(--font-h);font-size:13px;font-weight:600;
-  padding:14px 28px;background:transparent;color:white;
-  border:1.5px solid rgba(255,255,255,.3);border-radius:8px;
-  cursor:pointer;text-decoration:none;transition:border-color .15s;display:inline-block;
-}
-.btn-hero-s:hover{border-color:rgba(255,255,255,.7)}
-.hero-trust{display:flex;flex-wrap:wrap;gap:16px}
-.hero-trust-item{
-  display:flex;align-items:center;gap:6px;
-  font-family:var(--font-h);font-size:11px;font-weight:600;letter-spacing:.3px;
-  color:rgba(255,255,255,.5);
-}
-.hero-trust-item::before{content:'✓';color:var(--mint);font-size:12px}
-.hero-visual{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  border-radius:16px;padding:28px;
-}
-.hero-visual-title{
-  font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:16px;
-}
-.hero-card{
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
-  border-radius:10px;padding:14px 16px;margin-bottom:10px;
-  display:flex;align-items:center;justify-content:space-between;
-  cursor:pointer;transition:background .15s;text-decoration:none;
-}
-.hero-card:hover{background:rgba(255,255,255,.12)}
-.hero-card:last-child{margin-bottom:0}
-.hero-card-left h4{
-  font-family:var(--font-h);font-weight:700;font-size:13px;color:white;margin-bottom:3px;
-}
-.hero-card-left p{font-size:12px;color:rgba(255,255,255,.55);line-height:1.4}
-.hero-card-arrow{color:var(--mint);font-size:16px;font-weight:700}
-.hero-card-badge{
-  font-family:var(--font-h);font-size:10px;font-weight:700;letter-spacing:.5px;
-  text-transform:uppercase;padding:3px 8px;border-radius:4px;
-  background:rgba(111,183,174,.2);color:var(--mint);white-space:nowrap;
-}
-
-/* ── WAVE ── */
-.wave{display:block;line-height:0}
-.wave svg{display:block;width:100%}
-
-/* ── PROBLEMA ── */
-.problema{background:var(--arena);padding:72px 40px;border-bottom:1px solid var(--arena2)}
-.problema-inner{max-width:960px;margin:0 auto}
-.s-tag{
-  font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--mint);margin-bottom:10px;display:block;
-}
-.problema h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(22px,3vw,34px);color:var(--cobalt);
-  line-height:1.2;margin-bottom:14px;
-}
-.problema h2 em{color:var(--mint);font-style:normal}
-.problema-lead{font-size:16px;color:var(--gris2);max-width:680px;line-height:1.7;margin-bottom:36px}
-.problema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.prob-card{
-  background:white;border:1px solid var(--arena2);border-radius:11px;
-  padding:18px 16px;border-left:3px solid var(--niebla);
-}
-.prob-card p{font-size:14px;color:var(--gris);line-height:1.55;font-style:italic}
-.prob-card p::before{content:'“';font-size:20px;color:var(--niebla);font-style:normal;line-height:1}
-
-/* ── MÈTODE ── */
-.metode{background:white;padding:72px 40px}
-.metode-inner{max-width:960px;margin:0 auto}
-.metode h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(22px,3vw,34px);color:var(--cobalt);
-  line-height:1.2;margin-bottom:12px;
-}
-.metode h2 em{color:var(--mint);font-style:normal}
-.metode-lead{font-size:16px;color:var(--gris2);max-width:620px;line-height:1.7;margin-bottom:40px}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;position:relative}
-.steps::before{
-  content:'';position:absolute;top:20px;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--arena2) 10%,var(--arena2) 90%,transparent);
-}
-.step{padding:0 12px 0 0;position:relative;z-index:1}
-.step-num{
-  width:40px;height:40px;border-radius:50%;
-  background:var(--cobalt);color:white;
-  font-family:var(--font-h);font-weight:800;font-size:15px;
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:14px;
-}
-.step h4{font-family:var(--font-h);font-weight:700;font-size:14px;color:var(--cobalt);margin-bottom:5px}
-.step p{font-size:13px;color:var(--gris2);line-height:1.5}
-
-/* ── SEGMENTS ── */
-.segments{background:var(--arena);padding:72px 40px;border-top:1px solid var(--arena2)}
-.segments-inner{max-width:960px;margin:0 auto}
-.segments h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(22px,3vw,34px);color:var(--cobalt);
-  line-height:1.2;margin-bottom:12px;
-}
-.segments h2 em{color:var(--mint);font-style:normal}
-.segments-lead{font-size:16px;color:var(--gris2);max-width:580px;line-height:1.7;margin-bottom:40px}
-.seg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-.seg-card{
-  background:white;border:1px solid var(--arena2);border-radius:14px;
-  padding:24px 20px;text-decoration:none;transition:all .15s;
-  display:flex;flex-direction:column;
-}
-.seg-card:hover{border-color:var(--mint);transform:translateY(-2px);box-shadow:0 6px 24px rgba(10,45,86,.08)}
-.seg-icon{font-size:28px;margin-bottom:12px}
-.seg-card h3{font-family:var(--font-h);font-weight:700;font-size:16px;color:var(--cobalt);margin-bottom:7px}
-.seg-card p{font-size:13px;color:var(--gris2);line-height:1.55;flex:1;margin-bottom:14px}
-.seg-card-link{
-  font-family:var(--font-h);font-size:12px;font-weight:700;
-  color:var(--mint);letter-spacing:.3px;
-}
-.seg-card-link::after{content:' →'}
-
-/* ── EMPRESES FEATURED ── */
-.empreses-feature{
-  background:var(--cobalt);padding:72px 40px;
-  position:relative;overflow:hidden;
-}
-.empreses-feature::before{
-  content:'';position:absolute;right:-80px;top:-80px;
-  width:500px;height:500px;border-radius:50%;
-  background:radial-gradient(circle,rgba(111,183,174,.12) 0%,transparent 70%);
-}
-.empreses-inner{max-width:960px;margin:0 auto;position:relative;z-index:1}
-.emp-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-.emp-tag{
-  display:inline-block;font-family:var(--font-h);font-size:11px;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;color:var(--mint);
-  border:1px solid rgba(111,183,174,.35);padding:4px 11px;border-radius:4px;margin-bottom:16px;
-}
-.emp-h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(22px,2.8vw,34px);color:white;line-height:1.2;margin-bottom:14px;
-}
-.emp-h2 em{color:var(--mint);font-style:normal}
-.emp-lead{font-size:15px;color:rgba(255,255,255,.7);line-height:1.65;margin-bottom:28px;max-width:440px}
-.emp-ctas{display:flex;gap:12px;flex-wrap:wrap}
-.btn-emp{
-  font-family:var(--font-h);font-size:13px;font-weight:700;
-  padding:13px 24px;background:var(--mint);color:var(--cobalt);
-  border:none;border-radius:7px;cursor:pointer;text-decoration:none;
-  transition:background .15s;display:inline-block;
-}
-.btn-emp:hover{background:var(--mint2)}
-.btn-emp-s{
-  font-family:var(--font-h);font-size:12px;font-weight:600;
-  padding:11px 20px;background:transparent;color:white;
-  border:1.5px solid rgba(255,255,255,.3);border-radius:7px;
-  text-decoration:none;transition:border-color .15s;display:inline-block;
-}
-.btn-emp-s:hover{border-color:white}
-.ppe-card{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
-  border-radius:14px;padding:28px 24px;
-}
-.ppe-highlight{
-  background:var(--mint);border-radius:10px;padding:18px 20px;margin-bottom:16px;
-}
-.ppe-highlight h4{font-family:var(--font-h);font-weight:800;font-size:20px;color:var(--cobalt);margin-bottom:4px}
-.ppe-highlight p{font-size:13px;color:rgba(10,45,86,.8);line-height:1.45}
-.ppe-items{display:flex;flex-direction:column;gap:9px}
-.ppe-item{
-  display:flex;align-items:flex-start;gap:9px;
-  font-size:13px;color:rgba(255,255,255,.8);line-height:1.45;
-}
-.ppe-item::before{
-  content:'✓';color:var(--mint);font-weight:700;flex-shrink:0;margin-top:1px;
-}
-.ppe-disclaimer{
-  font-size:11px;color:rgba(255,255,255,.35);line-height:1.5;margin-top:14px;
-}
-
-/* ── DIFERENCIAL ── */
-.diferencial{background:white;padding:72px 40px}
-.diferencial-inner{max-width:960px;margin:0 auto}
-.dif-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
-.dif-left h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(22px,2.8vw,34px);color:var(--cobalt);
-  line-height:1.2;margin-bottom:14px;
-}
-.dif-left h2 em{color:var(--mint);font-style:normal}
-.dif-lead{font-size:15px;color:var(--gris2);line-height:1.7;margin-bottom:24px}
-.dif-items{display:flex;flex-direction:column;gap:10px}
-.dif-item{
-  display:flex;align-items:flex-start;gap:10px;
-  padding:12px 14px;background:var(--mint-bg);border-radius:8px;
-  font-size:13.5px;color:var(--cobalt);line-height:1.5;
-}
-.dif-item::before{content:'→';color:var(--mint);font-weight:700;flex-shrink:0;margin-top:1px}
-.dif-right{background:var(--arena);border-radius:14px;padding:28px}
-.dif-vs-title{
-  font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--niebla);margin-bottom:16px;
-}
-.vs-row{
-  display:flex;gap:12px;padding:12px 0;
-  border-bottom:1px solid var(--arena2);
-  align-items:flex-start;
-}
-.vs-row:last-child{border-bottom:none}
-.vs-no{
-  font-size:14px;color:var(--gris2);line-height:1.5;flex:1;
-}
-.vs-no::before{content:"✕";color:var(--niebla);font-weight:700;margin-right:8px;font-size:12px}
-.vs-yes{font-size:14px;color:var(--cobalt);line-height:1.5;flex:1;font-weight:600}
-.vs-yes::before{content:"✓";color:var(--mint);font-weight:800;margin-right:8px;font-size:13px}
-.vs-divider{color:var(--mint);font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px}
-
-/* ── FAQ ── */
-.faq{background:var(--arena);padding:72px 40px;border-top:1px solid var(--arena2)}
-.faq-inner{max-width:720px;margin:0 auto}
-.faq h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(20px,2.5vw,30px);color:var(--cobalt);
-  line-height:1.2;margin-bottom:32px;
-}
-.faq-item{
-  border-bottom:1px solid var(--arena2);padding:18px 0;
-  cursor:pointer;
-}
-.faq-item:last-child{border-bottom:none}
-.faq-q{
-  font-family:var(--font-h);font-weight:700;font-size:15px;
-  color:var(--cobalt);display:flex;justify-content:space-between;
-  align-items:flex-start;gap:12px;
-}
-.faq-arrow{
-  flex-shrink:0;color:var(--mint);font-size:18px;transition:transform .2s;
-}
-.faq-a{
-  font-size:14px;color:var(--gris2);line-height:1.7;
-  max-height:0;overflow:hidden;transition:max-height .3s,padding .2s;
-}
-.faq-item.open .faq-a{max-height:200px;padding-top:10px}
-.faq-item.open .faq-arrow{transform:rotate(45deg)}
-
-/* ── CTA FINAL ── */
-.cta-final{background:var(--cobalt);padding:80px 40px;text-align:center}
-.cta-final h2{
-  font-family:var(--font-h);font-weight:800;
-  font-size:clamp(24px,3vw,38px);color:white;
-  line-height:1.15;margin-bottom:14px;
-}
-.cta-final h2 em{color:var(--mint);font-style:normal}
-.cta-final p{
-  font-size:16px;color:rgba(255,255,255,.65);
-  max-width:520px;margin:0 auto 36px;line-height:1.65;
-}
-.cta-final-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.btn-cta-p{
-  font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:.3px;
-  padding:15px 32px;background:var(--mint);color:var(--cobalt);
-  border:none;border-radius:8px;cursor:pointer;text-decoration:none;
-  transition:background .15s;
-}
-.btn-cta-p:hover{background:var(--mint2)}
-.btn-cta-s{
-  font-family:var(--font-h);font-size:13px;font-weight:600;
-  padding:15px 28px;background:transparent;color:white;
-  border:1.5px solid rgba(255,255,255,.3);border-radius:8px;
-  text-decoration:none;transition:border-color .15s;
-}
-.btn-cta-s:hover{border-color:white}
-
-/* ── FOOTER ── */
-footer{background:var(--gris);padding:48px 40px 32px}
-.footer-inner{max-width:960px;margin:0 auto}
-.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;margin-bottom:40px}
-.footer-brand img{height:28px;margin-bottom:14px;filter:brightness(0) invert(1)}
-.footer-brand p{font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;max-width:280px}
-.footer-col h4{
-  font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:12px;
-}
-.footer-col a{
-  display:block;font-size:13px;color:rgba(255,255,255,.55);
-  text-decoration:none;padding:3px 0;transition:color .15s;
-}
-.footer-col a:hover{color:var(--mint)}
-.footer-bottom{
-  border-top:1px solid rgba(255,255,255,.08);
-  padding-top:20px;display:flex;justify-content:space-between;
-  align-items:center;flex-wrap:wrap;gap:12px;
-}
-.footer-legal{font-size:11.5px;color:rgba(255,255,255,.3);line-height:1.5}
-.footer-legal a{color:rgba(255,255,255,.4);text-decoration:none}
-.footer-legal a:hover{color:var(--mint)}
-
-/* ── RESPONSIVE ── */
-@media(max-width:768px){
-  nav{padding:0 20px;height:56px}
-  .nav-links{display:none}
-  .nav-mob{display:flex}
-  .hero{padding:52px 20px 48px;min-height:auto}
-  .hero-inner{grid-template-columns:1fr;gap:36px}
-  .hero-visual{display:none}
-  .problema{padding:52px 20px}
-  .metode{padding:52px 20px}
-  .steps{grid-template-columns:1fr 1fr}
-  .steps::before{display:none}
-  .segments{padding:52px 20px}
-  .empreses-feature{padding:52px 20px}
-  .emp-grid{grid-template-columns:1fr;gap:36px}
-  .diferencial{padding:52px 20px}
-  .dif-grid{grid-template-columns:1fr}
-  .faq{padding:52px 20px}
-  .cta-final{padding:60px 20px}
-  .footer-inner{padding:0}
-  footer{padding:40px 20px 28px}
-  .footer-top{grid-template-columns:1fr 1fr}
-  .footer-brand{grid-column:1/-1}
-}
-@media(max-width:480px){
-  .steps{grid-template-columns:1fr}
-  .footer-top{grid-template-columns:1fr}
-}
-nav a img{height:36px;width:auto;display:block}.footer-brand img{height:30px;width:auto}
-
-/* ── Protecció 360 ── */
-.w360{background:white;padding:72px 40px;border-top:1px solid var(--arena2)}
-.w360-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-.w360 .sec-tag{font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mint);margin-bottom:12px}
-.w360 h2{font-family:var(--font-h);font-weight:800;font-size:clamp(22px,2.8vw,34px);color:var(--cobalt);margin-bottom:14px}
-.w360 h2 em{font-style:normal;color:var(--mint)}
-.w360-copy p{color:var(--gris2);font-size:15px;line-height:1.65;margin-bottom:18px;max-width:440px}
-.w360-list{list-style:none;padding:0;margin:0}
-.w360-list li{font-size:14px;color:var(--gris2);padding:7px 0;border-bottom:1px solid var(--arena2)}
-.w360-list li:last-child{border-bottom:none}
-.w360-list strong{color:var(--cobalt);font-family:var(--font-h);font-weight:700}
-.w360-svg svg{width:100%;max-width:480px;display:block;margin:0 auto}
-.ws path{fill:var(--cobalt);transition:fill .18s;cursor:pointer}
-.ws text{font-family:var(--font-h);font-weight:700;font-size:15px;fill:white;pointer-events:none}
-.ws:hover path,.ws:focus path{fill:var(--mint)}
-.ws:hover text,.ws:focus text{fill:var(--cobalt)}
-.w360 .wc{font-family:var(--font-h);font-weight:700;font-size:13px;fill:var(--niebla)}
-.i-es{display:none}
-body.lang-es .i-es{display:inline}
-body.lang-es .i-ca{display:none}
-@media(max-width:860px){.w360-inner{grid-template-columns:1fr;gap:28px}.w360-svg svg{max-width:380px}}
-
-</style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav id="main-nav">
-  <a href="/" aria-label="COVERA - Inici">
-    <img src="assets/logo-horitzontal.png" alt="COVERA — Corredoria d'assegurances especialista" height="32">
-  </a>
-  <div class="nav-links" id="nav-links">
-    <a href="persones.html" class="nav-link" id="nl-persones">Persones</a>
-    <a href="autonoms.html" class="nav-link" id="nl-autonoms">Autònoms</a>
-    <a href="empreses.html" class="nav-link active" id="nl-empreses">Empreses</a>
-    <a href="glossari.html" class="nav-link" id="nl-productes">Productes</a>
-    <a href="manifest.html" class="nav-link" id="nl-sobre">Sobre COVERA</a>
+<div id="app-loading" class="app-loading">
+  <span class="loader"></span>
+  <span>Carregant…</span>
+</div>
+
+<!-- AUTH -->
+<div id="auth-page" class="auth-page hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand-logo">BKK</div>
+      <span style="font-size:17px;font-weight:500;letter-spacing:-0.02em">Brokkom</span>
+    </div>
+    <div class="auth-title">CRM comercial</div>
+    <div class="auth-sub">Entra al teu espai de treball</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Iniciar sessió</button>
+      <button class="auth-tab" data-tab="signup" onclick="switchAuthTab('signup')">Crear compte</button>
+    </div>
+
+    <form id="login-form" onsubmit="doLogin(event)">
+      <div class="form-row"><label>Email</label><input type="email" id="login-email" required></div>
+      <div class="form-row"><label>Contrasenya</label><input type="password" id="login-password" required></div>
+      <button type="submit" class="btn btn-primary" id="btn-login" style="width:100%;justify-content:center;padding:9px">Iniciar sessió</button>
+      <div style="text-align:center;margin-top:12px">
+        <a class="auth-link" onclick="recoverPassword(event)">He oblidat la contrasenya</a>
+      </div>
+    </form>
+
+    <form id="signup-form" class="hidden" onsubmit="doSignup(event)">
+      <div class="form-row"><label>Nom</label><input type="text" id="signup-nom" required></div>
+      <div class="form-row"><label>Email</label><input type="email" id="signup-email" required></div>
+      <div class="form-row"><label>Contrasenya</label><input type="password" id="signup-password" minlength="6" required></div>
+      <button type="submit" class="btn btn-primary" id="btn-signup" style="width:100%;justify-content:center;padding:9px">Crear compte</button>
+    </form>
   </div>
-  <div class="nav-right">
-    <div class="lang-toggle">
-      <button class="lb active" onclick="setLang('ca')" id="btn-ca">CA</button>
-      <button class="lb" onclick="setLang('es')" id="btn-es">ES</button>
-    </div>
-    <a href="#diagnostic" class="nav-cta" id="nav-cta">Diagnòstic gratuït</a>
-    <button class="nav-mob" onclick="toggleMob()" aria-label="Menú" id="mob-btn">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="2" y1="5" x2="20" y2="5" stroke="#2B2F33" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="11" x2="20" y2="11" stroke="#2B2F33" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="17" x2="20" y2="17" stroke="#2B2F33" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-</nav>
+</div>
 
-<!-- HERO -->
-<section class="hero" aria-label="COVERA — Protecció personal, familiar i empresarial">
-  <div class="hero-inner">
-    <div class="hero-left">
-      <div class="hero-tag" id="hero-tag">Corredoria independent · Catalunya</div>
-      <h1 id="hero-h1">La majoria compara.<br><em>COVERA ordena<br>la teva protecció.</em></h1>
-      <p class="hero-sub" id="hero-sub">Assegurances de salut, vida, baixa laboral, accidents i previsió. Per a persones, autònoms, empreses i col·lectius. Amb criteri independent, sense bancs ni comparadors.</p>
-      <div class="hero-ctas">
-        <a href="#diagnostic" class="btn-hero-p" id="hero-cta1">Fer el diagnòstic gratuït</a>
-        <a href="glossari.html" class="btn-hero-s" id="hero-cta2">Veure tots els productes</a>
-      </div>
-      <div class="hero-trust">
-        <span class="hero-trust-item" id="ht1">Corredoria independent</span>
-        <span class="hero-trust-item" id="ht2">Sense compromís</span>
-        <span class="hero-trust-item" id="ht3">Resposta en 24h</span>
-        <span class="hero-trust-item" id="ht4">Bilingüe CA/ES</span>
+<!-- MAIN APP -->
+<div id="main-app" class="layout hidden">
+
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-logo">BKK</div>
+      <div class="brand-text">
+        <div class="brand-name">Brokkom</div>
+        <div class="brand-sub">CRM comercial</div>
       </div>
     </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="hero-visual-title" id="hvt">On vols que comencem?</div>
-      <a href="persones.html" class="hero-card">
-        <div class="hero-card-left">
-          <h4 id="hc1-h">Persones i famílies</h4>
-          <p id="hc1-p">Salut, vida, hipoteca, estalvi, successió</p>
-        </div>
-        <span class="hero-card-arrow">→</span>
-      </a>
-      <a href="autonoms.html" class="hero-card">
-        <div class="hero-card-left">
-          <h4 id="hc2-h">Autònoms</h4>
-          <p id="hc2-p">Baixa laboral, ILT, accidents, previsió</p>
-        </div>
-        <span class="hero-card-arrow">→</span>
-      </a>
-      <a href="empreses.html" class="hero-card">
-        <div class="hero-card-left">
-          <h4 id="hc3-h">Empreses</h4>
-          <p id="hc3-p">Salut equip, PPE, conveni, beneficis</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="hero-card-badge" id="hc3-badge">Primera campanya</span>
-          <span class="hero-card-arrow">→</span>
-        </div>
-      </a>
-      <a href="socis-directius.html" class="hero-card">
-        <div class="hero-card-left">
-          <h4 id="hc4-h">Socis i directius</h4>
-          <p id="hc4-p">Home clau, vida socis, previsió directiva</p>
-        </div>
-        <span class="hero-card-arrow">→</span>
-      </a>
-    </div>
-  </div>
-</section>
-<div class="wave" style="background:var(--arena)"><svg viewBox="0 0 1440 40" preserveAspectRatio="none" height="40"><path d="M0,0 Q720,40 1440,0 L1440,40 L0,40 Z" fill="var(--arena)"/><path d="M0,0 Q720,40 1440,0" fill="none" stroke="none"/></svg></div>
 
-<!-- EL PROBLEMA -->
-<section class="problema" aria-labelledby="prob-h2">
-  <div class="problema-inner">
-    <span class="s-tag" id="prob-tag">El problema real</span>
-    <h2 id="prob-h2">Tenir assegurances<br><em>no és el mateix que estar ben protegit.</em></h2>
-    <p class="problema-lead" id="prob-lead">Moltes persones i empreses tenen pòlisses contractades en moments i criteris diferents, sense una visió global. El problema no és tenir o no tenir assegurances. És saber si responen quan fan falta.</p>
-    <div class="problema-grid">
-      <div class="prob-card"><p id="pc1">La vida de la hipoteca paga al banc. No a la família.</p></div>
-      <div class="prob-card"><p id="pc2">Moltes pòlisses de invalidesa només paguen amb incapacitat absoluta. La total és molt més freqüent.</p></div>
-      <div class="prob-card"><p id="pc3">Un autònom de baixa no cobra. La prestació pública sovint no cobreix les despeses fixes.</p></div>
-      <div class="prob-card"><p id="pc4">L'empresa té accidents de conveni, però ningú ha revisat si els capitals estan actualitzats.</p></div>
-      <div class="prob-card"><p id="pc5">Els beneficiaris de les pòlisses de vida no s'han revisat en 10 anys. La família ha canviat.</p></div>
-      <div class="prob-card"><p id="pc6">El PPE pot tenir un cost net mínim per a l'empresa. Quasi ningú ho sap.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- MÈTODE -->
-<section class="metode" aria-labelledby="met-h2">
-  <div class="metode-inner">
-    <span class="s-tag" id="met-tag">El mètode COVERA</span>
-    <h2 id="met-h2">Primer ordenem.<br><em>Després assegurem.</em></h2>
-    <p class="metode-lead" id="met-lead">No comencem pel producte. Comencem per entendre la situació real: qui ets, de qui depens, quins ingressos cal protegir i quins riscos no pots assumir.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h4 id="s1h">Entenem la situació</h4>
-        <p id="s1p">Persona, família, activitat, ingressos, empresa o col·lectiu.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h4 id="s2h">Detectem els buits</h4>
-        <p id="s2p">Salut, vida, baixa laboral, accidents, beneficiaris, previsió.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h4 id="s3h">Prioritzem riscos</h4>
-        <p id="s3p">No tot és igual d'urgent. No tot té el mateix impacte.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <h4 id="s4h">Proposem solucions</h4>
-        <p id="s4p">Amb criteri tècnic, fiscal, familiar i empresarial.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">5</div>
-        <h4 id="s5h">Revisem periòdicament</h4>
-        <p id="s5p">La vida canvia. La protecció també ha de canviar.</p>
+    <div class="sidebar-search">
+      <div class="search-box" title="Cerca global (Cmd+K, pendent)">
+        <span>🔍</span><span>Cerca…</span><span class="search-shortcut">⌘K</span>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- SEGMENTS -->
+    <div class="nav-group">
+      <div class="nav-item active" data-tab="dashboard"><span class="nav-item-icon">🏠</span><span class="nav-item-text">Tauler</span></div>
+      <div class="nav-item" data-tab="clients"><span class="nav-item-icon">👥</span><span class="nav-item-text">Clients</span><span class="nav-item-badge" id="nav-clients">0</span></div>
+      <div class="nav-item" data-tab="pipeline"><span class="nav-item-icon">🎯</span><span class="nav-item-text">Pipeline</span><span class="nav-item-badge" id="nav-pipeline">0</span></div>
+      <div class="nav-item" data-tab="consolidats"><span class="nav-item-icon">🏆</span><span class="nav-item-text">Consolidats</span><span class="nav-item-badge" id="nav-consolidats">0</span></div>
+      <div class="nav-item" data-tab="seguiments"><span class="nav-item-icon">📞</span><span class="nav-item-text">Seguiments</span></div>
+      <div class="nav-item" data-tab="oportunitats"><span class="nav-item-icon">💡</span><span class="nav-item-text">Oportunitats</span><span class="nav-item-badge" id="nav-opps">0</span></div>
+    </div>
 
-<section class="w360" id="proteccio360">
-  <div class="w360-inner">
-    <div class="w360-copy">
-      <div class="sec-tag"><span class="i-ca">Visió global</span><span class="i-es">Visión global</span></div>
-      <h2><span class="i-ca">Protecció <em>360°</em></span><span class="i-es">Protección <em>360°</em></span></h2>
-      <p><span class="i-ca">Cinc eixos, una sola pregunta: si demà canviés alguna cosa important, què respondria bé i què fallaria? Toca cada eix per veure com el cobrim.</span><span class="i-es">Cinco ejes, una sola pregunta: si mañana cambiara algo importante, ¿qué respondería bien y qué fallaría? Toca cada eje para ver cómo lo cubrimos.</span></p>
-      <ul class="w360-list">
-        <li><strong><span class="i-ca">Salut</span><span class="i-es">Salud</span></strong> · <span class="i-ca">accés mèdic quan toca</span><span class="i-es">acceso médico cuando toca</span></li>
-        <li><strong><span class="i-ca">Ingressos</span><span class="i-es">Ingresos</span></strong> · <span class="i-ca">si pares de treballar, segueixes cobrant</span><span class="i-es">si paras de trabajar, sigues cobrando</span></li>
-        <li><strong><span class="i-ca">Família</span><span class="i-es">Familia</span></strong> · <span class="i-ca">capital directe a qui depèn de tu</span><span class="i-es">capital directo a quien depende de ti</span></li>
-        <li><strong><span class="i-ca">Futur</span><span class="i-es">Futuro</span></strong> · <span class="i-ca">estalvi, rendes i successió ordenats</span><span class="i-es">ahorro, rentas y sucesión ordenados</span></li>
-        <li><strong><span class="i-ca">Equip</span><span class="i-es">Equipo</span></strong> · <span class="i-ca">beneficis assegurats per a l'empresa</span><span class="i-es">beneficios asegurados para la empresa</span></li>
-      </ul>
+    <div class="nav-group">
+      <div class="nav-label">Operativa</div>
+      <div class="nav-item" data-tab="inbox"><span class="nav-item-icon">📥</span><span class="nav-item-text">Bústia</span><span class="nav-item-badge" id="nav-inbox">0</span></div>
+      <div class="nav-item" data-tab="agenda"><span class="nav-item-icon">📅</span><span class="nav-item-text">Agenda</span><span class="nav-item-badge" id="nav-agenda">0</span></div>
+      <div class="nav-item" data-tab="tasques"><span class="nav-item-icon">✓</span><span class="nav-item-text">Tasques</span><span class="nav-item-badge" id="nav-tasques">0</span></div>
+      <div class="nav-item" data-tab="venciments"><span class="nav-item-icon">📆</span><span class="nav-item-text">Venciments</span><span class="nav-item-badge" id="nav-venc">0</span></div>
+      <div class="nav-item" data-tab="notes"><span class="nav-item-icon">💭</span><span class="nav-item-text">Notes</span><span class="nav-item-badge" id="nav-notes">0</span></div>
+      <div class="nav-item" data-tab="esborranys"><span class="nav-item-icon">📝</span><span class="nav-item-text">Esborranys</span><span class="nav-item-badge" id="nav-esborranys">0</span></div>
     </div>
-    <div class="w360-svg">
-      <svg viewBox="0 0 520 520" role="img" aria-label="Protecció 360">
-        <a href="salut.html" class="ws" aria-label="Salut">
-<path d="M267.0 60.1 A200 200 0 0 1 447.9 191.6 L372.8 219.0 A120 120 0 0 0 264.2 140.1 Z"/>
-<text x="354" y="131" text-anchor="middle" dominant-baseline="middle"><tspan class="i-ca">Salut</tspan><tspan class="i-es">Salud</tspan></text></a><a href="proteccio-ingressos.html" class="ws" aria-label="Ingressos">
-<path d="M452.3 204.9 A200 200 0 0 1 383.1 417.6 L333.9 354.6 A120 120 0 0 0 375.4 226.9 Z"/>
-<text x="412" y="309" text-anchor="middle" dominant-baseline="middle"><tspan class="i-ca">Ingressos</tspan><tspan class="i-es">Ingresos</tspan></text></a><a href="vida-risc.html" class="ws" aria-label="Família">
-<path d="M371.8 425.8 A200 200 0 0 1 148.2 425.8 L192.9 359.5 A120 120 0 0 0 327.1 359.5 Z"/>
-<text x="260" y="420" text-anchor="middle" dominant-baseline="middle"><tspan class="i-ca">Família</tspan><tspan class="i-es">Familia</tspan></text></a><a href="capitals-futur.html" class="ws" aria-label="Futur">
-<path d="M136.9 417.6 A200 200 0 0 1 67.7 204.9 L144.6 226.9 A120 120 0 0 0 186.1 354.6 Z"/>
-<text x="108" y="309" text-anchor="middle" dominant-baseline="middle"><tspan class="i-ca">Futur</tspan><tspan class="i-es">Futuro</tspan></text></a><a href="empreses.html" class="ws" aria-label="Equip">
-<path d="M72.1 191.6 A200 200 0 0 1 253.0 60.1 L255.8 140.1 A120 120 0 0 0 147.2 219.0 Z"/>
-<text x="166" y="131" text-anchor="middle" dominant-baseline="middle"><tspan class="i-ca">Equip</tspan><tspan class="i-es">Equipo</tspan></text></a>
-        <circle cx="260" cy="260" r="104" fill="white" stroke="#ede8e2"/>
-        <image href="assets/isotip.png" x="212" y="196" width="96" height="74"/>
-        <text x="260" y="306" text-anchor="middle" class="wc"><tspan class="i-ca">la teva protecció</tspan><tspan class="i-es">tu protección</tspan></text>
-      </svg>
-    </div>
-  </div>
-</section>
-<section class="segments" aria-labelledby="seg-h2">
-  <div class="segments-inner">
-    <span class="s-tag" id="seg-tag">Per a qui treballem</span>
-    <h2 id="seg-h2">Solucions per<br><em>a cada situació real</em></h2>
-    <p class="segments-lead" id="seg-lead">El client no pensa en productes. Pensa en situacions. Hem organitzat tota la nostra oferta en funció de qui ets i del que necessites protegir.</p>
-    <div class="seg-grid">
-      <a href="persones.html" class="seg-card">
-        <div class="seg-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A2D56" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="3.5"/><path d="M21 21v-2a4 4 0 0 0-3-3.87" stroke="#6FB7AE"/><path d="M16 3.6a3.5 3.5 0 0 1 0 6.8" stroke="#6FB7AE"/></svg></div>
-        <h3 id="sc1h">Persones i famílies</h3>
-        <p id="sc1p">Salut, vida, hipoteca, accidents, estalvi, beneficiaris i successió. Per a cada etapa de la vida.</p>
-        <span class="seg-card-link" id="sc1l">Veure protecció per a persones</span>
-      </a>
-      <a href="autonoms.html" class="seg-card">
-        <div class="seg-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A2D56" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="#6FB7AE"/><path d="M3 12h18"/></svg></div>
-        <h3 id="sc2h">Autònoms i professionals</h3>
-        <p id="sc2p">Baixa laboral, ILT, accidents, vida i previsió. Per als qui no es poden permetre deixar d'ingressar.</p>
-        <span class="seg-card-link" id="sc2l">Veure protecció per a autònoms</span>
-      </a>
-      <a href="empreses.html" class="seg-card" style="border-color:var(--mint)">
-        <div class="seg-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A2D56" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="12" height="18" rx="1.5"/><path d="M16 9h4v12h-4" stroke="#6FB7AE"/><path d="M8 7h2M8 11h2M8 15h2M12 7h0M12 11h0M12 15h0"/><path d="M9 21v-3h3v3"/></svg></div>
-        <h3 id="sc3h">Empreses</h3>
-        <p id="sc3p">Salut col·lectiva, accidents de conveni, PPE, retribució flexible i beneficis per a l'equip.</p>
-        <span class="seg-card-link" id="sc3l">Veure solucions per a empreses</span>
-      </a>
-      <a href="socis-directius.html" class="seg-card">
-        <div class="seg-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A2D56" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 12l3 3a2 2 0 0 0 2.8 0L17 11"/><path d="M3 7l4-2 5 2 5-2 4 2" stroke="#6FB7AE"/><path d="M3 7v7l4 4M21 7v7l-4 4"/></svg></div>
-        <h3 id="sc4h">Socis i directius</h3>
-        <p id="sc4p">Continuïtat empresarial, vida de socis, home clau i previsió directiva.</p>
-        <span class="seg-card-link" id="sc4l">Veure protecció per a socis</span>
-      </a>
-    </div>
-  </div>
-</section>
 
-<!-- EMPRESES FEATURED — CAMPANYA PPE -->
-<section class="empreses-feature" aria-labelledby="emp-h2">
-  <div class="empreses-inner">
-    <div class="emp-grid">
-      <div>
-        <span class="emp-tag" id="emp-tag">Primera campanya · Empreses</span>
-        <h2 class="emp-h2" id="emp-h2">Un PPE pot costar<br><em>molt menys del que sembla a l'empresa</em><br>i valer molt a l'equip.</h2>
-        <p class="emp-lead" id="emp-lead">El Pla de Previsió d'Empresa permet fer aportacions per als treballadors amb deducció en l'Impost de Societats. Amb una estructura ben feta, el cost net pot ser mínim o zero. L'equip ho percep com un benefici real de futur.</p>
-        <div class="emp-ctas">
-          <a href="ppe.html" class="btn-emp" id="emp-cta1">Entendre com funciona el PPE</a>
-          <a href="empreses.html" class="btn-emp-s" id="emp-cta2">Tots els beneficis per a empreses</a>
-        </div>
-      </div>
-      <div class="ppe-card">
-        <div class="ppe-highlight">
-          <h4 id="ppe-hl-h">Cost net mínim per a l'empresa.</h4>
-          <p id="ppe-hl-p">Deducció fiscal i estalvi en cotitzacions que poden compensar gran part de l'aportació.</p>
-        </div>
-        <div class="ppe-items">
-          <div class="ppe-item" id="pi1">Deduïble en Impost de Societats</div>
-          <div class="ppe-item" id="pi2">No computa com a salari immediat pel treballador</div>
-          <div class="ppe-item" id="pi3">Gran valor percebut per l'equip: pensen en el seu futur</div>
-          <div class="ppe-item" id="pi4">Flexible: diferent aportació per perfil o col·lectiu</div>
-          <div class="ppe-item" id="pi5">Sense cost de consultoria — COVERA ho gestiona tot</div>
-        </div>
-        <p class="ppe-disclaimer" id="ppe-disc">* El cost net depèn del tipus impositiu aplicable i de l'estructura de cada empresa. A COVERA analitzem cada cas individualment.</p>
+    <div class="nav-group">
+      <div class="nav-label">Recursos</div>
+      <div class="nav-item" data-tab="asseguradores"><span class="nav-item-icon">🛡️</span><span class="nav-item-text">Asseguradores</span></div>
+      <div class="nav-item admin-only" data-tab="comunicacio"><span class="nav-item-icon">📰</span><span class="nav-item-text">Posts LinkedIn</span></div>
+      <div class="nav-item admin-only" data-tab="usuaris"><span class="nav-item-icon">👤</span><span class="nav-item-text">Usuaris</span></div>
+      <div class="nav-item" data-tab="ia"><span class="nav-item-icon">🤖</span><span class="nav-item-text">IA assistent</span></div>
+      <div class="nav-item" data-tab="config"><span class="nav-item-icon">⚙️</span><span class="nav-item-text">Configuració</span></div>
+    </div>
+
+    <div class="sidebar-footer" id="user-info-block">
+      <div class="user-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name">…</div>
+        <div class="user-role">…</div>
       </div>
     </div>
-  </div>
-</section>
+  </aside>
 
-<!-- DIFERENCIAL -->
-<section class="diferencial" aria-labelledby="dif-h2">
-  <div class="diferencial-inner">
-    <div class="dif-grid">
-      <div class="dif-left">
-        <span class="s-tag" id="dif-tag">Per què COVERA</span>
-        <h2 id="dif-h2">No som un comparador.<br><em>Som una corredoria especialista.</em></h2>
-        <p class="dif-lead" id="dif-lead">Un comparador dona preus. Un banc proposa els seus productes. Una asseguradora defensa la seva oferta. COVERA treballa des d'una altra lògica: entendre el que necessites i ordenar-ho amb criteri independent.</p>
-        <div class="dif-items">
-          <div class="dif-item" id="di1">Analitzem qui depèn econòmicament de tu</div>
-          <div class="dif-item" id="di2">Revisem quines pòlisses ja tens i si responen bé</div>
-          <div class="dif-item" id="di3">Detectem buits, duplicitats i capitals insuficients</div>
-          <div class="dif-item" id="di4">Proposem solucions amb criteri fiscal i familiar</div>
-          <div class="dif-item" id="di5">Revisem periòdicament perquè la vida canvia</div>
-        </div>
-      </div>
-      <div class="dif-right">
-        <div class="dif-vs-title" id="dvt">Altres opcions vs COVERA</div>
-        <div class="vs-row">
-          <span class="vs-no" id="vs1a">Et comparen preus</span>
-          <span class="vs-divider">→</span>
-          <span class="vs-yes" id="vs1b">Analitzem la teva situació real</span>
-        </div>
-        <div class="vs-row">
-          <span class="vs-no" id="vs2a">Et proposen el seu producte</span>
-          <span class="vs-divider">→</span>
-          <span class="vs-yes" id="vs2b">Accedim a tot el mercat</span>
-        </div>
-        <div class="vs-row">
-          <span class="vs-no" id="vs3a">Venen per producte</span>
-          <span class="vs-divider">→</span>
-          <span class="vs-yes" id="vs3b">Ordenem per situació</span>
-        </div>
-        <div class="vs-row">
-          <span class="vs-no" id="vs4a">No revisen mai</span>
-          <span class="vs-divider">→</span>
-          <span class="vs-yes" id="vs4b">Revisió periòdica activa</span>
-        </div>
-        <div class="vs-row">
-          <span class="vs-no" id="vs5a">Diuen que tot és necessari</span>
-          <span class="vs-divider">→</span>
-          <span class="vs-yes" id="vs5b">Diem quan <em>no</em> té sentit</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+  <main class="main">
+    <div class="main-inner" id="tab-content"></div>
+  </main>
+</div>
 
-<!-- FAQ (amb schema ja al head) -->
-<section class="faq" aria-labelledby="faq-h2">
-  <div class="faq-inner">
-    <h2 id="faq-h2">Preguntes freqüents</h2>
-    <div class="faq-item" onclick="toggleFAQ(this)">
-      <div class="faq-q"><span id="fq1">Què fa diferent COVERA d'un comparador?</span><span class="faq-arrow">+</span></div>
-      <div class="faq-a" id="fa1">Un comparador dona preus. COVERA analitza la teva situació real — ingressos, família, empresa, riscos — i proposa les cobertures que té sentit tenir, les que falten i les que estàs pagant de més. No comencem pel producte. Comencem pel que vols protegir.</div>
-    </div>
-    <div class="faq-item" onclick="toggleFAQ(this)">
-      <div class="faq-q"><span id="fq2">Un PPE pot tenir un cost net mínim per a l'empresa?</span><span class="faq-arrow">+</span></div>
-      <div class="faq-a" id="fa2">Depèn del cas. Les aportacions al PPE són deduïbles en l'Impost de Societats. Per a una empresa amb tipus impositiu del 25%, una aportació de 1.000€ té un cost net d'aproximadament 750€. En alguns casos, la deducció compensa pràcticament tota l'aportació. Cal analitzar cada cas individualment.</div>
-    </div>
-    <div class="faq-item" onclick="toggleFAQ(this)">
-      <div class="faq-q"><span id="fq3">Com funciona la baixa laboral per a autònoms?</span><span class="faq-arrow">+</span></div>
-      <div class="faq-a" id="fa3">La ILT paga una indemnització diària mentre dura la baixa per malaltia o accident. Tries l'import diari i la franquícia. La Seguretat Social té prestació pública però sovint insuficient per cobrir les despeses fixes d'un autònom: quotes, lloguer, personal.</div>
-    </div>
-    <div class="faq-item" onclick="toggleFAQ(this)">
-      <div class="faq-q"><span id="fq4">Quina diferència hi ha entre invalidesa total i absoluta?</span><span class="faq-arrow">+</span></div>
-      <div class="faq-a" id="fa4">La incapacitat permanent total t'impedeix fer la teva professió habitual però podries fer una altra feina diferent. L'absoluta t'impedeix qualsevol treball. Moltes pòlisses bàsiques només paguen amb absoluta. Però la total és molt més freqüent: a Espanya hi ha 682.000 pensions de total davant 338.000 d'absoluta.</div>
-    </div>
-    <div class="faq-item" onclick="toggleFAQ(this)">
-      <div class="faq-q"><span id="fq5">Té cost el diagnòstic de protecció de COVERA?</span><span class="faq-arrow">+</span></div>
-      <div class="faq-a" id="fa5">No. El diagnòstic inicial és gratuït i sense compromís. Analitzem la teva situació, detectem buits i proposem prioritats. No cal que tinguis cap decisió presa ni cap pòlissa a revisar prèviament.</div>
-    </div>
-  </div>
-</section>
+<div id="modal-container"></div>
+<div id="toast-container"></div>
 
-<!-- CTA FINAL + FORMULARI -->
-<section class="cta-final" id="diagnostic" aria-labelledby="cta-h2">
-  <h2 id="cta-h2">Vols saber si estàs<br><em>ben protegit?</em></h2>
-  <p id="cta-sub">No cal començar contractant res. Podem començar revisant el que tens, el que falta i el que convé prioritzar.</p>
-  <div class="cta-final-btns">
-    <a href="diagnostic.html" class="btn-cta-p" id="cta-btn1">Fer el diagnòstic gratuït</a>
-    <a href="ppe.html" class="btn-cta-s" id="cta-btn2">Soc empresa · vull saber el PPE</a>
-  </div>
-</section>
+<script type="module" src="app.js"></script>
+<script src="modules.js"></script>
+<script src="modals.js"></script>
+<script src="brokkom-patch.js"></script>
+<script src="brokkom-patch2.js"></script>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <img src="assets/logo-horitzontal.png" alt="COVERA">
-        <p id="fb-desc">Corredoria d'assegurances especialista en protecció personal, familiar i empresarial. Independent, amb criteri assegurador.</p>
-      </div>
-      <div class="footer-col">
-        <h4 id="fc1-title">Productes</h4>
-        <a href="persones.html" id="fc1-1">Persones i famílies</a>
-        <a href="autonoms.html" id="fc1-2">Autònoms</a>
-        <a href="empreses.html" id="fc1-3">Empreses</a>
-        <a href="socis-directius.html" id="fc1-4">Socis i directius</a>
-        <a href="glossari.html" id="fc1-5">Tots els productes</a>
-      </div>
-      <div class="footer-col">
-        <h4 id="fc2-title">Destacats</h4>
-        <a href="ppe.html" id="fc2-1">PPE empreses</a>
-        <a href="ilt.html" id="fc2-2">ILT autònoms</a>
-        <a href="vida-risc.html" id="fc2-3">Vida risc</a>
-        <a href="accidents-conveni.html" id="fc2-4">Accidents conveni</a>
-        <a href="salut-collectiva.html" id="fc2-5">Salut col·lectiva</a>
-      </div>
-      <div class="footer-col">
-        <h4 id="fc3-title">COVERA</h4>
-        <a href="manifest.html" id="fc3-1">Qui som</a>
-        <a href="diagnostic.html" id="fc3-2">Diagnòstic gratuït</a>
-        <a href="glossari.html" id="fc3-3">Glossari</a>
-        <a href="diagnostic.html" id="fc3-4">Contacte</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p class="footer-legal" id="foot-legal">
-        © 2026 COVERA · covera.com · 
-        <a href="#">Avís legal</a> · 
-        <a href="#">Privacitat</a> · 
-        <a href="#">Cookies</a>
-      </p>
-      <p class="footer-legal" id="foot-legal2">Corredoria d'assegurances registrada a la DGS</p>
-    </div>
-  </div>
-</footer>
-
-<script>
-/* ── LANG ── */
-const CA={
-  navCta:'Diagnòstic gratuït',heroTag:'Corredoria independent · Catalunya',
-  heroH1:'La majoria compara.<br><em>COVERA ordena<br>la teva protecció.</em>',
-  heroSub:"Assegurances de salut, vida, baixa laboral, accidents i previsió. Per a persones, autònoms, empreses i col·lectius. Amb criteri independent, sense bancs ni comparadors.",
-  heroCta1:'Fer el diagnòstic gratuït',heroCta2:'Veure tots els productes',
-  ht:['Corredoria independent','Sense compromís','Resposta en 24h','Bilingüe CA/ES'],
-  hvt:'On vols que comencem?',
-  hc:['Persones i famílies','Autònoms','Empreses','Socis i directius'],
-  hcp:['Salut, vida, hipoteca, estalvi, successió','Baixa laboral, ILT, accidents, previsió','Salut equip, PPE, conveni, beneficis','Home clau, vida socis, previsió directiva'],
-  hc3badge:'Primera campanya',
-  probTag:'El problema real',
-  probH2:'Tenir assegurances<br><em>no és el mateix que estar ben protegit.</em>',
-  probLead:"Moltes persones i empreses tenen pòlisses contractades en moments i criteris diferents, sense visió global. El problema no és tenir o no tenir assegurances. És saber si responen quan fan falta.",
-  pc:["La vida de la hipoteca paga al banc. No a la família.","Moltes pòlisses d'invalidesa només paguen amb incapacitat absoluta. La total és molt més freqüent.","Un autònom de baixa no cobra. La prestació pública sovint no cobreix les despeses fixes.","L'empresa té accidents de conveni, però ningú ha revisat si els capitals estan actualitzats.","Els beneficiaris de les pòlisses de vida no s'han revisat en 10 anys. La família ha canviat.","El PPE pot tenir un cost net mínim per a l'empresa. Quasi ningú ho sap."],
-  metTag:'El mètode COVERA',metH2:'Primer ordenem.<br><em>Després assegurem.</em>',
-  metLead:"No comencem pel producte. Comencem per entendre la situació real: qui ets, de qui depens, quins ingressos cal protegir.",
-  steps:[['Entenem la situació','Persona, família, activitat, ingressos, empresa o col·lectiu.'],['Detectem els buits','Salut, vida, baixa laboral, accidents, beneficiaris, previsió.'],['Prioritzem riscos','No tot és igual d'urgent. No tot té el mateix impacte.'],['Proposem solucions','Amb criteri tècnic, fiscal, familiar i empresarial.'],['Revisem periòdicament','La vida canvia. La protecció també ha de canviar.']],
-  segTag:'Per a qui treballem',segH2:'Solucions per<br><em>a cada situació real</em>',
-  segLead:"El client no pensa en productes. Pensa en situacions. Hem organitzat tota la nostra oferta en funció de qui ets.",
-  segs:[['Persones i famílies','Salut, vida, hipoteca, accidents, estalvi, beneficiaris i successió.','Veure protecció per a persones'],['Autònoms i professionals','Baixa laboral, ILT, accidents, vida i previsió. Per als qui no es poden permetre deixar d'ingressar.','Veure protecció per a autònoms'],['Empreses','Salut col·lectiva, accidents de conveni, PPE, retribució flexible i beneficis per a l'equip.','Veure solucions per a empreses'],['Socis i directius','Continuïtat empresarial, vida de socis, home clau i previsió directiva.','Veure protecció per a socis']],
-  empTag:'Primera campanya · Empreses',
-  empH2:'Un PPE pot costar<br><em>molt menys del que sembla a l'empresa</em><br>i valer molt a l'equip.',
-  empLead:"El Pla de Previsió d'Empresa permet fer aportacions per als treballadors amb deducció en l'IS. Amb una estructura ben feta, el cost net pot ser mínim o zero.",
-  empCta1:'Entendre com funciona el PPE',empCta2:'Tots els beneficis per a empreses',
-  ppeHlH:'Cost net mínim per a l'empresa.',ppeHlP:'Deducció fiscal i estalvi en cotitzacions que poden compensar gran part de l'aportació.',
-  ppeItems:['Deduïble en Impost de Societats','No computa com a salari immediat pel treballador','Gran valor percebut per l'equip: pensen en el seu futur','Flexible: diferent aportació per perfil o col·lectiu','Sense cost de consultoria — COVERA ho gestiona tot'],
-  ppeDisc:'* El cost net depèn del tipus impositiu aplicable i de l'estructura de cada empresa. A COVERA analitzem cada cas individualment.',
-  difTag:'Per què COVERA',
-  difH2:'No som un comparador.<br><em>Som una corredoria especialista.</em>',
-  difLead:"Un comparador dona preus. Un banc proposa els seus productes. COVERA treballa des d'una altra lògica: entendre el que necessites i ordenar-ho amb criteri independent.",
-  difItems:['Analitzem qui depèn econòmicament de tu','Revisem quines pòlisses ja tens i si responen bé','Detectem buits, duplicitats i capitals insuficients','Proposem solucions amb criteri fiscal i familiar','Revisem periòdicament perquè la vida canvia'],
-  dvt:'Altres opcions vs COVERA',
-  vs:[['Et comparen preus','Analitzem la teva situació real'],['Et proposen el seu producte','Accedim a tot el mercat'],['Venen per producte','Ordenem per situació'],['No revisen mai','Revisió periòdica activa'],['Diuen que tot és necessari','Diem quan no té sentit']],
-  faqH2:'Preguntes freqüents',
-  faqs:[
-    ["Què fa diferent COVERA d'un comparador?","Un comparador dona preus. COVERA analitza la teva situació real — ingressos, família, empresa, riscos — i proposa les cobertures que té sentit tenir, les que falten i les que estàs pagant de més."],
-    ["Un PPE pot tenir un cost net mínim per a l'empresa?","Depèn del cas. Les aportacions al PPE són deduïbles en l'IS. Per a una empresa amb tipus del 25%, una aportació de 1.000€ té un cost net d'aprox. 750€. En alguns casos la deducció compensa pràcticament tota l'aportació."],
-    ["Com funciona la baixa laboral per a autònoms?","La ILT paga una indemnització diària mentre dura la baixa. Tries l'import diari i la franquícia. La SS té prestació pública però sovint insuficient per cobrir les despeses fixes d'un autònom."],
-    ["Quina diferència hi ha entre invalidesa total i absoluta?","La total t'impedeix fer la teva professió habitual. L'absoluta t'impedeix qualsevol treball. Moltes pòlisses bàsiques només paguen amb absoluta. Però a Espanya hi ha 682.000 pensions de total davant 338.000 d'absoluta."],
-    ["Té cost el diagnòstic de protecció de COVERA?","No. El diagnòstic és gratuït i sense compromís. Analitzem la teva situació, detectem buits i proposem prioritats."]
-  ],
-  ctaH2:'Vols saber si estàs<br><em>ben protegit?</em>',
-  ctaSub:"No cal començar contractant res. Podem començar revisant el que tens, el que falta i el que convé prioritzar.",
-  ctaBtn1:'Fer el diagnòstic gratuït',ctaBtn2:'Soc empresa · vull saber el PPE',
-  fbDesc:"Corredoria d'assegurances especialista en protecció personal, familiar i empresarial. Independent, amb criteri assegurador.",
-  fc1t:'Productes',fc2t:'Destacats',fc3t:'COVERA',
-  footLegal:'© 2026 COVERA · covera.com',footLegal2:'Corredoria d'assegurances registrada a la DGS'
-};
-
-const ES={
-  navCta:'Diagnóstico gratuito',heroTag:'Correduría independiente · Cataluña',
-  heroH1:'La mayoría compara.<br><em>COVERA ordena<br>tu protección.</em>',
-  heroSub:"Seguros de salud, vida, baja laboral, accidentes y previsión. Para personas, autónomos, empresas y colectivos. Con criterio independiente, sin bancos ni comparadores.",
-  heroCta1:'Hacer el diagnóstico gratuito',heroCta2:'Ver todos los productos',
-  ht:['Correduría independiente','Sin compromiso','Respuesta en 24h','Bilingüe CA/ES'],
-  hvt:'¿Por dónde empezamos?',
-  hc:['Personas y familias','Autónomos','Empresas','Socios y directivos'],
-  hcp:['Salud, vida, hipoteca, ahorro, sucesión','Baja laboral, ILT, accidentes, previsión','Salud equipo, PPE, convenio, beneficios','Hombre clave, vida socios, previsión directiva'],
-  hc3badge:'Primera campaña',
-  probTag:'El problema real',
-  probH2:'Tener seguros<br><em>no es lo mismo que estar bien protegido.</em>',
-  probLead:"Muchas personas y empresas tienen pólizas contratadas en momentos y criterios diferentes, sin visión global. El problema no es tener o no tener seguros. Es saber si responden cuando hacen falta.",
-  pc:["El seguro de vida de la hipoteca paga al banco. No a la familia.","Muchas pólizas de invalidez solo pagan con incapacidad absoluta. La total es mucho más frecuente.","Un autónomo de baja no cobra. La prestación pública a menudo no cubre los gastos fijos.","La empresa tiene accidentes de convenio, pero nadie ha revisado si los capitales están actualizados.","Los beneficiarios de las pólizas de vida no se han revisado en 10 años. La familia ha cambiado.","El PPE puede tener un coste neto mínimo para la empresa. Casi nadie lo sabe."],
-  metTag:'El método COVERA',metH2:'Primero ordenamos.<br><em>Después aseguramos.</em>',
-  metLead:"No empezamos por el producto. Empezamos por entender la situación real: quién eres, de quién dependes, qué ingresos hay que proteger.",
-  steps:[['Entendemos la situación','Persona, familia, actividad, ingresos, empresa o colectivo.'],['Detectamos los vacíos','Salud, vida, baja laboral, accidentes, beneficiarios, previsión.'],['Priorizamos riesgos','No todo es igual de urgente. No todo tiene el mismo impacto.'],['Proponemos soluciones','Con criterio técnico, fiscal, familiar y empresarial.'],['Revisamos periódicamente','La vida cambia. La protección también tiene que cambiar.']],
-  segTag:'Para quién trabajamos',segH2:'Soluciones para<br><em>cada situación real</em>',
-  segLead:"El cliente no piensa en productos. Piensa en situaciones. Hemos organizado toda nuestra oferta en función de quién eres.",
-  segs:[['Personas y familias','Salud, vida, hipoteca, accidentes, ahorro, beneficiarios y sucesión.','Ver protección para personas'],['Autónomos y profesionales','Baja laboral, ILT, accidentes, vida y previsión. Para los que no pueden permitirse dejar de ingresar.','Ver protección para autónomos'],['Empresas','Salud colectiva, accidentes de convenio, PPE, retribución flexible y beneficios para el equipo.','Ver soluciones para empresas'],['Socios y directivos','Continuidad empresarial, vida de socios, hombre clave y previsión directiva.','Ver protección para socios']],
-  empTag:'Primera campaña · Empresas',
-  empH2:'Un PPE puede costar<br><em>mucho menos de lo que parece a la empresa</em><br>y valer mucho al equipo.',
-  empLead:"El Plan de Previsión de Empresa permite hacer aportaciones para los trabajadores con deducción en el IS. Con una estructura bien hecha, el coste neto puede ser mínimo o cero.",
-  empCta1:'Entender cómo funciona el PPE',empCta2:'Todos los beneficios para empresas',
-  ppeHlH:'Coste neto mínimo para la empresa.',ppeHlP:'Deducción fiscal y ahorro en cotizaciones que pueden compensar gran parte de la aportación.',
-  ppeItems:['Deducible en Impuesto de Sociedades','No computa como salario inmediato para el trabajador','Gran valor percibido por el equipo: piensan en su futuro','Flexible: diferente aportación por perfil o colectivo','Sin coste de consultoría — COVERA lo gestiona todo'],
-  ppeDisc:'* El coste neto depende del tipo impositivo aplicable y de la estructura de cada empresa. En COVERA analizamos cada caso individualmente.',
-  difTag:'Por qué COVERA',
-  difH2:'No somos un comparador.<br><em>Somos una correduría especialista.</em>',
-  difLead:"Un comparador da precios. Un banco propone sus productos. COVERA trabaja desde otra lógica: entender lo que necesitas y ordenarlo con criterio independiente.",
-  difItems:['Analizamos quién depende económicamente de ti','Revisamos qué pólizas tienes y si responden bien','Detectamos vacíos, duplicidades y capitales insuficientes','Proponemos soluciones con criterio fiscal y familiar','Revisamos periódicamente porque la vida cambia'],
-  dvt:'Otras opciones vs COVERA',
-  vs:[['Te comparan precios','Analizamos tu situación real'],['Te proponen su producto','Accedemos a todo el mercado'],['Venden por producto','Ordenamos por situación'],['No revisan nunca','Revisión periódica activa'],['Dicen que todo es necesario','Decimos cuándo no tiene sentido']],
-  faqH2:'Preguntas frecuentes',
-  faqs:[
-    ["¿Qué hace diferente a COVERA de un comparador?","Un comparador da precios. COVERA analiza tu situación real — ingresos, familia, empresa, riesgos — y propone las coberturas que tiene sentido tener, las que faltan y las que estás pagando de más."],
-    ["¿Un PPE puede tener un coste neto mínimo para la empresa?","Depende del caso. Las aportaciones al PPE son deducibles en el IS. Para una empresa con tipo del 25%, una aportación de 1.000€ tiene un coste neto de aprox. 750€. En algunos casos la deducción compensa prácticamente toda la aportación."],
-    ["¿Cómo funciona la baja laboral para autónomos?","La ILT paga una indemnización diaria mientras dura la baja. Eliges el importe diario y la franquicia. La SS tiene prestación pública pero a menudo insuficiente para cubrir los gastos fijos de un autónomo."],
-    ["¿Cuál es la diferencia entre invalidez total y absoluta?","La total te impide hacer tu profesión habitual. La absoluta te impide cualquier trabajo. Muchas pólizas básicas solo pagan con absoluta. Pero en España hay 682.000 pensiones de total frente a 338.000 de absoluta."],
-    ["¿Tiene coste el diagnóstico de protección de COVERA?","No. El diagnóstico es gratuito y sin compromiso. Analizamos tu situación, detectamos vacíos y proponemos prioridades."]
-  ],
-  ctaH2:'¿Quieres saber si estás<br><em>bien protegido?</em>',
-  ctaSub:"No hace falta empezar contratando nada. Podemos empezar revisando lo que tienes, lo que falta y lo que conviene priorizar.",
-  ctaBtn1:'Hacer el diagnóstico gratuito',ctaBtn2:'Soy empresa · quiero saber el PPE',
-  fbDesc:"Correduría de seguros especialista en protección personal, familiar y empresarial. Independiente, con criterio asegurador.",
-  fc1t:'Productos',fc2t:'Destacados',fc3t:'COVERA',
-  footLegal:'© 2026 COVERA · covera.com',footLegal2:'Correduría de seguros registrada en la DGS'
-};
-
-let lang='ca';
-function setLang(l){
-  lang=l;
-  document.body.classList.toggle('lang-es',l==='es');
-  document.getElementById('btn-ca').classList.toggle('active',l==='ca');
-  document.getElementById('btn-es').classList.toggle('active',l==='es');
-  const c=l==='ca'?CA:ES;
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerHTML=v;};
-  set('nav-cta',c.navCta);set('hero-tag',c.heroTag);set('hero-h1',c.heroH1);set('hero-sub',c.heroSub);
-  set('hero-cta1',c.heroCta1);set('hero-cta2',c.heroCta2);
-  c.ht.forEach((t,i)=>set('ht'+(i+1),t));
-  set('hvt',c.hvt);
-  c.hc.forEach((h,i)=>{set('hc'+(i+1)+'-h',h);set('hc'+(i+1)+'-p',c.hcp[i]);});
-  set('hc3-badge',c.hc3badge);
-  set('prob-tag',c.probTag);set('prob-h2',c.probH2);set('prob-lead',c.probLead);
-  c.pc.forEach((p,i)=>set('pc'+(i+1),p));
-  set('met-tag',c.metTag);set('met-h2',c.metH2);set('met-lead',c.metLead);
-  c.steps.forEach((s,i)=>{set('s'+(i+1)+'h',s[0]);set('s'+(i+1)+'p',s[1]);});
-  set('seg-tag',c.segTag);set('seg-h2',c.segH2);set('seg-lead',c.segLead);
-  c.segs.forEach((s,i)=>{set('sc'+(i+1)+'h',s[0]);set('sc'+(i+1)+'p',s[1]);set('sc'+(i+1)+'l',s[2]);});
-  set('emp-tag',c.empTag);set('emp-h2',c.empH2);set('emp-lead',c.empLead);
-  set('emp-cta1',c.empCta1);set('emp-cta2',c.empCta2);
-  set('ppe-hl-h',c.ppeHlH);set('ppe-hl-p',c.ppeHlP);
-  c.ppeItems.forEach((p,i)=>set('pi'+(i+1),p));
-  set('ppe-disc',c.ppeDisc);
-  set('dif-tag',c.difTag);set('dif-h2',c.difH2);set('dif-lead',c.difLead);
-  c.difItems.forEach((d,i)=>set('di'+(i+1),d));
-  set('dvt',c.dvt);
-  c.vs.forEach((v,i)=>{set('vs'+(i+1)+'a',v[0]);set('vs'+(i+1)+'b',v[1]);});
-  set('faq-h2',c.faqH2);
-  const faqItems=document.querySelectorAll('.faq-item');
-  faqItems.forEach((item,i)=>{
-    if(!c.faqs[i])return;
-    item.querySelector('.faq-q span').innerHTML=c.faqs[i][0];
-    item.querySelector('.faq-a').innerHTML=c.faqs[i][1];
-  });
-  set('cta-h2',c.ctaH2);set('cta-sub',c.ctaSub);
-  set('cta-btn1',c.ctaBtn1);set('cta-btn2',c.ctaBtn2);
-  set('fb-desc',c.fbDesc);
-  set('fc1-title',c.fc1t);set('fc2-title',c.fc2t);set('fc3-title',c.fc3t);
-  set('foot-legal',c.footLegal+' · <a href="#">Avís legal</a> · <a href="#">Privacitat</a>');
-  set('foot-legal2',c.footLegal2);
-  document.documentElement.lang=l;
-  document.title=l==='ca'?"COVERA — Corredoria d'assegurances especialista":"COVERA — Correduría de seguros especialista";
-}
-
-function toggleFAQ(el){
-  el.classList.toggle('open');
-}
-
-function toggleMob(){
-  const nl=document.getElementById('nav-links');
-  nl.style.display=nl.style.display==='flex'?'none':'flex';
-  nl.style.flexDirection='column';
-  nl.style.position='absolute';nl.style.top='56px';nl.style.left='0';nl.style.right='0';
-  nl.style.background='white';nl.style.padding='12px 20px';nl.style.borderBottom='1px solid var(--arena2)';
-  nl.style.zIndex='199';
-}
-</script>
 </body>
 </html>
