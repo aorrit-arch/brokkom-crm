@@ -1,530 +1,269 @@
-// ==================================================================
-// BROKKOM CRM · app.js v4 — DIAGNÒSTIC + TIMEOUTS
-// ==================================================================
+// ============ STATE ============
+const titles = {
+  'home':           { path: ['covera.es'], views: ['home'], name: 'COVERA', count: 10 },
+  'persones':       { path: ['covera.es','persones'], views: ['home','persones'], name: 'Persones', count: 11 },
+  'autonoms':       { path: ['covera.es','autonoms'], views: ['home','autonoms'], name: 'Autònoms', count: 11 },
+  'empreses':       { path: ['covera.es','empreses'], views: ['home','empreses'], name: 'Empreses', count: 11 },
+  'collectius':     { path: ['covera.es','collectius'], views: ['home','collectius'], name: 'Col·lectius', count: 11 },
+  'previsio':       { path: ['covera.es','previsio'], views: ['home','previsio'], name: 'Previsió', count: 10 },
+  'recursos':       { path: ['covera.es','recursos'], views: ['home','recursos'], name: 'Recursos', count: 6 },
+  'doc-manifest':   { path: ['covera.es','manifest.md'], views: ['home','doc-manifest'], name: 'Manifest.md', count: 1 },
+  'doc-sobre':      { path: ['covera.es','sobre.md'], views: ['home','doc-sobre'], name: 'Sobre.md', count: 1 },
+  'doc-persones':   { path: ['covera.es','persones','llegeix-me.md'], views: ['home','persones','doc-persones'], name: 'Llegeix-me.md', count: 1 },
+  'doc-autonoms':   { path: ['covera.es','autonoms','llegeix-me.md'], views: ['home','autonoms','doc-autonoms'], name: 'Llegeix-me.md', count: 1 },
+  'doc-empreses':   { path: ['covera.es','empreses','llegeix-me.md'], views: ['home','empreses','doc-empreses'], name: 'Llegeix-me.md', count: 1 },
+  'doc-collectius': { path: ['covera.es','collectius','llegeix-me.md'], views: ['home','collectius','doc-collectius'], name: 'Llegeix-me.md', count: 1 },
+  'doc-previsio':   { path: ['covera.es','previsio','llegeix-me.md'], views: ['home','previsio','doc-previsio'], name: 'Llegeix-me.md', count: 1 },
+  'app-diagnostic': { path: ['covera.es','diagnostic.app'], views: ['home','app-diagnostic'], name: 'Diagnòstic.app', count: 1 },
+  'app-cotitzador': { path: ['covera.es','collectius','cotitzador.app'], views: ['home','collectius','app-cotitzador'], name: 'Cotitzador.app', count: 1 }
+};
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+let history = ['home'];
+let historyIdx = 0;
 
-const SUPABASE_URL = 'https://ovzvdmxbuoysckprjlej.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92enZkbXhidW95c2NrcHJqbGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjMxMjEsImV4cCI6MjA5NDM5OTEyMX0.lKCJRod0cwckd6BPBq546NHEbQtQoxv7OJzprvM3MSE';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-window.supabase = supabase;
+function navigate(view, fromHistory) {
+  if (!titles[view]) return;
+  document.querySelectorAll('.view, .doc-view, .app-view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById('view-' + view);
+  if (target) target.classList.add('active');
 
-console.log('🚀 [1] app.js v8 — refreshUserUI on every tab');
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  const sidebarMatch = document.querySelector('.sidebar-item[data-view="' + view + '"]');
+  if (sidebarMatch) sidebarMatch.classList.add('active');
+  // If it's a doc, highlight its parent folder
+  else if (view.startsWith('doc-')) {
+    const parent = view.replace('doc-','');
+    const sb = document.querySelector('.sidebar-item[data-view="' + parent + '"]');
+    if (sb) sb.classList.add('active');
+  }
 
-// Funció helper: query amb timeout
-async function withTimeout(promise, ms, label) {
-  console.log(`⏱️ [TIMEOUT] Iniciant: ${label} (timeout: ${ms}ms)`);
-  return Promise.race([
-    promise.then(r => { console.log(`✅ [TIMEOUT] Acabat: ${label}`); return r; }),
-    new Promise((_, reject) => setTimeout(() => {
-      console.error(`⏰ [TIMEOUT] FALLAT: ${label} (després de ${ms}ms)`);
-      reject(new Error(`Timeout: ${label}`));
-    }, ms))
-  ]);
+  // Address bar: every segment is a clickable link that returns exactly to that level
+  const path = titles[view].path;
+  const views = titles[view].views;
+  const pathHtml = path.map((seg, i) => {
+    const isLast = i === path.length - 1;
+    const targetView = views[i];
+    const segHtml = '<button class="ab-segment' + (isLast ? ' current' : '') + '"' +
+      (!isLast ? ' onclick="navigate(\'' + targetView + '\')"' : '') + '>' +
+      (i === 0 ? '<svg class="ab-favicon"><use href="#ic-c3"/></svg>' : '') +
+      '<span>' + seg + '</span>' +
+      '</button>';
+    return (i > 0 ? '<span class="ab-sep">/</span>' : '') + segHtml;
+  }).join('');
+  document.getElementById('addressBar').innerHTML = pathHtml;
+
+  // Window title
+  document.getElementById('windowTitle').textContent = view === 'home' ? 'COVERA' : 'COVERA — ' + titles[view].name;
+
+  // Status count
+  const count = titles[view].count;
+  document.getElementById('statusCount').textContent = count + (count === 1 ? ' element' : ' elements');
+
+  // History
+  if (!fromHistory) {
+    history = history.slice(0, historyIdx + 1);
+    history.push(view);
+    historyIdx = history.length - 1;
+  }
+  updateNavButtons();
+
+  // Scroll to top inside content
+  document.getElementById('content').scrollTop = 0;
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  document.querySelector('.mobile-overlay').classList.remove('show');
 }
 
-// State global
-window.state = {
-  user: null,
-  mediador: null,
-  profile: null,
-  config: null,
-  clients: [], ofertes: [], consolidats: [], seguiments: [],
-  oportunitats: [], venciments: [], tasques: [], asseguradores: [],
-  posts: [], inbox: [], notes: [], agenda: [], esborranys: [],
-  vinculacions: [], comparticions: [],
-  usuaris: [], mediadors: [],
-  currentTab: 'dashboard'
-};
-
-window.ESTATS_PIPELINE = ['Lead','Qualificat','Cotitzant','Oferta enviada','En negociació','Tancada guanyada'];
-window.ESTATS_PERDUDA = 'Tancada perduda';
-window.TOPICS = [];
-
-// Helpers
-window.uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2,5);
-window.fmt = n => new Intl.NumberFormat('ca-ES').format(Math.round(n||0));
-window.fmtEur = n => fmt(n) + '€';
-window.fmtDate = d => {
-  if (!d) return '—';
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  return dt.toLocaleDateString('ca-ES');
-};
-window.daysFromNow = d => Math.ceil((new Date(d) - new Date()) / 86400000);
-window.isAdmin = () => state.mediador?.rol === 'admin';
-window.getInitials = (s) => {
-  if (!s) return '?';
-  const str = String(s).split('@')[0];
-  const parts = str.split(/[\s._-]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return str.slice(0, 2).toUpperCase();
-};
-
-window.toast = (msg, type = 'success') => {
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  const container = document.getElementById('toast-container');
-  if (container) container.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
-};
-
-// AUTH
-window.switchAuthTab = (tab) => {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
-};
-window.doLogin = async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btn-login');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Entrant...';
-  try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: document.getElementById('login-email').value.trim(),
-      password: document.getElementById('login-password').value
-    });
-    if (error) throw error;
-  } catch (err) {
-    toast('Error: ' + err.message, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Iniciar sessió';
-  }
-};
-window.doSignup = async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btn-signup');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Creant...';
-  try {
-    const nom = document.getElementById('signup-nom').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value;
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { nom } } });
-    if (error) throw error;
-    toast('Compte creat! Inicia sessió');
-    switchAuthTab('login');
-  } catch (err) {
-    toast('Error: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Crear compte';
-  }
-};
-window.recoverPassword = async (e) => {
-  if (e?.preventDefault) e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
-  if (!email) { toast('Posa primer el teu email', 'error'); return; }
-  try {
-    await supabase.auth.resetPasswordForEmail(email);
-    toast('Email de recuperació enviat');
-  } catch (err) {
-    toast('Error: ' + err.message, 'error');
-  }
-};
-window.doLogout = async () => {
-  if (!confirm('Tancar sessió?')) return;
-  await supabase.auth.signOut();
-  location.reload();
-};
-
-// CARREGAR MEDIADOR — amb timeout obligatori
-async function loadMediador() {
-  console.log('📥 [2] loadMediador() iniciat per user_id:', state.user.id);
-
-  // Fallback per defecte — si tot falla, l'app segueix
-  state.mediador = {
-    user_id: state.user.id,
-    email: state.user.email,
-    nom: state.user.email,
-    rol: 'agent',
-    actiu: true
-  };
-  state.profile = state.mediador;
-
-  try {
-    const query = supabase
-      .from('mediadors')
-      .select('*')
-      .eq('user_id', state.user.id)
-      .maybeSingle();
-
-    const result = await withTimeout(query, 8000, 'consulta mediadors');
-    const { data, error } = result;
-
-    if (error) {
-      console.warn('⚠️ [2] Error consulta mediadors:', error);
-    } else if (data) {
-      state.mediador = data;
-      state.profile = data;
-      console.log('✅ [2] Mediador trobat:', data.nom, '· rol:', data.rol);
-    } else {
-      console.warn('⚠️ [2] Mediador no trobat — fallback agent');
-    }
-  } catch (err) {
-    console.error('❌ [2] Excepció loadMediador:', err.message);
-    console.warn('🔧 [2] Continuant amb mediador fictici (rol: agent)');
+function goBack() {
+  if (historyIdx > 0) {
+    historyIdx--;
+    navigate(history[historyIdx], true);
   }
 }
-
-async function loadUserConfig() {
-  console.log('📥 [3] loadUserConfig() iniciat');
-  state.config = {
-    rams: ['Multiriscos industrial','Accidents conveni col·lectiu','Vehicles RC','RC Patronal','Mercaderies CMR/ICC','Ciber','Salut col·lectiva','Vida','Altres'],
-    model_fast: 'claude-haiku-4-5-20251001',
-    model_smart: 'claude-haiku-4-5-20251001'
-  };
-  try {
-    const query = supabase.from('user_config').select('*').eq('user_id', state.user.id).maybeSingle();
-    const { data } = await withTimeout(query, 3000, 'consulta user_config');
-    if (data) state.config = { ...state.config, ...data };
-    console.log('✅ [3] Config carregat');
-  } catch (err) {
-    console.warn('⚠️ [3] user_config:', err.message, '— usant defaults');
+function goForward() {
+  if (historyIdx < history.length - 1) {
+    historyIdx++;
+    navigate(history[historyIdx], true);
   }
 }
-
-async function loadAllData() {
-  console.log('📥 [4] loadAllData() iniciat');
-  const fetchAll = async (table) => {
-    try {
-      const query = supabase.from(table).select('*');
-      const { data, error } = await withTimeout(query, 5000, `select ${table}`);
-      if (error) {
-        console.warn(`⚠️ [4] ${table} error:`, error.message);
-        return [];
-      }
-      return data || [];
-    } catch (err) {
-      console.warn(`⚠️ [4] ${table} timeout o error:`, err.message);
-      return [];
-    }
-  };
-  const tables = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox_items','notes','agenda_events','esborranys','vinculacions','comparticions','mediadors'];
-  const stateKeys = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox','notes','agenda','esborranys','vinculacions','comparticions','mediadors'];
-  const results = await Promise.all(tables.map(t => fetchAll(t)));
-  tables.forEach((t, i) => { state[stateKeys[i]] = results[i]; });
-  state.usuaris = state.mediadors;
-
-  // FIX admin: actualitzar mediador amb dades reals si el fallback no és correcte
-  if (state.mediadors && state.user) {
-    const real = state.mediadors.find(m => m.user_id === state.user.id);
-    if (real) {
-      console.log('🔧 [4] Mediador real trobat:', real.nom, '· rol:', real.rol);
-      state.mediador = real;
-      state.profile = real;
-    }
-  }
-
-  console.log('✅ [4] Dades:', tables.map((t,i) => `${t}:${results[i].length}`).join(' '));
+function updateNavButtons() {
+  document.getElementById('btnBack').disabled = historyIdx === 0;
+  document.getElementById('btnFwd').disabled = historyIdx >= history.length - 1;
 }
 
-// opts.silent = true → actualitza l'estat i els badges però NO re-renderitza
-// la pestanya actual. Imprescindible per a la bústia IA: si re-renderitzem
-// després de cada import, desapareixen les fitxes pendents d'importar.
-window.refreshData = async (only, opts = {}) => {
-  const map = {
-    clients: 'clients', ofertes: 'ofertes', consolidats: 'consolidats',
-    seguiments: 'seguiments', oportunitats: 'oportunitats', venciments: 'venciments',
-    tasques: 'tasques', asseguradores: 'asseguradores', posts: 'posts',
-    inbox: 'inbox_items', notes: 'notes', agenda: 'agenda_events',
-    esborranys: 'esborranys', vinculacions: 'vinculacions',
-    comparticions: 'comparticions', mediadors: 'mediadors'
-  };
-  if (only && map[only]) {
-    try {
-      const query = supabase.from(map[only]).select('*');
-      const { data } = await withTimeout(query, 5000, `refresh ${only}`);
-      state[only] = data || [];
-      if (only === 'mediadors') state.usuaris = state.mediadors;
-    } catch (err) {
-      console.warn('refresh error:', err.message);
-    }
-  } else {
-    await loadAllData();
-  }
-  if (typeof updateNavBadges === 'function') updateNavBadges();
-  if (!opts.silent && typeof renderCurrentTab === 'function') renderCurrentTab();
-};
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.querySelector('.mobile-overlay').classList.toggle('show');
+}
 
-window.updateNavBadges = () => {
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('nav-clients', state.clients.length);
-  set('nav-pipeline', state.ofertes.filter(o => !['Tancada guanyada','Tancada perduda'].includes(o.estat)).length);
-  set('nav-consolidats', state.consolidats.length);
-  set('nav-opps', state.oportunitats.filter(o => o.estat !== 'Descartada').length);
-  set('nav-venc', state.venciments.length);
-  set('nav-tasques', state.tasques.filter(t => t.estat === 'pendent').length);
-  set('nav-inbox', state.inbox.filter(i => i.estat === 'pendent').length);
-  set('nav-notes', state.notes.length);
-  set('nav-esborranys', (state.esborranys || []).filter(e => e.estat !== 'arxivat').length);
-  const now = new Date(); now.setHours(0,0,0,0);
-  set('nav-agenda', state.agenda.filter(e => new Date(e.data_inici) >= now).length);
-};
-
-// Refresca la UI de l'usuari al sidebar (rol, avatar, admin badges)
-window.refreshUserUI = function() {
-  // Si hi ha mediadors carregats, prendre el real
-  if (state.mediadors && state.user) {
-    const real = state.mediadors.find(m => m.user_id === state.user.id);
-    if (real) {
-      state.mediador = real;
-      state.profile = real;
-    }
-  }
-  const m = state.mediador;
-  if (!m) return;
-
-  const nomMostrar = m.nom || m.email || 'Usuari';
-  const initials = getInitials(nomMostrar);
-
-  const userBlock = document.getElementById('user-info-block');
-  if (userBlock) {
-    userBlock.innerHTML = `
-      <div class="user-avatar" style="background:#0F766E">${initials}</div>
-      <div class="user-info">
-        <div class="user-name">${nomMostrar}</div>
-        <div class="user-role">
-          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
-        </div>
-      </div>
-      <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
-    `;
-  }
-
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.classList.toggle('hidden', !isAdmin());
+// ============ DIAGNÒSTIC ============
+let diagStep = 1;
+const diagAnswers = {};
+function diagAnswer(key, value) {
+  diagAnswers[key] = value;
+  if (diagStep < 5) diagGo(diagStep + 1);
+}
+function diagBack() { if (diagStep > 1) diagGo(diagStep - 1); }
+function diagGo(step) {
+  diagStep = step;
+  document.querySelectorAll('.diag-step').forEach(s => s.classList.remove('active'));
+  document.querySelector('.diag-step[data-step="' + step + '"]').classList.add('active');
+  const dots = document.querySelectorAll('#diagProgress .diag-dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('done','current');
+    if (i < step - 1) d.classList.add('done');
+    if (i === step - 1) d.classList.add('current');
   });
-};
-
-window.showTab = (tab) => {
-  state.currentTab = tab;
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.tab === tab);
-  });
-  refreshUserUI(); // ← refrescar usuari sempre
-  renderCurrentTab();
-  updateNavBadges();
-};
-
-window.renderCurrentTab = () => {
-  const tab = state.currentTab;
-  const c = document.getElementById('tab-content');
-  if (!c) return;
-  c.innerHTML = '';
-  const renderers = {
-    dashboard: window.renderDashboard,
-    clients: window.renderClients,
-    pipeline: window.renderPipeline,
-    consolidats: window.renderConsolidats,
-    seguiments: window.renderSeguiments,
-    oportunitats: window.renderOpps,
-    venciments: window.renderVenciments,
-    tasques: window.renderTasques,
-    asseguradores: window.renderAsseguradores,
-    comunicacio: window.renderComunicacio,
-    usuaris: window.renderUsuaris,
-    ia: window.renderIA,
-    config: window.renderConfig,
-    inbox: window.renderInbox,
-    notes: window.renderNotes,
-    agenda: window.renderAgenda,
-    esborranys: window.renderEsborranys
-  };
-  if (typeof renderers[tab] === 'function') {
-    try { renderers[tab](); return; }
-    catch (err) { console.error(`Render ${tab}:`, err); }
-  }
-  renderBasicTab(tab);
-};
-
-function renderBasicTab(tab) {
-  const c = document.getElementById('tab-content');
-  const titulars = {
-    dashboard: ['🏠 Tauler', "Resum comercial d'avui"],
-    clients: ['👥 Clients', `${state.clients.length} clients`],
-    pipeline: ['🎯 Pipeline', "Ofertes actives"],
-    consolidats: ['🏆 Consolidats', "Tancaments"],
-    seguiments: ['📞 Seguiments', "Interaccions"],
-    oportunitats: ['💡 Oportunitats', "Cross-selling"],
-    venciments: ['📆 Venciments', "90/30/7"],
-    tasques: ['✓ Tasques', "Pendents"],
-    asseguradores: ['🛡️ Asseguradores', "Catàleg"],
-    comunicacio: ['📰 Posts', "LinkedIn"],
-    usuaris: ['👤 Usuaris', "Mediadors"],
-    ia: ['🤖 IA', "Assistent"],
-    config: ['⚙️ Configuració', "Preferències"],
-    inbox: ['📥 Bústia', "Captura"],
-    notes: ['💭 Notes', "Idees"],
-    agenda: ['📅 Agenda', "Esdeveniments"],
-    esborranys: ['📝 Esborranys', "A mig fer"]
-  };
-  const [tit, sub] = titulars[tab] || [tab, ''];
-  let preview = '';
-  if (tab === 'dashboard') {
-    const ofertesObertes = state.ofertes.filter(o => !['Tancada guanyada','Tancada perduda'].includes(o.estat));
-    const now = new Date();
-    const tancMes = state.consolidats.filter(c => {
-      const d = new Date(c.data_tancament);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    preview = `
-      <div class="metrics">
-        <div class="metric"><div class="metric-label">Pipeline</div><div class="metric-value">${ofertesObertes.length}</div><div class="metric-sub">ofertes obertes</div></div>
-        <div class="metric"><div class="metric-label">Tancaments mes</div><div class="metric-value">${tancMes.length}</div><div class="metric-sub">guanyats</div></div>
-        <div class="metric"><div class="metric-label">Clients</div><div class="metric-value">${state.clients.length}</div><div class="metric-sub">a la cartera</div></div>
-        <div class="metric"><div class="metric-label">Oportunitats</div><div class="metric-value">${state.oportunitats.filter(o => o.estat !== 'Descartada').length}</div><div class="metric-sub">detectades</div></div>
-      </div>
-    `;
-  } else if (tab === 'clients' && state.clients.length > 0) {
-    preview = `
-      <div class="card">
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Clients de la cartera:</div>
-        ${state.clients.slice(0, 20).map(c => `
-          <div style="padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
-            <span style="font-weight:500">${c.empresa || c.nom || '?'}</span>
-            <span style="color:var(--text-3);font-size:11px">${c.cif || c.email || ''}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  } else if (tab === 'usuaris' && isAdmin()) {
-    preview = `
-      <div class="card" style="padding:0;overflow-x:auto">
-        <table class="table">
-          <thead><tr><th>Nom</th><th>Email</th><th>Rol</th><th>Actiu</th></tr></thead>
-          <tbody>${state.mediadors.map(u => `
-            <tr><td><strong>${u.nom || '—'}</strong></td><td>${u.email}</td><td><span class="role-badge ${u.rol === 'admin' ? 'role-admin' : 'role-agent'}">${u.rol}</span></td><td>${u.actiu ? '✓' : '✗'}</td></tr>
-          `).join('')}</tbody>
-        </table>
-      </div>
-    `;
-  }
-  c.innerHTML = `
-    <div class="topbar"><div><div class="page-title">${tit}</div><div class="page-sub">${sub}</div></div></div>
-    ${preview}
-    ${!preview ? `<div class="card"><div class="empty-state"><div class="empty-icon">🚧</div>En construcció</div></div>` : ''}
-  `;
+}
+function diagSubmit() {
+  const nom = document.getElementById('diag-nom').value.trim();
+  const email = document.getElementById('diag-email').value.trim();
+  if (!nom || !email) { alert('Necessitem el teu nom i email per enviar-te el diagnòstic.'); return; }
+  diagAnswers.nom = nom; diagAnswers.email = email;
+  diagAnswers.telefon = document.getElementById('diag-tel').value.trim();
+  // Aquí connectaríem amb el CRM real (HubSpot, Brevo…)
+  document.querySelectorAll('.diag-step, #diagProgress').forEach(el => el.style.display = 'none');
+  document.getElementById('diagThanks').classList.add('show');
 }
 
-async function startApp() {
-  console.log('🚀 [5] startApp() iniciat');
-  try {
-    document.getElementById('app-loading').classList.add('hidden');
-    document.getElementById('auth-page').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-
-    const m = state.mediador;
-    const nomMostrar = m?.nom || m?.email || 'Usuari';
-    const initials = getInitials(nomMostrar);
-
-    document.getElementById('user-info-block').innerHTML = `
-      <div class="user-avatar" style="background:#0F766E">${initials}</div>
-      <div class="user-info">
-        <div class="user-name">${nomMostrar}</div>
-        <div class="user-role">
-          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m?.rol || 'agent'}</span>
-        </div>
-      </div>
-      <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
-    `;
-
-    document.querySelectorAll('.admin-only').forEach(el => {
-      el.classList.toggle('hidden', !isAdmin());
-    });
-
-    console.log('🎨 [5] UI base pintada, ara carregant dades...');
-
-    // Carregar dades en paral·lel (no bloqueja UI inicial)
-    loadAllData().then(() => {
-      console.log('🎉 [6] Dades carregades, refrescant UI');
-      refreshUserUI();
-      if (state.currentTab) renderCurrentTab();
-      updateNavBadges();
-    }).catch(err => {
-      console.error('⚠️ loadAllData error (no bloqueja):', err);
-    });
-
-    document.querySelectorAll('.nav-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const tab = el.dataset.tab;
-        if (tab) showTab(tab);
-      });
-    });
-
-    showTab('dashboard');
-    console.log('✅ [5] startApp acabat (dades carregant en segon pla)');
-  } catch (err) {
-    console.error('❌ [5] Error startApp:', err);
-    document.getElementById('app-loading').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-    const c = document.getElementById('tab-content');
-    if (c) c.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">⚠️</div><strong>Error:</strong><br>${err.message}<br><br><button class="btn btn-primary" onclick="location.reload()">Tornar a provar</button></div></div>`;
-  }
+// ============ COTITZADOR ============
+function togglePill(input) {
+  const pill = input.closest('.cot-pill');
+  if (input.checked) pill.classList.add('checked');
+  else pill.classList.remove('checked');
 }
-
-function showLogin() {
-  console.log('🔓 [-] showLogin()');
-  document.getElementById('app-loading').classList.add('hidden');
-  document.getElementById('auth-page').classList.remove('hidden');
-  document.getElementById('main-app').classList.add('hidden');
-}
-
-let _appStarted = false;
-
-supabase.auth.onAuthStateChange(async (event, session) => {
-  console.log('🔐 Auth event:', event);
-  if (event === 'SIGNED_IN' && session?.user && !_appStarted) {
-    _appStarted = true;
-    state.user = session.user;
-    try {
-      await loadMediador();
-      await loadUserConfig();
-      await startApp();
-    } catch (err) {
-      console.error('Error SIGNED_IN:', err);
-    }
-  } else if (event === 'SIGNED_OUT') {
-    _appStarted = false;
-    state.user = null;
-    state.mediador = null;
-    state.profile = null;
-    showLogin();
-  }
+document.querySelectorAll('.cot-pill input').forEach(i => {
+  if (i.checked) i.closest('.cot-pill').classList.add('checked');
 });
 
-// Init
-(async () => {
-  try {
-    console.log('🔍 [INIT] Verificant sessió...');
-    const sessionResult = await withTimeout(supabase.auth.getSession(), 5000, 'getSession');
-    const session = sessionResult?.data?.session;
+function cotitzar() {
+  const activitat = document.getElementById('cot-activitat').value;
+  const participants = Math.max(1, parseInt(document.getElementById('cot-participants').value) || 1);
+  const dies = Math.max(1, parseInt(document.getElementById('cot-dies').value) || 1);
+  const monitors = Math.max(0, parseInt(document.getElementById('cot-monitors').value) || 0);
+  const menors = document.getElementById('cot-menors').checked;
+  const rc = document.getElementById('cot-rc').checked;
+  const defensa = document.getElementById('cot-defensa').checked;
+  const assistencia = document.getElementById('cot-assistencia').checked;
 
-    if (session?.user && !_appStarted) {
-      _appStarted = true;
-      console.log('🔐 [INIT] Sessió activa:', session.user.email);
-      state.user = session.user;
-      await loadMediador();
-      await loadUserConfig();
-      await startApp();
-    } else if (!session?.user) {
-      console.log('🔐 [INIT] Sense sessió');
-      showLogin();
-    }
-  } catch (err) {
-    console.error('❌ [INIT] Error:', err.message);
-    document.getElementById('app-loading').classList.add('hidden');
-    if (state.user && !_appStarted) {
-      _appStarted = true;
-      console.warn('🆘 [INIT] Tot i l\'error, mostrem main app');
-      try {
-        await startApp();
-      } catch (e) {
-        showLogin();
-      }
-    } else if (!state.user) {
-      showLogin();
-    }
+  const mult = { casal:1.0, colonia:1.25, campus:1.35, formacio:0.85, excursio:0.95, esdeveniment:1.1 }[activitat] || 1.0;
+  let base = participants * dies * 0.55 * mult;
+  if (menors) base += participants * dies * 0.25;
+  base += monitors * dies * 0.45;
+  if (rc) base += 120 + participants * 1.2;
+  if (defensa) base += 60 + participants * 0.4;
+  if (assistencia) base += 90 + participants * 0.6;
+  base = Math.max(base, 75);
+  const min = Math.round(base * 0.85);
+  const max = Math.round(base * 1.15);
+  document.getElementById('cot-preu').textContent = min + ' – ' + max + ' €';
+  document.getElementById('cot-rang').textContent = 'Estimació per ' + dies + ' dies · ' + participants + ' persones';
+}
+cotitzar();
+
+// ============ CLOCK ============
+function tick() {
+  const d = new Date();
+  const days = ['dg','dl','dt','dc','dj','dv','ds'];
+  const months = ['gen','feb','mar','abr','mai','jun','jul','ago','set','oct','nov','des'];
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + '  ' + h + ':' + m;
+}
+tick(); setInterval(tick, 30000);
+
+// ============ KEYBOARD ============
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.altKey) && e.key === 'ArrowLeft') { goBack(); e.preventDefault(); }
+  if ((e.metaKey || e.altKey) && e.key === 'ArrowRight') { goForward(); e.preventDefault(); }
+  if (e.key === 'Escape') { navigate('home'); }
+});
+
+// ============ SEARCH (basic filter on current view) ============
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase().trim();
+  const view = document.querySelector('.view.active, .doc-view.active, .app-view.active');
+  if (!view) return;
+  view.querySelectorAll('.item').forEach(item => {
+    const name = item.textContent.toLowerCase();
+    item.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+});
+
+// ============ MENU BAR DROPDOWNS ============
+function toggleMenu(name, ev) {
+  if (ev) ev.stopPropagation();
+  const menu = document.getElementById('menu-' + name);
+  if (!menu) return;
+  const trigger = menu.previousElementSibling;
+  const wasOpen = menu.classList.contains('open');
+  closeAllMenus();
+  if (!wasOpen) {
+    menu.classList.add('open');
+    trigger.classList.add('active');
   }
-})();
+}
+function closeAllMenus() {
+  document.querySelectorAll('.menu-dropdown.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.menubar-item.active').forEach(b => b.classList.remove('active'));
+}
+// Close on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.menubar-item-wrap')) closeAllMenus();
+});
+// Auto-close after clicking an action inside a menu
+document.querySelectorAll('.menu-action').forEach(a => {
+  a.addEventListener('click', () => setTimeout(closeAllMenus, 60));
+});
+// Hover-to-switch when one menu is already open (macOS behaviour)
+document.querySelectorAll('.menubar-item-wrap').forEach(wrap => {
+  wrap.addEventListener('mouseenter', () => {
+    const anyOpen = document.querySelector('.menu-dropdown.open');
+    if (anyOpen) {
+      const trigger = wrap.querySelector('.menubar-item');
+      const id = trigger.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+      if (id) toggleMenu(id);
+    }
+  });
+});
+
+// ============ MENU ACTIONS ============
+function focusSearch() {
+  document.getElementById('searchInput').focus();
+}
+function copyCurrentUrl() {
+  const active = document.querySelector('.view.active, .doc-view.active, .app-view.active');
+  const view = active ? active.id.replace('view-','') : 'home';
+  const path = titles[view] ? titles[view].path.join('/') : 'covera.es';
+  const url = 'https://' + path;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('Copiat: ' + url));
+  } else {
+    toast('URL: ' + url);
+  }
+}
+
+// ============ TOAST ============
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:48px;left:50%;transform:translateX(-50%) translateY(8px);background:#0A2D56;color:#fff;padding:12px 20px;border-radius:8px;font-family:var(--font-mono);font-size:12px;z-index:1000;box-shadow:0 12px 32px rgba(10,45,86,0.28);opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  requestAnimationFrame(() => {
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  clearTimeout(t._h);
+  t._h = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(8px)';
+  }, 2400);
+}
+
+updateNavButtons();

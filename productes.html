@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productes | COVERA</title>
+<link rel="canonical" href="https://covera.es/productes.html">
+<meta property="og:title" content="Productes | COVERA">
+<meta property="og:description" content="Totes les solucions asseguradores de COVERA ordenades per situació real: persones, autònoms, empreses, socis i directius.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://covera.es/productes.html">
+<meta property="og:site_name" content="COVERA">
+<meta property="og:locale" content="ca_ES">
+<meta property="og:image" content="https://covera.es/assets/og-covera.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Totes les solucions asseguradores de COVERA ordenades per situació real: persones, autònoms, empreses, socis i directius.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cobalt:#0A2D56;--cobalt2:#0d3a6b;
+  --mint:#6FB7AE;--mint2:#8fcdc5;--mint-bg:#E6F2EF;
+  --arena:#F7F3EF;--arena2:#ede8e2;
+  --niebla:#8FA3B3;--gris:#2B2F33;--gris2:#5a6370;
+  --font-h:'Montserrat',sans-serif;--font-b:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);color:var(--gris);background:var(--arena);line-height:1.6}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:var(--cobalt);display:flex;align-items:center;justify-content:space-between;padding:13px 36px;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-logo-wrap{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-text{font-family:var(--font-h);font-weight:800;font-size:16px;color:white;letter-spacing:3px}
+.nav-logo-text span{color:var(--mint)}
+.nav-right{display:flex;align-items:center;gap:14px}
+.lang-toggle{display:flex;gap:3px;background:rgba(255,255,255,.1);padding:3px;border-radius:5px}
+.lang-btn{font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:1px;padding:4px 9px;border:none;cursor:pointer;border-radius:3px;background:transparent;color:rgba(255,255,255,.5);transition:all .15s}
+.lang-btn.active{background:var(--mint);color:var(--cobalt)}
+.nav-cta{font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.3px;padding:7px 16px;background:var(--mint);color:var(--cobalt);border:none;border-radius:6px;cursor:pointer;text-decoration:none;transition:background .15s}
+.nav-cta:hover{background:var(--mint2)}
+
+/* HERO */
+.hero{background:var(--cobalt);padding:56px 36px 48px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;right:-60px;top:-60px;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(111,183,174,.15) 0%,transparent 70%)}
+.hero-inner{max-width:820px;margin:0 auto;position:relative;z-index:1}
+.hero-breadcrumb{font-family:var(--font-h);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:16px}
+.hero-breadcrumb span{color:var(--mint)}
+.hero h1{font-family:var(--font-h);font-weight:800;font-size:clamp(24px,3.5vw,40px);color:white;line-height:1.15;margin-bottom:14px}
+.hero h1 em{color:var(--mint);font-style:normal}
+.hero-sub{font-size:15px;color:rgba(255,255,255,.65);max-width:560px;line-height:1.65}
+.wave{display:block;background:var(--cobalt);line-height:0}
+.wave svg{display:block;width:100%;height:36px}
+
+/* STICKY SEGMENT NAV */
+.seg-nav{background:white;border-bottom:1px solid var(--arena2);position:sticky;top:52px;z-index:90;padding:0 36px}
+.seg-nav-inner{max-width:820px;margin:0 auto;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.seg-nav-inner::-webkit-scrollbar{display:none}
+.seg-btn{font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.3px;padding:13px 18px;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;color:var(--niebla);white-space:nowrap;transition:all .15s}
+.seg-btn:hover{color:var(--cobalt)}
+.seg-btn.active{color:var(--cobalt);border-bottom-color:var(--mint)}
+
+/* SEGMENT SECTION */
+.seg-section{max-width:820px;margin:0 auto;padding:52px 36px 20px}
+.seg-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid var(--mint-bg)}
+.seg-icon-wrap{width:48px;height:48px;border-radius:12px;background:var(--cobalt);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.seg-icon{font-size:22px}
+.seg-header-text h2{font-family:var(--font-h);font-weight:800;font-size:clamp(18px,2.5vw,26px);color:var(--cobalt);margin-bottom:4px}
+.seg-header-text h2 em{color:var(--mint);font-style:normal}
+.seg-header-text p{font-size:13.5px;color:var(--gris2);line-height:1.55;max-width:560px}
+
+/* PRODUCT GRID */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:16px}
+.prod-card{
+  background:white;border:1px solid var(--arena2);border-radius:12px;
+  padding:18px 16px;cursor:pointer;
+  transition:border-color .15s, transform .1s, box-shadow .15s;
+  text-decoration:none;display:block;
+  position:relative;overflow:hidden;
+}
+.prod-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--mint-bg);transition:background .15s}
+.prod-card:hover{border-color:var(--mint);transform:translateY(-1px);box-shadow:0 4px 16px rgba(10,45,86,.08)}
+.prod-card:hover::before{background:var(--mint)}
+.prod-card-tag{font-family:var(--font-h);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--niebla);margin-bottom:7px}
+.prod-card-title{font-family:var(--font-h);font-weight:700;font-size:14px;color:var(--cobalt);margin-bottom:6px;line-height:1.3}
+.prod-card-desc{font-size:12.5px;color:var(--gris2);line-height:1.5}
+.prod-card-arrow{position:absolute;right:14px;bottom:14px;font-size:14px;color:var(--mint);font-weight:700;opacity:0;transition:opacity .15s}
+.prod-card:hover .prod-card-arrow{opacity:1}
+.prod-note{font-size:12px;color:var(--niebla);font-style:italic;padding:8px 0 24px;line-height:1.5}
+
+/* DIVIDER */
+.seg-divider{border:none;border-top:1px solid var(--arena2);margin:8px 0 0}
+
+/* CTA FINAL */
+.cta-strip{background:var(--cobalt);padding:52px 36px}
+.cta-strip-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.cta-strip h2{font-family:var(--font-h);font-weight:800;font-size:clamp(18px,2.5vw,26px);color:white;line-height:1.2}
+.cta-strip h2 em{color:var(--mint);font-style:normal}
+.cta-strip p{font-size:14px;color:rgba(255,255,255,.65);margin-top:6px;max-width:480px;line-height:1.55}
+.cta-strip-btns{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn-p{font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:.3px;padding:13px 24px;background:var(--mint);color:var(--cobalt);border:none;border-radius:7px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s;text-align:center}
+.btn-p:hover{background:var(--mint2)}
+.btn-s{font-family:var(--font-h);font-size:12px;font-weight:600;padding:10px 24px;background:transparent;color:white;border:1.5px solid rgba(255,255,255,.3);border-radius:7px;cursor:pointer;text-decoration:none;white-space:nowrap;text-align:center;transition:border-color .15s}
+.btn-s:hover{border-color:white}
+
+/* FOOTER */
+footer{background:var(--gris);padding:28px 36px;text-align:center}
+footer p{font-size:11.5px;color:rgba(255,255,255,.4);line-height:1.6}
+footer a{color:var(--mint);text-decoration:none}
+
+@media(max-width:640px){
+  nav,.seg-nav{padding-left:18px;padding-right:18px}
+  .hero{padding:40px 18px 36px}
+  .seg-section{padding:40px 18px 16px}
+  .cta-strip{padding:44px 18px}
+  .nav-cta{display:none}
+  .seg-btn{padding:12px 14px;font-size:11px}
+}
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": ["InsuranceAgency", "LocalBusiness"], "@id": "https://covera.es/#org", "name": "COVERA", "url": "https://covera.es", "areaServed": {"@type": "State", "name": "Catalunya"}, "knowsLanguage": ["ca", "es"]}, {"@type": "WebPage", "@id": "https://covera.es/productes.html#webpage", "url": "https://covera.es/productes.html", "name": "Productes | COVERA", "description": "Totes les solucions asseguradores de COVERA ordenades per situació real: persones, autònoms, empreses, socis i directius.", "inLanguage": "ca", "isPartOf": {"@id": "https://covera.es/#website"}, "about": {"@id": "https://covera.es/#org"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Inici", "item": "https://covera.es/"}, {"@type": "ListItem", "position": 2, "name": "Productes", "item": "https://covera.es/productes.html"}]}]}</script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo-wrap">
+    <!-- Logo SVG inline — isotip C3 + wordmark -->
+    <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="COVERA isotip">
+      <circle cx="34" cy="50" r="30" fill="#0A2D56"/>
+      <circle cx="34" cy="50" r="30" fill="none" stroke="#0A2D56" stroke-width="0"/>
+      <path d="M34 22 A28 28 0 1 0 34 78 A28 28 0 0 1 34 22 Z" fill="#0A2D56"/>
+      <text x="18" y="62" font-family="Montserrat,sans-serif" font-weight="800" font-size="42" fill="white">C</text>
+      <text x="52" y="62" font-family="Montserrat,sans-serif" font-weight="800" font-size="42" fill="#6FB7AE">3</text>
+    </svg>
+    <span class="nav-logo-text">COV<span>E</span>RA</span>
+  </a>
+  <div class="nav-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('ca')" id="btn-ca">CA</button>
+      <button class="lang-btn" onclick="setLang('es')" id="btn-es">ES</button>
+    </div>
+    <a href="#cta" class="nav-cta" id="nav-cta-lbl">Diagnòstic gratuït</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-breadcrumb" id="hero-bc">COVERA · <span id="hero-bc-span">Productes i solucions</span></div>
+    <h1 id="hero-h1">No comencem pel producte.<br><em>Comencem pel que vols protegir.</em></h1>
+    <p class="hero-sub" id="hero-sub">Cada producte assegurador existeix per resoldre una situació real. Aquí els tens ordenats per qui ets i per allò que necessites cobrir.</p>
+  </div>
+</section>
+<div class="wave"><svg viewBox="0 0 1440 36" preserveAspectRatio="none"><path d="M0,0 Q720,36 1440,0 L1440,36 L0,36 Z" fill="#F7F3EF"/></svg></div>
+
+<!-- STICKY NAV -->
+<div class="seg-nav">
+  <div class="seg-nav-inner">
+    <button class="seg-btn active" onclick="scrollTo('persones')" id="snav-persones" data-ca="Persones i famílies" data-es="Personas y familias">Persones i famílies</button>
+    <button class="seg-btn" onclick="scrollTo('autonoms')" id="snav-autonoms" data-ca="Autònoms" data-es="Autónomos">Autònoms</button>
+    <button class="seg-btn" onclick="scrollTo('empreses')" id="snav-empreses" data-ca="Empreses" data-es="Empresas">Empreses</button>
+    <button class="seg-btn" onclick="scrollTo('socis')" id="snav-socis" data-ca="Socis i directius" data-es="Socios y directivos">Socis i directius</button>
+  </div>
+</div>
+
+<!-- ── PERSONES ── -->
+<section id="persones">
+<div class="seg-section">
+  <div class="seg-header">
+    <div class="seg-icon-wrap"><span class="seg-icon">👨‍👩‍👧</span></div>
+    <div class="seg-header-text">
+      <h2 id="ph2">Persones i <em>famílies</em></h2>
+      <p id="psub">Protegir una família no és tenir moltes pòlisses. És saber què passaria si falta salut, ingressos, capital o ordre. Aquí tens les solucions que revisem.</p>
+    </div>
+  </div>
+
+  <div class="prod-grid" id="grid-persones"></div>
+  <p class="prod-note" id="note-persones">Els decessos poden tenir sentit en determinats contextos familiars. A COVERA l'analitzem quan és rellevant, sense que sigui la porta d'entrada a la conversa.</p>
+  <hr class="seg-divider">
+</div>
+</section>
+
+<!-- ── AUTÒNOMS ── -->
+<section id="autonoms">
+<div class="seg-section">
+  <div class="seg-header">
+    <div class="seg-icon-wrap"><span class="seg-icon">💼</span></div>
+    <div class="seg-header-text">
+      <h2 id="ah2">Autònoms i <em>professionals</em></h2>
+      <p id="asub">Quan no factures, no entra res. La protecció d'un autònom ha de cobrir la persona, els ingressos i el futur alhora.</p>
+    </div>
+  </div>
+  <div class="prod-grid" id="grid-autonoms"></div>
+  <hr class="seg-divider">
+</div>
+</section>
+
+<!-- ── EMPRESES ── -->
+<section id="empreses">
+<div class="seg-section">
+  <div class="seg-header">
+    <div class="seg-icon-wrap"><span class="seg-icon">🏢</span></div>
+    <div class="seg-header-text">
+      <h2 id="eh2">Empreses que <em>cuiden l'equip</em></h2>
+      <p id="esub">Les empreses ja no competeixen només per salari. També competeixen per la capacitat de protegir i fidelitzar les persones. Aquí tens les solucions asseguradores.</p>
+    </div>
+  </div>
+  <div class="prod-grid" id="grid-empreses"></div>
+  <hr class="seg-divider">
+</div>
+</section>
+
+<!-- ── SOCIS ── -->
+<section id="socis">
+<div class="seg-section">
+  <div class="seg-header">
+    <div class="seg-icon-wrap"><span class="seg-icon">🤝</span></div>
+    <div class="seg-header-text">
+      <h2 id="sh2">Socis, directius i <em>persones clau</em></h2>
+      <p id="ssub">Quan una persona és clau per a l'empresa, la seva protecció també ho és. Solucions per a continuïtat, liquiditat i previsió en l'àmbit directiu i societari.</p>
+    </div>
+  </div>
+  <div class="prod-grid" id="grid-socis"></div>
+</div>
+</section>
+
+<!-- CTA FINAL -->
+<div class="cta-strip" id="cta">
+  <div class="cta-strip-inner">
+    <div>
+      <h2 id="cta-h2">No saps per on<br><em>començar?</em></h2>
+      <p id="cta-sub">No cal que ho tinguis clar. En 15 minuts et podem dir quins productes tenen sentit per a la teva situació i quins no.</p>
+    </div>
+    <div class="cta-strip-btns">
+      <a href="diagnostic.html" class="btn-p" id="cta-btn1">Fer el diagnòstic</a>
+      <a href="tel:+34900000000" class="btn-s" id="cta-btn2">Trucar ara</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p id="footer-txt">
+    <svg width="18" height="18" viewBox="0 0 100 100" fill="none" style="vertical-align:middle;margin-right:6px" aria-hidden="true">
+      <text x="8" y="68" font-family="Montserrat,sans-serif" font-weight="800" font-size="52" fill="#6FB7AE">C</text>
+      <text x="50" y="68" font-family="Montserrat,sans-serif" font-weight="800" font-size="52" fill="rgba(255,255,255,.35)">3</text>
+    </svg>
+    COVERA · Corredoria d'assegurances especialista · <a href="#">Avís legal</a> · <a href="#">Privacitat</a>
+  </p>
+</footer>
+
+<script>
+/* ── DATA ── */
+const PRODS = {
+  persones: {
+    ca: [
+      {tag:'Protecció familiar',title:'Vida risc',desc:'Capital per a la família si la persona que sosté els ingressos no pot continuar. El producte de protecció familiar més important.',url:'vida-risc.html'},
+      {tag:'Hipoteca',title:'Vida hipoteca',desc:'Cobreix el capital pendent de la hipoteca. Diferent al que ofereix el banc: independent, revisable i sense costos ocults.',url:'vida-hipoteca.html'},
+      {tag:'Assistència mèdica',title:'Salut',desc:'Accés a metges, especialistes i proves sense llistes d\'espera. Per a persones, parelles i famílies completes.',url:'salut.html'},
+      {tag:'Estalvi a llarg termini',title:'Vida estalvi',desc:'Construir un capital amb una finalitat: jubilació, fills, hereus o renda futura. Separat del compte corrent.',url:'vida-estalvi.html'},
+      {tag:'Estalvi assegurador',title:'PIAS',desc:'Pla Individual d\'Estalvi Sistemàtic. Aportacions periòdiques amb avantatge fiscal si es converteix en renda vitalícia.',url:'pias.html'},
+      {tag:'Estalvi lliure',title:'SIALP',desc:'Segur Individual d\'Estalvi a Llarg Termini. Capital garantit, liquiditat als 5 anys i fiscalitat avantatjosa si es manté.',url:'sialp.html'},
+      {tag:'Previsió jubilació',title:'PPA',desc:'Pla de Previsió Assegurat. Com un pla de pensions però amb capital garantit i gestió asseguradora.',url:'ppa.html'},
+      {tag:'Renda periòdica',title:'Renda vitalícia',desc:'Convertir un capital en ingressos mensuals garantits per a tota la vida. Especialment útil en jubilació o successió.',url:'renda-vitalicia.html'},
+      {tag:'Renda a termini',title:'Renda temporal',desc:'Capital que es converteix en ingressos durant un període determinat. Per a transicions, jubilació anticipada o fills.',url:'renda-temporal.html'},
+      {tag:'Successió',title:'Designació de beneficiaris',desc:'Saber qui cobra i quan en cas de sinistre. Una decisió que moltes famílies no han pres bé.',url:'beneficiaris.html'},
+      {tag:'Cobertura defunció',title:'Decessos',desc:'Cobertura de les despeses associades al moment de la defunció. S\'analitza quan és rellevant per al context familiar.',url:'decessos.html'},
+    ],
+    es: [
+      {tag:'Protección familiar',title:'Vida riesgo',desc:'Capital para la familia si la persona que sostiene los ingresos no puede continuar. El producto de protección familiar más importante.',url:'vida-risc.html'},
+      {tag:'Hipoteca',title:'Vida hipoteca',desc:'Cubre el capital pendiente de la hipoteca. Diferente a lo que ofrece el banco: independiente, revisable y sin costes ocultos.',url:'vida-hipoteca.html'},
+      {tag:'Asistencia médica',title:'Salud',desc:'Acceso a médicos, especialistas y pruebas sin listas de espera. Para personas, parejas y familias completas.',url:'salut.html'},
+      {tag:'Ahorro a largo plazo',title:'Vida ahorro',desc:'Construir un capital con una finalidad: jubilación, hijos, herederos o renta futura. Separado de la cuenta corriente.',url:'vida-estalvi.html'},
+      {tag:'Ahorro asegurador',title:'PIAS',desc:'Plan Individual de Ahorro Sistemático. Aportaciones periódicas con ventaja fiscal si se convierte en renta vitalicia.',url:'pias.html'},
+      {tag:'Ahorro libre',title:'SIALP',desc:'Seguro Individual de Ahorro a Largo Plazo. Capital garantizado, liquidez a los 5 años y fiscalidad ventajosa si se mantiene.',url:'sialp.html'},
+      {tag:'Previsión jubilación',title:'PPA',desc:'Plan de Previsión Asegurado. Como un plan de pensiones pero con capital garantizado y gestión aseguradora.',url:'ppa.html'},
+      {tag:'Renta periódica',title:'Renta vitalicia',desc:'Convertir un capital en ingresos mensuales garantizados para toda la vida. Especialmente útil en jubilación o sucesión.',url:'renda-vitalicia.html'},
+      {tag:'Renta a plazo',title:'Renta temporal',desc:'Capital que se convierte en ingresos durante un período determinado. Para transiciones, jubilación anticipada o hijos.',url:'renda-temporal.html'},
+      {tag:'Sucesión',title:'Designación de beneficiarios',desc:'Saber quién cobra y cuándo en caso de siniestro. Una decisión que muchas familias no han tomado bien.',url:'beneficiaris.html'},
+      {tag:'Cobertura defunción',title:'Decesos',desc:'Cobertura de los gastos asociados al momento del fallecimiento. Se analiza cuando es relevante para el contexto familiar.',url:'decessos.html'},
+    ]
+  },
+  autonoms: {
+    ca: [
+      {tag:'Assistència mèdica',title:'Salut',desc:'Accés ràpid a especialistes sense esperes. Per a autònoms, la salut privada és una eina de productivitat, no un luxe.',url:'salut.html'},
+      {tag:'Protecció ingressos',title:'ILT / Baixa laboral',desc:'Si no pots treballar, els ingressos no s\'aturen. Indemnització diària mentre dura la baixa per malaltia o accident.',url:'ilt.html'},
+      {tag:'Riscos professionals',title:'Accidents',desc:'Cobertura per accidents laborals i no laborals. Capital, invalidesa i assistència mèdica sense dependre del sistema públic.',url:'accidents-autonoms.html'},
+      {tag:'Protecció familiar',title:'Vida risc',desc:'Si l\'autònom és el principal sustentador de la família, el capital de vida ha d\'estar ben calculat i independent del banc.',url:'vida-risc.html'},
+      {tag:'Visió global',title:'Protecció d\'ingressos',desc:'Anàlisi integral de tots els riscos que afecten la capacitat de facturar: baixa, accident, malaltia greu, invalidesa.',url:'proteccio-ingressos.html'},
+      {tag:'Previsió futura',title:'Jubilació autònoms',desc:'Els autònoms cotitzen menys i cobren pensions més baixes. La previsió privada és especialment rellevant per a aquest col·lectiu.',url:'jubilacio-autonoms.html'},
+      {tag:'Estalvi i previsió',title:'PIAS / PPA',desc:'Productes asseguradors d\'estalvi adequats per a autònoms amb ingressos irregulars. Flexibilitat en aportacions i objectiu clar.',url:'pias.html'},
+    ],
+    es: [
+      {tag:'Asistencia médica',title:'Salud',desc:'Acceso rápido a especialistas sin esperas. Para autónomos, la salud privada es una herramienta de productividad, no un lujo.',url:'salut.html'},
+      {tag:'Protección ingresos',title:'ILT / Baja laboral',desc:'Si no puedes trabajar, los ingresos no se paran. Indemnización diaria mientras dura la baja por enfermedad o accidente.',url:'ilt.html'},
+      {tag:'Riesgos profesionales',title:'Accidentes',desc:'Cobertura por accidentes laborales y no laborales. Capital, invalidez y asistencia médica sin depender del sistema público.',url:'accidents-autonoms.html'},
+      {tag:'Protección familiar',title:'Vida riesgo',desc:'Si el autónomo es el principal sustentador de la familia, el capital de vida debe estar bien calculado e independiente del banco.',url:'vida-risc.html'},
+      {tag:'Visión global',title:'Protección de ingresos',desc:'Análisis integral de todos los riesgos que afectan la capacidad de facturar: baja, accidente, enfermedad grave, invalidez.',url:'proteccio-ingressos.html'},
+      {tag:'Previsión futura',title:'Jubilación autónomos',desc:'Los autónomos cotizan menos y cobran pensiones más bajas. La previsión privada es especialmente relevante para este colectivo.',url:'jubilacio-autonoms.html'},
+      {tag:'Ahorro y previsión',title:'PIAS / PPA',desc:'Productos aseguradores de ahorro adecuados para autónomos con ingresos irregulares. Flexibilidad en aportaciones y objetivo claro.',url:'pias.html'},
+    ]
+  },
+  empreses: {
+    ca: [
+      {tag:'Benefici principal',title:'Salut col·lectiva',desc:'Accés a medicina privada per a tots els treballadors. Deduïble fiscalment, percepció de valor molt alta i fàcil de comunicar.',url:'salut-collectiva.html'},
+      {tag:'Protecció familiar equip',title:'Vida col·lectiva',desc:'Capital per a la família del treballador si mor o queda invàlid. Benefici de baix cost i alt impacte emocional per a l\'equip.',url:'vida-collectiva.html'},
+      {tag:'Obligació laboral',title:'Accidents segons conveni',desc:'Moltes empreses no saben si compleixen bé les obligacions del seu conveni. Revisem capitals, garanties i cobertures.',url:'accidents-conveni.html'},
+      {tag:'Optimització fiscal',title:'Retribució flexible',desc:'Part del salari brut es destina a productes amb avantatge fiscal. Millora el net del treballador sense incrementar el cost empresa.',url:'retribucio-flexible.html'},
+      {tag:'Fidelització equip',title:'Benefici social',desc:'L\'empresa paga un producte addicional al salari. Salut, vida, previsió. Diferent de la retribució flexible: aquí paga l\'empresa.',url:'benefici-social.html'},
+      {tag:'Previsió empresarial',title:'PPSE',desc:'Pla de Previsió Social Empresarial. Aportacions de l\'empresa per als treballadors. Deduïble i amb gran valor percebut per l\'equip.',url:'ppe.html'},
+      {tag:'Compromisos futurs',title:'Compromisos per pensions',desc:'Quan l\'empresa té compromisos adquirits amb treballadors o directius en matèria de previsió, cal exterioritzar-los correctament.',url:'compromisos-pensions.html'},
+      {tag:'Diagnòstic empresarial',title:'Auditoria de pòlisses',desc:'Revisem totes les pòlisses actives de l\'empresa: cobertures, capitals, duplicitats, forats de protecció i oportunitats de millora.',url:'auditoria.html'},
+    ],
+    es: [
+      {tag:'Beneficio principal',title:'Salud colectiva',desc:'Acceso a medicina privada para todos los trabajadores. Deducible fiscalmente, percepción de valor muy alta y fácil de comunicar.',url:'salut-collectiva.html'},
+      {tag:'Protección familiar equipo',title:'Vida colectiva',desc:'Capital para la familia del trabajador si muere o queda inválido. Beneficio de bajo coste y alto impacto emocional para el equipo.',url:'vida-collectiva.html'},
+      {tag:'Obligación laboral',title:'Accidentes según convenio',desc:'Muchas empresas no saben si cumplen bien las obligaciones de su convenio. Revisamos capitales, garantías y coberturas.',url:'accidents-conveni.html'},
+      {tag:'Optimización fiscal',title:'Retribución flexible',desc:'Parte del salario bruto se destina a productos con ventaja fiscal. Mejora el neto del trabajador sin incrementar el coste empresa.',url:'retribucio-flexible.html'},
+      {tag:'Fidelización equipo',title:'Beneficio social',desc:'La empresa paga un producto adicional al salario. Salud, vida, previsión. Diferente de la retribución flexible: aquí paga la empresa.',url:'benefici-social.html'},
+      {tag:'Previsión empresarial',title:'PPSE',desc:'Plan de Previsión Social Empresarial. Aportaciones de la empresa para los trabajadores. Deducible y con gran valor percibido por el equipo.',url:'ppe.html'},
+      {tag:'Compromisos futuros',title:'Compromisos por pensiones',desc:'Cuando la empresa tiene compromisos adquiridos con trabajadores o directivos en materia de previsión, hay que exteriorizarlos correctamente.',url:'compromisos-pensions.html'},
+      {tag:'Diagnóstico empresarial',title:'Auditoría de pólizas',desc:'Revisamos todas las pólizas activas de la empresa: coberturas, capitales, duplicidades, huecos de protección y oportunidades de mejora.',url:'auditoria.html'},
+    ]
+  },
+  socis: {
+    ca: [
+      {tag:'Continuïtat empresarial',title:'Home / Dona clau',desc:'Quan una persona imprescindible per al negoci falta, l\'empresa necessita temps i capital per reorganitzar-se. Això és el que cobreix.',url:'home-clau.html'},
+      {tag:'Pacte societari',title:'Vida de socis',desc:'Si un soci mor o queda incapacitat, l\'assegurança garanteix que l\'empresa pugui comprar les seves participacions als hereus.',url:'vida-socis.html'},
+      {tag:'Govern societari',title:'Pacte de socis assegurat',desc:'El pacte de socis defineix el protocol. L\'assegurança el fa possible econòmicament. Tots dos documents han d\'estar coordinats.',url:'pacte-socis.html'},
+      {tag:'Liquiditat societària',title:'Compra de participacions',desc:'Capital disponible per executar el dret de compra o venda de participacions quan es produeix un sinistre entre socis.',url:'compra-participacions.html'},
+      {tag:'Protecció directiva',title:'Previsió directiva',desc:'Solucions de previsió, estalvi i protecció adaptades al perfil d\'un directiu: ILT, vida, rendes, PPSE i plans individuals.',url:'previsio-directiva.html'},
+    ],
+    es: [
+      {tag:'Continuidad empresarial',title:'Hombre / Mujer clave',desc:'Cuando una persona imprescindible para el negocio falta, la empresa necesita tiempo y capital para reorganizarse. Eso es lo que cubre.',url:'home-clau.html'},
+      {tag:'Pacto societario',title:'Vida de socios',desc:'Si un socio muere o queda incapacitado, el seguro garantiza que la empresa pueda comprar sus participaciones a los herederos.',url:'vida-socis.html'},
+      {tag:'Gobierno societario',title:'Pacto de socios asegurado',desc:'El pacto de socios define el protocolo. El seguro lo hace posible económicamente. Ambos documentos deben estar coordinados.',url:'pacte-socis.html'},
+      {tag:'Liquidez societaria',title:'Compra de participaciones',desc:'Capital disponible para ejecutar el derecho de compra o venta de participaciones cuando se produce un siniestro entre socios.',url:'compra-participacions.html'},
+      {tag:'Protección directiva',title:'Previsión directiva',desc:'Soluciones de previsión, ahorro y protección adaptadas al perfil de un directivo: ILT, vida, rentas, PPSE y planes individuales.',url:'previsio-directiva.html'},
+    ]
+  }
+};
+
+const LABELS = {
+  ca:{
+    navCta:'Diagnòstic gratuït',
+    heroBc:'COVERA · ',heroBcSpan:'Productes i solucions',
+    heroH1:'No comencem pel producte.<br><em>Comencem pel que vols protegir.</em>',
+    heroSub:'Cada producte assegurador existeix per resoldre una situació real. Aquí els tens ordenats per qui ets i per allò que necessites cobrir.',
+    snav:['Persones i famílies','Autònoms','Empreses','Socis i directius'],
+    ph2:'Persones i <em>famílies</em>',psub:'Protegir una família no és tenir moltes pòlisses. És saber què passaria si falta salut, ingressos, capital o ordre.',
+    ah2:'Autònoms i <em>professionals</em>',asub:'Quan no factures, no entra res. La protecció d\'un autònom ha de cobrir la persona, els ingressos i el futur alhora.',
+    eh2:'Empreses que <em>cuiden l\'equip</em>',esub:'Les empreses ja no competeixen només per salari. También competeixen per la capacitat de protegir i fidelitzar les persones.',
+    sh2:'Socis, directius i <em>persones clau</em>',ssub:'Quan una persona és clau per a l\'empresa, la seva protecció també ho és.',
+    noteP:'Els decessos poden tenir sentit en determinats contextos familiars. A COVERA l\'analitzem quan és rellevant, sense que sigui la porta d\'entrada a la conversa.',
+    ctaH2:'No saps per on<br><em>començar?</em>',ctaSub:'No cal que ho tinguis clar. En 15 minuts et podem dir quins productes tenen sentit per a la teva situació i quins no.',
+    ctaBtn1:'Fer el diagnòstic',ctaBtn2:'Trucar ara',
+    footerTxt:'COVERA · Corredoria d\'assegurances especialista · <a href="#">Avís legal</a> · <a href="#">Privacitat</a>'
+  },
+  es:{
+    navCta:'Diagnóstico gratuito',
+    heroBc:'COVERA · ',heroBcSpan:'Productos y soluciones',
+    heroH1:'No empezamos por el producto.<br><em>Empezamos por lo que quieres proteger.</em>',
+    heroSub:'Cada producto asegurador existe para resolver una situación real. Aquí los tienes ordenados por quién eres y por lo que necesitas cubrir.',
+    snav:['Personas y familias','Autónomos','Empresas','Socios y directivos'],
+    ph2:'Personas y <em>familias</em>',psub:'Proteger una familia no es tener muchas pólizas. Es saber qué pasaría si falta salud, ingresos, capital u orden.',
+    ah2:'Autónomos y <em>profesionales</em>',asub:'Cuando no facturas, no entra nada. La protección de un autónomo tiene que cubrir la persona, los ingresos y el futuro a la vez.',
+    eh2:'Empresas que <em>cuidan al equipo</em>',esub:'Las empresas ya no compiten solo por salario. También compiten por la capacidad de proteger y fidelizar a las personas.',
+    sh2:'Socios, directivos y <em>personas clave</em>',ssub:'Cuando una persona es clave para la empresa, su protección también lo es.',
+    noteP:'Los decesos pueden tener sentido en determinados contextos familiares. En COVERA los analizamos cuando son relevantes, sin que sean la puerta de entrada a la conversación.',
+    ctaH2:'¿No sabes por dónde<br><em>empezar?</em>',ctaSub:'No hace falta que lo tengas claro. En 15 minutos podemos decirte qué productos tienen sentido para tu situación y cuáles no.',
+    ctaBtn1:'Hacer el diagnóstico',ctaBtn2:'Llamar ahora',
+    footerTxt:'COVERA · Correduría de seguros especialista · <a href="#">Aviso legal</a> · <a href="#">Privacidad</a>'
+  }
+};
+
+let lang='ca';
+
+function renderGrid(segId, l){
+  const items = PRODS[segId][l];
+  const el = document.getElementById('grid-'+segId);
+  el.innerHTML = items.map(p=>`
+    <a class="prod-card" href="${p.url}">
+      <div class="prod-card-tag">${p.tag}</div>
+      <div class="prod-card-title">${p.title}</div>
+      <div class="prod-card-desc">${p.desc}</div>
+      <span class="prod-card-arrow">→</span>
+    </a>`).join('');
+}
+
+function renderAll(l){
+  ['persones','autonoms','empreses','socis'].forEach(s=>renderGrid(s,l));
+}
+
+function setLang(l){
+  lang=l;
+  document.getElementById('btn-ca').classList.toggle('active',l==='ca');
+  document.getElementById('btn-es').classList.toggle('active',l==='es');
+  const L=LABELS[l];
+  document.getElementById('nav-cta-lbl').textContent=L.navCta;
+  document.getElementById('hero-bc').innerHTML=L.heroBc+'<span>'+L.heroBcSpan+'</span>';
+  document.getElementById('hero-h1').innerHTML=L.heroH1;
+  document.getElementById('hero-sub').textContent=L.heroSub;
+  ['persones','autonoms','empreses','socis'].forEach((id,i)=>{
+    const el=document.getElementById('snav-'+id);
+    el.textContent=L.snav[i];
+  });
+  document.getElementById('ph2').innerHTML=L.ph2;
+  document.getElementById('psub').textContent=L.psub;
+  document.getElementById('ah2').innerHTML=L.ah2;
+  document.getElementById('asub').textContent=L.asub;
+  document.getElementById('eh2').innerHTML=L.eh2;
+  document.getElementById('esub').textContent=L.esub;
+  document.getElementById('sh2').innerHTML=L.sh2;
+  document.getElementById('ssub').textContent=L.ssub;
+  document.getElementById('note-persones').textContent=L.noteP;
+  document.getElementById('cta-h2').innerHTML=L.ctaH2;
+  document.getElementById('cta-sub').textContent=L.ctaSub;
+  document.getElementById('cta-btn1').textContent=L.ctaBtn1;
+  document.getElementById('cta-btn2').textContent=L.ctaBtn2;
+  document.getElementById('footer-txt').innerHTML=`
+    <svg width="18" height="18" viewBox="0 0 100 100" fill="none" style="vertical-align:middle;margin-right:6px" aria-hidden="true">
+      <text x="8" y="68" font-family="Montserrat,sans-serif" font-weight="800" font-size="52" fill="#6FB7AE">C</text>
+      <text x="50" y="68" font-family="Montserrat,sans-serif" font-weight="800" font-size="52" fill="rgba(255,255,255,.35)">3</text>
+    </svg>`+L.footerTxt;
+  renderAll(l);
+  document.documentElement.lang=l;
+}
+
+function scrollTo(id){
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('snav-'+id).classList.add('active');
+}
+
+/* Intersection observer per activar nav */
+const segs=['persones','autonoms','empreses','socis'];
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+      const id=e.target.id;
+      const btn=document.getElementById('snav-'+id);
+      if(btn)btn.classList.add('active');
+    }
+  });
+},{rootMargin:'-120px 0px -55% 0px',threshold:0});
+segs.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
+
+/* Init */
+renderAll('ca');
+</script>
+</body>
+</html>
