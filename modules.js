@@ -761,7 +761,10 @@ window.renderOpps = function() {
   c.innerHTML = `
     <div class="topbar">
       <div><div class="page-title">Oportunitats</div><div class="page-sub">${list.length} detectades</div></div>
-      <div class="topbar-actions">${state.clients.length === 0 ? '<button class="btn" onclick="openModal(\'client\')">+ Crea client primer</button>' : '<button class="btn" onclick="regenerarOportunitats()">🤖 Regenerar amb IA</button>'}</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openModal('oportunitat')">+ Nova oportunitat</button>
+        ${state.clients.length > 0 ? '<button class="btn" onclick="regenerarOportunitats()">🤖 Regenerar amb IA</button>' : ''}
+      </div>
     </div>
     ${list.length === 0 ? `<div class="card"><div class="empty-state"><div class="empty-icon">💡</div>Cap oportunitat${state.clients.length === 0?'<br><br>Crea primer alguns clients per poder detectar oportunitats':''}</div></div>` :
       list.map(o => {
@@ -781,6 +784,7 @@ window.renderOpps = function() {
           <div style="margin-top:8px;display:flex;gap:6px">
             <button class="btn btn-sm" onclick="canviarEstatOpp('${o.id}')">Canviar estat</button>
             <button class="btn btn-sm" onclick="convertirOppEnOferta('${o.id}')">→ Crear oferta</button>
+            <button class="btn btn-sm" onclick="deleteRecord('oportunitats','${o.id}')" style="color:var(--danger)">🗑</button>
           </div>
         </div>`;
       }).join('')
