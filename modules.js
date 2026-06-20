@@ -1237,3 +1237,114 @@ window.apiCallWithRetry = async function(url, options = {}, maxRetries = 3) {
 console.log('✅ apiCallWithRetry definit');
 
 console.log('✅ modules.js carregat correctament');
+
+// ==================================================================
+// CERCA GLOBAL (Cmd/Ctrl+K) — cerca a tot el CRM
+// ==================================================================
+window.openGlobalSearch = function() {
+  if (document.getElementById('global-search-overlay')) return;
+  const ov = document.createElement('div');
+  ov.id = 'global-search-overlay';
+  ov.className = 'modal-overlay';
+  ov.style.alignItems = 'flex-start';
+  ov.style.paddingTop = '10vh';
+  ov.onclick = (e) => { if (e.target === ov) closeGlobalSearch(); };
+  ov.innerHTML = `
+    <div class="modal" style="max-width:640px;padding:0;overflow:hidden">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">🔍</span>
+        <input id="global-search-input" type="text" placeholder="Cerca clients, ofertes, oportunitats, venciments, tasques..." style="border:none;background:transparent;font-size:16px;flex:1;outline:none" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-3)">ESC</span>
+      </div>
+      <div id="global-search-results" style="max-height:55vh;overflow-y:auto;padding:8px"></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const input = document.getElementById('global-search-input');
+  input.addEventListener('input', () => renderGlobalSearchResults(input.value));
+  input.focus();
+  renderGlobalSearchResults('');
+};
+
+window.closeGlobalSearch = function() {
+  const ov = document.getElementById('global-search-overlay');
+  if (ov) ov.remove();
+};
+
+function gsNom(cli) {
+  if (!cli) return '?';
+  return cli.tipus === 'particular' ? (cli.nom || cli.empresa || '?') : (cli.empresa || cli.nom || '?');
+}
+
+window.renderGlobalSearchResults = function(q) {
+  const box = document.getElementById('global-search-results');
+  if (!box) return;
+  const term = (q || '').toLowerCase().trim();
+  if (!term) {
+    box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:13px">Escriu per cercar a tot el CRM</div>';
+    return;
+  }
+  const match = (...vals) => vals.some(v => v && String(v).toLowerCase().includes(term));
+  const groups = [];
+
+  const clients = (state.clients||[]).filter(c => match(c.empresa, c.nom, c.cif, c.dni, c.email, c.telefon, c.notes))
+    .map(c => ({ label: gsNom(c), sub: [c.cif||c.dni, c.email, c.telefon].filter(Boolean).join(' · '), tab: 'clients', icon: '👥' }));
+  if (clients.length) groups.push({ title: 'Clients', items: clients });
+
+  const ofertes = (state.ofertes||[]).filter(o => match(o.empresa, o.ram, o.asseguradora, o.notes))
+    .map(o => ({ label: o.empresa || gsNom((state.clients||[]).find(c=>c.id===o.client_id)), sub: [o.ram, o.estat, o.prima_brokkom?fmtEur(o.prima_brokkom):null].filter(Boolean).join(' · '), tab: 'pipeline', icon: '🎯' }));
+  if (ofertes.length) groups.push({ title: 'Ofertes', items: ofertes });
+
+  const consolidats = (state.consolidats||[]).filter(c => match(c.empresa, c.ram, c.asseguradora, c.num_polissa))
+    .map(c => ({ label: c.empresa, sub: [c.ram, c.asseguradora, c.prima_anual?fmtEur(c.prima_anual):null].filter(Boolean).join(' · '), tab: 'consolidats', icon: '🏆' }));
+  if (consolidats.length) groups.push({ title: 'Consolidats', items: consolidats });
+
+  const opps = (state.oportunitats||[]).filter(o => match(o.empresa, o.producte, o.argument, o.prioritat))
+    .map(o => ({ label: o.empresa || gsNom((state.clients||[]).find(c=>c.id===o.client_id)), sub: [o.producte, o.prioritat, o.estat].filter(Boolean).join(' · '), tab: 'oportunitats', icon: '💡' }));
+  if (opps.length) groups.push({ title: 'Oportunitats', items: opps });
+
+  const venc = (state.venciments||[]).filter(v => match(v.empresa, v.ram, v.asseguradora))
+    .map(v => ({ label: v.empresa, sub: [v.ram, v.data_venciment?fmtDate(v.data_venciment):null].filter(Boolean).join(' · '), tab: 'venciments', icon: '📆' }));
+  if (venc.length) groups.push({ title: 'Venciments', items: venc });
+
+  const seg = (state.seguiments||[]).filter(s => match(s.resum, s.canal, s.proper_pas))
+    .map(s => ({ label: gsNom((state.clients||[]).find(c=>c.id===s.client_id)), sub: [s.canal, s.resum].filter(Boolean).join(' · ').slice(0,80), tab: 'seguiments', icon: '📞' }));
+  if (seg.length) groups.push({ title: 'Seguiments', items: seg });
+
+  const tasq = (state.tasques||[]).filter(t => match(t.titol, t.descripcio, t.categoria))
+    .map(t => ({ label: t.titol, sub: [t.prioritat, t.categoria, t.estat].filter(Boolean).join(' · '), tab: 'tasques', icon: '✓' }));
+  if (tasq.length) groups.push({ title: 'Tasques', items: tasq });
+
+  const asseg = (state.asseguradores||[]).filter(a => match(a.nom, (a.rams||[]).join(' '), a.notes))
+    .map(a => ({ label: a.nom, sub: (a.rams||[]).join(', '), tab: 'asseguradores', icon: '🛡️' }));
+  if (asseg.length) groups.push({ title: 'Asseguradores', items: asseg });
+
+  const total = groups.reduce((n,g)=>n+g.items.length,0);
+  if (!total) {
+    box.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-3);font-size:13px">Cap resultat per "${q}"</div>`;
+    return;
+  }
+  box.innerHTML = groups.map(g => `
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);padding:8px 8px 4px">${g.title} (${g.items.length})</div>
+    ${g.items.slice(0,8).map(it => `
+      <div class="gs-item" onclick="closeGlobalSearch();showTab('${it.tab}')" style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer">
+        <span>${it.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${it.label}</div>
+          ${it.sub?`<div style="font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.sub}</div>`:''}
+        </div>
+      </div>`).join('')}
+  `).join('');
+  box.querySelectorAll('.gs-item').forEach(el => {
+    el.onmouseenter = () => el.style.background = 'var(--surface-2)';
+    el.onmouseleave = () => el.style.background = 'transparent';
+  });
+};
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    if (document.getElementById('global-search-overlay')) closeGlobalSearch();
+    else openGlobalSearch();
+  }
+  if (e.key === 'Escape') closeGlobalSearch();
+});
