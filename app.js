@@ -150,7 +150,7 @@ async function loadMediador() {
       .eq('user_id', state.user.id)
       .maybeSingle();
 
-    const result = await withTimeout(query, 8000, 'consulta mediadors');
+    const result = await withTimeout(query, 20000, 'consulta mediadors');
     const { data, error } = result;
 
     if (error) {
@@ -177,7 +177,7 @@ async function loadUserConfig() {
   };
   try {
     const query = supabase.from('user_config').select('*').eq('user_id', state.user.id).maybeSingle();
-    const { data } = await withTimeout(query, 3000, 'consulta user_config');
+    const { data } = await withTimeout(query, 15000, 'consulta user_config');
     if (data) state.config = { ...state.config, ...data };
     console.log('✅ [3] Config carregat');
   } catch (err) {
@@ -187,22 +187,34 @@ async function loadUserConfig() {
 
 async function loadAllData() {
   console.log('📥 [4] loadAllData() iniciat');
-  const fetchAll = async (table) => {
+  const fetchAll = async (table, intent = 1) => {
     try {
       const query = supabase.from(table).select('*');
-      const { data, error } = await withTimeout(query, 5000, `select ${table}`);
+      const { data, error } = await withTimeout(query, 15000, `select ${table}`);
       if (error) {
         console.warn(`⚠️ [4] ${table} error:`, error.message);
         return [];
       }
       return data || [];
     } catch (err) {
+      if (intent < 2) {
+        console.warn(`🔁 [4] ${table} reintent (${err.message})`);
+        return fetchAll(table, intent + 1);
+      }
       console.warn(`⚠️ [4] ${table} timeout o error:`, err.message);
       return [];
     }
   };
   const tables = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox_items','notes','agenda_events','esborranys','vinculacions','comparticions','mediadors'];
   const stateKeys = ['clients','ofertes','consolidats','seguiments','oportunitats','venciments','tasques','asseguradores','posts','inbox','notes','agenda','esborranys','vinculacions','comparticions','mediadors'];
+  // Despertar la base de dades (free tier s'adorm) amb una consulta lleugera prèvia
+  // abans de demanar les 16 taules de cop. Així la resta arriba sobre una base ja desperta.
+  try {
+    await withTimeout(supabase.from('clients').select('id').limit(1), 25000, 'warm-up');
+    console.log('☀️ [4] Base de dades desperta');
+  } catch (e) {
+    console.warn('⚠️ [4] warm-up no completat:', e.message);
+  }
   const results = await Promise.all(tables.map(t => fetchAll(t)));
   tables.forEach((t, i) => { state[stateKeys[i]] = results[i]; });
   state.usuaris = state.mediadors;
@@ -235,7 +247,7 @@ window.refreshData = async (only, opts = {}) => {
   if (only && map[only]) {
     try {
       const query = supabase.from(map[only]).select('*');
-      const { data } = await withTimeout(query, 5000, `refresh ${only}`);
+      const { data } = await withTimeout(query, 20000, `refresh ${only}`);
       state[only] = data || [];
       if (only === 'mediadors') state.usuaris = state.mediadors;
     } catch (err) {
@@ -498,7 +510,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 (async () => {
   try {
     console.log('🔍 [INIT] Verificant sessió...');
-    const sessionResult = await withTimeout(supabase.auth.getSession(), 5000, 'getSession');
+    const sessionResult = await withTimeout(supabase.auth.getSession(), 20000, 'getSession');
     const session = sessionResult?.data?.session;
 
     if (session?.user && !_appStarted) {
