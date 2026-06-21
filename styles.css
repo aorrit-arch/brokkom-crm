@@ -42,13 +42,13 @@
   --side-active-bg: rgba(255,255,255,0.12);
   --side-accent: #7FA8E0;
   /* Radis */
-  --r-sm: 5px;
-  --r: 7px;
-  --r-md: 10px;
-  --r-lg: 14px;
+  --r-sm: 6px;
+  --r: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --shadow-card: 0 1px 2px rgba(16,24,40,0.05);
-  --shadow-pop: 0 2px 8px rgba(16,24,40,0.08);
+  --shadow-card: 0 1px 2px rgba(16,24,40,0.04), 0 2px 6px rgba(16,24,40,0.045);
+  --shadow-pop: 0 6px 20px rgba(16,24,40,0.10), 0 1px 3px rgba(16,24,40,0.06);
 }
 
 html, body { height: 100%; }
@@ -73,7 +73,7 @@ body {
   display: flex; flex-direction: column; overflow-y: auto;
 }
 .main { flex: 1; background: var(--bg); overflow-y: auto; min-width: 0; }
-.main-inner { max-width: 1100px; padding: 32px 44px; }
+.main-inner { max-width: 1160px; padding: 38px 52px 56px; }
 
 /* Brand (sobre fons fosc) */
 .brand {
@@ -159,8 +159,8 @@ body {
 /* Header de pàgina */
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-3); margin-bottom: 4px; }
 .page-title {
-  font-size: 23px; font-weight: 600; letter-spacing: -0.02em;
-  color: var(--text); margin-bottom: 4px;
+  font-size: 26px; font-weight: 650; letter-spacing: -0.025em;
+  color: var(--text); margin-bottom: 5px;
   display: flex; align-items: center; gap: 12px;
 }
 .page-sub { font-size: 13px; color: var(--text-2); margin-bottom: 24px; }
@@ -169,8 +169,8 @@ body {
 
 /* Botons */
 .btn {
-  font-family: inherit; font-size: 12.5px;
-  padding: 6px 12px; border-radius: var(--r);
+  font-family: inherit; font-size: 13px;
+  padding: 7px 14px; border-radius: var(--r);
   border: 1px solid var(--border-2);
   background: var(--surface); color: var(--text);
   cursor: pointer; transition: all .12s;
@@ -198,10 +198,10 @@ body {
 /* Cards */
 .card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-md); padding: 16px 18px; margin-bottom: 12px;
+  border-radius: var(--r-md); padding: 20px 22px; margin-bottom: 14px;
   box-shadow: var(--shadow-card);
 }
-.card.compact { padding: 12px 14px; }
+.card.compact { padding: 13px 15px; }
 
 /* Pills */
 .pill {
@@ -273,17 +273,18 @@ label { font-size: 11.5px; color: var(--text-2); display: block; margin-bottom: 
 /* Mètriques */
 .metrics, .metric-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px; margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px; margin-bottom: 26px;
 }
 .metric {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-md); padding: 14px 16px;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--r-md); padding: 17px 18px;
+  box-shadow: var(--shadow-card); transition: box-shadow .15s, transform .15s;
 }
-.metric-label { font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 600; }
-.metric-value { font-size: 23px; font-weight: 650; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.metric-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.metric:hover { box-shadow: var(--shadow-pop); transform: translateY(-1px); }
+.metric-label { font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; font-weight: 600; }
+.metric-value { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.metric-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
 
 /* Taula estil base de dades */
 .db-table { border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-card); }
