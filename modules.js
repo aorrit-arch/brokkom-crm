@@ -40,77 +40,103 @@ function getClientNom(c) {
 // ==================================================================
 window.renderDashboard = function() {
   const c = document.getElementById('tab-content');
-  const ofertesObertes = state.ofertes.filter(o => !['Tancada guanyada','Tancada perduda'].includes(o.estat));
   const now = new Date();
-  const tancMes = state.consolidats.filter(co => {
-    const d = new Date(co.data_tancament);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
+  const todayMid = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+  const isToday = (s) => { if (!s) return false; const d = new Date(s); return d.toDateString() === now.toDateString(); };
+
+  const ofertesObertes = state.ofertes.filter(o => !['Tancada guanyada','Tancada perduda'].includes(o.estat));
+  const tancMes = state.consolidats.filter(co => { const d = new Date(co.data_tancament); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const primaPipeline = ofertesObertes.reduce((s,o) => s + (parseFloat(o.prima_brokkom)||0), 0);
   const primaTancMes = tancMes.reduce((s,co) => s + (parseFloat(co.prima_anual)||0), 0);
   const totalTanc = state.consolidats.length;
   const totalOfertesFin = state.ofertes.filter(o => ['Tancada guanyada','Tancada perduda'].includes(o.estat)).length + state.consolidats.length;
   const conversio = totalOfertesFin > 0 ? Math.round((totalTanc/totalOfertesFin)*100) : 0;
 
-  // Alarmes properes
-  const alarmes = [];
-  state.venciments.forEach(v => {
-    [90,30,7].forEach(d => {
-      const dataAlarma = new Date(v.data_venciment);
-      dataAlarma.setDate(dataAlarma.getDate() - d);
-      const dies = daysFromNow(dataAlarma);
-      if (dies >= 0 && dies <= 90) {
-        alarmes.push({
-          data: dataAlarma,
-          titol: `${d===90?'Preparar oferta':d===30?'URGENT renovació':'CRÍTIC venciment'} — ${v.empresa}`,
-          sub: `${v.ram||''} · venç ${fmtDate(v.data_venciment)}`,
-          tipus: d
-        });
-      }
-    });
-  });
-  alarmes.sort((a,b) => a.data - b.data);
-
-  // Accions prioritàries
-  const accions = [];
+  // ---------- Accions del dia ----------
+  const trucables = (state.prospectes||[]).filter(p => !p.no_trucar && !['No interessa','Convertit'].includes(p.estat));
+  const trucadesQueue = trucables.filter(p => (p.num_intents||0) === 0 || (p.propera_accio_data && new Date(p.propera_accio_data) <= todayMid()));
+  const callbacksAvui = (state.prospectes||[]).filter(p => isToday(p.propera_accio_data));
+  const segFreds = [];
   state.ofertes.filter(o => o.estat === 'Oferta enviada').forEach(o => {
     const ultim = state.seguiments.filter(s => s.client_id === o.client_id).sort((a,b) => new Date(b.data) - new Date(a.data))[0];
-    if (!ultim || daysFromNow(ultim.data) < -15) {
-      accions.push({
-        tipus: 'danger',
-        titol: `Seguiment fred: ${o.empresa || getClientNom(getClient(o.client_id))}`,
-        sub: ultim ? `Sense contacte ${-daysFromNow(ultim.data)} dies` : 'Sense seguiment',
-        accio: () => openModal('seguiment', { client_id: o.client_id })
-      });
-    }
+    if (!ultim || daysFromNow(ultim.data) < -15) segFreds.push({ o, sub: ultim ? `Sense contacte ${-daysFromNow(ultim.data)} dies` : 'Sense seguiment' });
   });
-  state.tasques.filter(t => t.estat === 'pendent' && t.prioritat === 'Alta').slice(0,3).forEach(t => {
-    accions.push({ tipus:'warning', titol: t.titol, sub: t.descripcio||'', accio: () => showTab('tasques') });
-  });
+  const vencImminents = state.venciments
+    .filter(v => { const d = daysFromNow(v.data_venciment); return d >= 0 && d <= 30; })
+    .sort((a,b) => new Date(a.data_venciment) - new Date(b.data_venciment));
+  const oppsNoves = state.oportunitats.filter(o => o.estat === 'Detectada');
+  const totalAccions = trucadesQueue.length + callbacksAvui.length + segFreds.length + vencImminents.length + oppsNoves.length;
 
-  const today = new Date().toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const accioCard = (icon, titol, color, items, veureTab) => {
+    const n = items.length;
+    return `
+      <div class="card" style="border-top:3px solid ${color}">
+        <div class="card-row" style="margin-bottom:${n?'8px':'0'}">
+          <div class="card-title" style="font-size:13px">${icon} ${titol}</div>
+          <span class="pill ${n?'p-warning':'p-success'}">${n}</span>
+        </div>
+        ${n === 0 ? '<div style="font-size:12px;color:var(--text-3)">Tot al dia ✓</div>'
+          : items.slice(0,3).map(it => `
+            <div onclick="${it.onclick}" style="cursor:pointer;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12.5px">
+              <div style="font-weight:500">${escapeHtml(it.text)}</div>
+              ${it.sub ? `<div style="font-size:11px;color:var(--text-3)">${escapeHtml(it.sub)}</div>` : ''}
+            </div>`).join('') + (n > 3 ? `<div style="text-align:center;margin-top:8px"><a class="auth-link" onclick="showTab('${veureTab}')">+${n-3} més</a></div>` : '')}
+      </div>`;
+  };
+  const itTruc = trucadesQueue.map(p => ({ text: p.empresa || '(sense nom)', sub: [(p.telefon||p.mobil||''), p.municipi].filter(Boolean).join(' · '), onclick: `obrirTrucada('${p.id}')` }));
+  const itCall = callbacksAvui.map(p => ({ text: p.empresa || '(sense nom)', sub: 'Tornar a trucar avui', onclick: `obrirTrucada('${p.id}')` }));
+  const itSeg = segFreds.map(x => ({ text: x.o.empresa || getClientNom(getClient(x.o.client_id)), sub: x.sub, onclick: `openModal('seguiment',{client_id:'${x.o.client_id}'})` }));
+  const itVenc = vencImminents.map(v => ({ text: v.empresa, sub: `${v.ram||''} · venç ${fmtDate(v.data_venciment)} (${daysFromNow(v.data_venciment)}d)`, onclick: `showTab('venciments')` }));
+  const itOpp = oppsNoves.map(o => ({ text: o.empresa || getClientNom(getClient(o.client_id)), sub: o.producte || '', onclick: `showTab('oportunitats')` }));
+
+  // ---------- Comença el dia (tasques) ----------
+  const avui = state.tasques.filter(window.tascaActivaAvui);
+  const endarr = avui.filter(window.tascaEndarrerida).length;
+  const ordT = {'Alta':3,'Mitjana':2,'Baixa':1};
+  avui.sort((a,b) => { const ea = window.tascaEndarrerida(a)?1:0, eb = window.tascaEndarrerida(b)?1:0; if (ea!==eb) return eb-ea; return (ordT[b.prioritat]||0)-(ordT[a.prioritat]||0); });
+
+  const today = now.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
   c.innerHTML = `
     <div class="topbar">
-      <div>
-        <div class="page-title">Tauler</div>
-        <div class="page-sub">${today}</div>
-      </div>
-      <div class="topbar-actions">
-        <button class="btn btn-primary" onclick="openModal('client')">+ Nou client</button>
-      </div>
+      <div><div class="page-title">Tauler</div><div class="page-sub">${today}</div></div>
+      <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('client')">+ Nou client</button></div>
     </div>
 
-    <div class="metrics">
+    <div class="card" style="border-left:3px solid var(--brand);margin-bottom:20px">
+      <div class="card-row" style="margin-bottom:10px">
+        <div>
+          <div class="card-title">Comença el dia</div>
+          <div class="card-sub">${avui.length} ${avui.length===1?'tasca':'tasques'} per avui${endarr?` · ${endarr} endarrerides`:''}</div>
+        </div>
+        <button class="btn btn-sm" onclick="showTab('tasques')">Veure totes</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:${avui.length?'10px':'0'}">
+        <input type="text" id="dash-quick-tasca" placeholder="Afegeix una tasca per avui i prem Enter…" onkeydown="if(event.key==='Enter')quickAddTascaAvui('dash-quick-tasca')" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="quickAddTascaAvui('dash-quick-tasca')">Afegir</button>
+      </div>
+      ${avui.length===0 ? '' : `<ul class="checklist">${avui.slice(0,8).map(_tascaItemHTML).join('')}</ul>${avui.length>8?`<div style="text-align:center;margin-top:8px"><a class="auth-link" onclick="showTab('tasques')">+${avui.length-8} més</a></div>`:''}`}
+    </div>
+
+    <div class="section-title">Accions del dia${totalAccions?` · ${totalAccions}`:''}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+      ${accioCard('📞','Trucades pendents','#0F766E', itTruc, 'prospeccio')}
+      ${accioCard('↩️',"Callbacks d'avui",'#185FA5', itCall, 'prospeccio')}
+      ${accioCard('🔵','Seguiments freds','#E24B4A', itSeg, 'seguiments')}
+      ${accioCard('📆','Venciments ≤30 dies','#EF9F27', itVenc, 'venciments')}
+      ${accioCard('💡','Oportunitats per treballar','#3C3489', itOpp, 'oportunitats')}
+    </div>
+
+    <div class="metrics" style="margin-top:20px">
       <div class="metric"><div class="metric-label">Pipeline obert</div><div class="metric-value">${ofertesObertes.length}</div><div class="metric-sub">${fmtEur(primaPipeline)} valor</div></div>
       <div class="metric"><div class="metric-label">Tancaments mes</div><div class="metric-value">${tancMes.length}</div><div class="metric-sub">${fmtEur(primaTancMes)} primat</div></div>
       <div class="metric"><div class="metric-label">Taxa conversió</div><div class="metric-value">${conversio}%</div><div class="metric-sub">històrica</div></div>
       <div class="metric"><div class="metric-label">Clients</div><div class="metric-value">${state.clients.length}</div><div class="metric-sub">a la cartera</div></div>
       <div class="metric"><div class="metric-label">Oportunitats</div><div class="metric-value">${state.oportunitats.filter(o => o.estat !== 'Descartada').length}</div><div class="metric-sub">detectades</div></div>
-      <div class="metric"><div class="metric-label">Tasques pend.</div><div class="metric-value" style="${state.tasques.filter(t => t.estat==='pendent').length>0?'color:var(--warning)':''}">${state.tasques.filter(t => t.estat==='pendent').length}</div><div class="metric-sub">a fer</div></div>
+      <div class="metric"><div class="metric-label">Tasques avui</div><div class="metric-value" style="${avui.length>0?'color:var(--warning)':''}">${avui.length}</div><div class="metric-sub">a fer</div></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
       <div>
         <div class="section-title">Pipeline — vista resum</div>
         <div class="card">
@@ -125,53 +151,22 @@ window.renderDashboard = function() {
             </div>`;
           }).join('') || '<div class="empty-state">Sense ofertes obertes</div>'}
         </div>
-
-        <div class="section-title" style="margin-top:24px">Tancaments del mes</div>
+      </div>
+      <div>
+        <div class="section-title">Tancaments del mes</div>
         <div class="card">
           ${tancMes.length === 0 ? '<div class="empty-state">Cap tancament aquest mes</div>' :
             tancMes.slice(0,5).map(co => `
               <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px">
-                <div><strong>${co.empresa}</strong> · ${co.ram||''}<br><span style="font-size:11px;color:var(--text-3)">${co.asseguradora||''} · ${fmtDate(co.data_tancament)}</span></div>
+                <div><strong>${escapeHtml(co.empresa)}</strong> · ${escapeHtml(co.ram||'')}<br><span style="font-size:11px;color:var(--text-3)">${escapeHtml(co.asseguradora||'')} · ${fmtDate(co.data_tancament)}</span></div>
                 <div style="text-align:right"><strong style="color:var(--success)">${fmtEur(co.prima_anual)}</strong></div>
               </div>
             `).join('')
           }
         </div>
       </div>
-
-      <div>
-        <div class="section-title">Properes alarmes</div>
-        <div class="card">
-          ${alarmes.length === 0 ? '<div class="empty-state">Cap alarma propera</div>' :
-            alarmes.slice(0,5).map(a => `
-              <div class="alarm-item">
-                <div class="alarm-date">
-                  <div class="alarm-day">${a.data.getDate()}</div>
-                  <div class="alarm-month">${a.data.toLocaleDateString('ca-ES',{month:'short'})}</div>
-                </div>
-                <div class="alarm-body">
-                  <div class="alarm-title">${a.titol}</div>
-                  <div class="alarm-sub">${a.sub}</div>
-                </div>
-                <div class="alarm-dot ${a.tipus===7?'dot-r':a.tipus===30?'dot-a':'dot-g'}"></div>
-              </div>
-            `).join('')
-          }
-        </div>
-
-        <div class="section-title" style="margin-top:24px">Accions prioritàries</div>
-        ${accions.length === 0 ? '<div class="card"><div class="empty-state">Cap acció urgent</div></div>' :
-          accions.slice(0,4).map((a,i) => `
-            <div class="card compact" style="border-left:3px solid ${a.tipus==='danger'?'var(--danger)':'var(--warning)'};border-radius:0 var(--r-md) var(--r-md) 0;cursor:pointer" onclick="window._dashActions[${i}]()">
-              <div style="font-size:13px;font-weight:500">${a.titol}</div>
-              <div style="font-size:11px;color:var(--text-3);margin-top:2px">${a.sub}</div>
-            </div>
-          `).join('')
-        }
-      </div>
     </div>
   `;
-  window._dashActions = accions.map(a => a.accio);
 };
 
 // ==================================================================
@@ -823,97 +818,162 @@ window.renderVenciments = function() {
   `;
 };
 
+// =================================================================
+// TODO POTENT — lògica del dia (traspàs automàtic + pròrroga)
+// =================================================================
+window.tascaActivaAvui = (t) => {
+  if (t.estat === 'done') return false;
+  if (!t.data_prevista) return true;
+  const avui = new Date(); avui.setHours(0,0,0,0);
+  const d = new Date(t.data_prevista); d.setHours(0,0,0,0);
+  return d <= avui;   // planificada per a avui o abans (s'arrossega sola)
+};
+window.tascaEndarrerida = (t) => {
+  if (t.estat === 'done' || !t.data_prevista) return false;
+  const avui = new Date(); avui.setHours(0,0,0,0);
+  const d = new Date(t.data_prevista); d.setHours(0,0,0,0);
+  return d < avui;
+};
+window.tasquesAvui = () => state.tasques.filter(window.tascaActivaAvui);
+
+function _diesEndarrerida(t) {
+  const avui = new Date(); avui.setHours(0,0,0,0);
+  const d = new Date(t.data_prevista); d.setHours(0,0,0,0);
+  return Math.round((avui - d) / 86400000);
+}
+
+function _tascaItemHTML(t) {
+  const endarr = window.tascaEndarrerida(t);
+  const dies = endarr ? _diesEndarrerida(t) : 0;
+  const prioPill = t.prioritat ? `<span class="pill ${t.prioritat==='Alta'?'p-danger':t.prioritat==='Mitjana'?'p-warning':'p-success'}">${escapeHtml(t.prioritat)}</span>` : '';
+  const catPill = t.categoria ? `<span class="pill p-gray">${escapeHtml(t.categoria)}</span>` : '';
+  const dataPill = endarr
+    ? `<span class="pill p-danger">Endarrerida ${dies}d</span>`
+    : (t.data_prevista ? `<span class="pill p-info">${fmtDate(t.data_prevista)}</span>` : '');
+  const prorrPill = (t.num_prorrogues||0) >= 2 ? `<span class="pill p-warning" title="Prorrogada ${t.num_prorrogues} cops">⏳ ${t.num_prorrogues}×</span>` : '';
+  const limitPill = t.data_limit ? `<span class="pill p-gray" title="Data límit">⏰ ${fmtDate(t.data_limit)}</span>` : '';
+  const avatar = (window.isAdmin() && t.user_id) ? renderUserAvatar(t.user_id,'sm') : '';
+  const accions = t.estat !== 'done'
+    ? `<button class="btn btn-sm" onclick="posposarTascaModal('${t.id}')" title="Prorrogar">⏭ Posposar</button>`
+    : '';
+  return `
+    <li>
+      <div class="check ${t.estat==='done'?'done':''}" onclick="toggleTasca('${t.id}')"></div>
+      <div style="flex:1">
+        <div class="text ${t.estat==='done'?'done':''}">${escapeHtml(t.titol)}</div>
+        ${t.descripcio ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${escapeHtml(t.descripcio)}</div>` : ''}
+        <div class="text-meta">${prioPill}${catPill}${dataPill}${prorrPill}${limitPill}${avatar}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        ${accions}
+        <button class="btn btn-sm" onclick="deleteRecord('tasques','${t.id}')" style="color:var(--danger)">🗑</button>
+      </div>
+    </li>`;
+}
+
 window.renderTasques = function() {
   const c = document.getElementById('tab-content');
-  const filtre = state._filtreTasques || 'pendent';
-  let list = [...state.tasques];
-  if (filtre !== '') list = list.filter(t => t.estat === filtre);
-  list.sort((a,b) => { const ord={'Alta':3,'Mitjana':2,'Baixa':1}; return (ord[b.prioritat]||0)-(ord[a.prioritat]||0); });
+  const filtre = state._filtreTasques || 'avui';
+  let list;
+  if (filtre === 'avui') list = state.tasques.filter(window.tascaActivaAvui);
+  else if (filtre === 'pendent') list = state.tasques.filter(t => t.estat === 'pendent');
+  else if (filtre === 'done') list = state.tasques.filter(t => t.estat === 'done');
+  else list = [...state.tasques];
+  const ord = {'Alta':3,'Mitjana':2,'Baixa':1};
+  list.sort((a,b) => {
+    const ea = window.tascaEndarrerida(a)?1:0, eb = window.tascaEndarrerida(b)?1:0;
+    if (ea !== eb) return eb - ea;
+    return (ord[b.prioritat]||0)-(ord[a.prioritat]||0);
+  });
+  const endarrerides = list.filter(window.tascaEndarrerida).length;
   c.innerHTML = `
     <div class="topbar">
-      <div><div class="page-title">Tasques</div><div class="page-sub">${list.length} ${filtre||'totes'}</div></div>
+      <div><div class="page-title">Tasques</div><div class="page-sub">${list.length} ${filtre==='avui'?"per avui":(filtre||'totes')}${endarrerides?` · ${endarrerides} endarrerides`:''}</div></div>
       <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('tasca')">+ Nova</button></div>
     </div>
     <div class="toolbar">
-      <button class="btn btn-pill ${filtre==='pendent'?'active':''}" onclick="state._filtreTasques='pendent';renderTasques()">Pendents</button>
+      <button class="btn btn-pill ${filtre==='avui'?'active':''}" onclick="state._filtreTasques='avui';renderTasques()">Avui</button>
+      <button class="btn btn-pill ${filtre==='pendent'?'active':''}" onclick="state._filtreTasques='pendent';renderTasques()">Totes pendents</button>
       <button class="btn btn-pill ${filtre==='done'?'active':''}" onclick="state._filtreTasques='done';renderTasques()">Fetes</button>
       <button class="btn btn-pill ${filtre===''?'active':''}" onclick="state._filtreTasques='';renderTasques()">Totes</button>
     </div>
-    ${list.length === 0 ? '<div class="card"><div class="empty-state">Cap tasca</div></div>' : `
-      <div class="card"><ul class="checklist">${list.map(t => `
-        <li>
-          <div class="check ${t.estat==='done'?'done':''}" onclick="toggleTasca('${t.id}')"></div>
-          <div style="flex:1">
-            <div class="text ${t.estat==='done'?'done':''}">${t.titol}</div>
-            ${t.descripcio ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${t.descripcio}</div>` : ''}
-            <div class="text-meta">
-              ${t.prioritat ? `<span class="pill ${t.prioritat==='Alta'?'p-danger':t.prioritat==='Mitjana'?'p-warning':'p-success'}">${t.prioritat}</span>` : ''}
-              ${t.categoria ? `<span class="pill p-gray">${t.categoria}</span>` : ''}
-              ${t.data_limit ? `<span class="pill p-info">${fmtDate(t.data_limit)}</span>` : ''}
-              ${window.isAdmin() && t.user_id ? renderUserAvatar(t.user_id,'sm') : ''}
-            </div>
-          </div>
-          <button class="btn btn-sm" onclick="deleteRecord('tasques','${t.id}')" style="color:var(--danger)">🗑</button>
-        </li>
-      `).join('')}</ul></div>
-    `}
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="quick-tasca" placeholder="Afegeix una tasca per avui i prem Enter…" onkeydown="if(event.key==='Enter')quickAddTascaAvui()" style="flex:1">
+        <button class="btn btn-primary" onclick="quickAddTascaAvui()">Afegir</button>
+      </div>
+    </div>
+    ${list.length === 0
+      ? `<div class="card"><div class="empty-state">${filtre==='avui'?'Res per avui. Bona feina! 🎉':'Cap tasca'}</div></div>`
+      : `<div class="card"><ul class="checklist">${list.map(_tascaItemHTML).join('')}</ul></div>`}
   `;
 };
 window.renderTasquesList = window.renderTasques;
 
-window.renderAsseguradores = function() {
-  const c = document.getElementById('tab-content');
-  c.innerHTML = `
-    <div class="topbar">
-      <div><div class="page-title">Asseguradores</div><div class="page-sub">Catàleg Brokkom</div></div>
-      ${window.isAdmin() ? '<div class="topbar-actions"><button class="btn btn-primary" onclick="openModal(\'asseguradora\')">+ Nova</button></div>' : ''}
-    </div>
-    ${state.asseguradores.length === 0 ? '<div class="card"><div class="empty-state">Cap asseguradora</div></div>' :
-      state.asseguradores.map(a => `
-        <div class="card">
-          <div class="card-row">
-            <div>
-              <div class="card-title">${a.nom}</div>
-              ${a.contacte_intern ? `<div class="card-sub">${a.contacte_intern}${a.email?' · '+a.email:''}${a.telefon?' · '+a.telefon:''}</div>` : ''}
-            </div>
-            ${window.isAdmin() ? `<button class="btn btn-sm" onclick="deleteRecord('asseguradores','${a.id}')" style="color:var(--danger)">🗑</button>` : ''}
-          </div>
-          ${(a.rams||[]).length>0 ? `<div style="margin-top:8px">${(a.rams||[]).map(r => `<span class="pill p-info" style="margin-right:4px">${r}</span>`).join('')}</div>` : ''}
-          ${a.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">${a.notes}</div>` : ''}
-        </div>
-      `).join('')
-    }
-  `;
+// Afegir ràpid una tasca per a avui (des de Tasques o el Tauler)
+window.quickAddTascaAvui = async function(inputId) {
+  const el = document.getElementById(inputId || 'quick-tasca');
+  const titol = (el?.value || '').trim();
+  if (!titol) { if (el) el.focus(); return; }
+  const dades = {
+    titol, prioritat: 'Mitjana', categoria: 'comercial', estat: 'pendent',
+    data_prevista: new Date().toISOString().slice(0,10),
+    user_id: state.user.id, mediador_id: state.mediador?.id || null
+  };
+  try {
+    const { error } = await supabase.from('tasques').insert(dades);
+    if (error) throw error;
+    if (el) el.value = '';
+    await refreshData('tasques');
+    renderCurrentTab();
+    updateNavBadges();
+  } catch (err) { toast('Error: '+err.message, 'error'); }
 };
 
-window.renderUsuaris = function() {
-  const c = document.getElementById('tab-content');
-  c.innerHTML = `
-    <div class="topbar">
-      <div><div class="page-title">Usuaris</div><div class="page-sub">${state.mediadors.length} mediadors</div></div>
+// Modal lleuger per prorrogar (sense prompt() natiu)
+window.posposarTascaModal = function(id) {
+  const t = state.tasques.find(x => x.id === id);
+  if (!t) return;
+  const fmtISO = (d) => d.toISOString().slice(0,10);
+  const avui = new Date();
+  const dema = new Date(avui); dema.setDate(avui.getDate()+1);
+  const tresDies = new Date(avui); tresDies.setDate(avui.getDate()+3);
+  const setmana = new Date(avui); setmana.setDate(avui.getDate()+7);
+  const dilluns = new Date(avui); dilluns.setDate(avui.getDate() + ((8 - avui.getDay()) % 7 || 7));
+  const html = `
+    <div class="modal-title">Prorrogar tasca</div>
+    <div class="modal-sub">${escapeHtml(t.titol)}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0">
+      <button class="btn" onclick="posposarTasca('${id}','${fmtISO(dema)}')">Demà</button>
+      <button class="btn" onclick="posposarTasca('${id}','${fmtISO(tresDies)}')">D'aquí 3 dies</button>
+      <button class="btn" onclick="posposarTasca('${id}','${fmtISO(setmana)}')">D'aquí 1 setmana</button>
+      <button class="btn" onclick="posposarTasca('${id}','${fmtISO(dilluns)}')">Dilluns vinent</button>
     </div>
-    <div class="card" style="padding:0;overflow-x:auto">
-      <table class="table">
-        <thead><tr><th></th><th>Nom</th><th>Email</th><th>Rol</th><th>Actiu</th></tr></thead>
-        <tbody>${state.mediadors.map(u => `
-          <tr>
-            <td>${renderUserAvatar(u.user_id,'md')}</td>
-            <td><strong>${u.nom||'—'}</strong></td>
-            <td>${u.email}</td>
-            <td>
-              ${window.isAdmin() && u.user_id !== state.user.id ? `
-                <select onchange="canviarRol('${u.user_id}',this.value)" style="font-size:11px;padding:3px 6px">
-                  <option value="agent" ${u.rol==='agent'?'selected':''}>agent</option>
-                  <option value="admin" ${u.rol==='admin'?'selected':''}>admin</option>
-                </select>
-              ` : `<span class="role-badge ${u.rol==='admin'?'role-admin':'role-agent'}">${u.rol||'agent'}</span>`}
-            </td>
-            <td>${u.actiu ? '✓' : '✗'}</td>
-          </tr>
-        `).join('')}</tbody>
-      </table>
+    <div class="form-row"><label>O tria una data concreta</label>
+      <input type="date" id="posposar-data" value="${fmtISO(dema)}" min="${fmtISO(dema)}">
     </div>
-  `;
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel·lar</button>
+      <button class="btn btn-primary" onclick="posposarTasca('${id}', document.getElementById('posposar-data').value)">Prorrogar</button>
+    </div>`;
+  document.getElementById('modal-container').innerHTML =
+    `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+};
+
+window.posposarTasca = async function(id, dataISO) {
+  if (!dataISO) { toast('Tria una data','error'); return; }
+  const t = state.tasques.find(x => x.id === id);
+  const nProrr = (t?.num_prorrogues || 0) + 1;
+  try {
+    const { error } = await supabase.from('tasques')
+      .update({ data_prevista: dataISO, num_prorrogues: nProrr }).eq('id', id);
+    if (error) throw error;
+    if (t) { t.data_prevista = dataISO; t.num_prorrogues = nProrr; }
+    closeModal();
+    renderCurrentTab();
+    updateNavBadges();
+    toast(nProrr >= 3 ? `Prorrogada (ja ${nProrr} cops — l'hauries de tancar?)` : 'Tasca prorrogada', nProrr >= 3 ? 'error' : 'success');
+  } catch (err) { toast('Error: '+err.message, 'error'); }
 };
 
 window.canviarRol = async function(userId, nouRol) {
@@ -959,62 +1019,6 @@ window.renderIA = function() {
       <div class="card" id="ia-result-content"></div>
     </div>
   `;
-};
-
-window.processarIA = async function() {
-  const txt = document.getElementById('ia-input').value.trim();
-  if (!txt) { toast('Enganxa primer text', 'error'); return; }
-  const resDiv = document.getElementById('ia-result-content');
-  document.getElementById('ia-result').classList.remove('hidden');
-  resDiv.innerHTML = '<div class="empty-state"><span class="loader loader-lg"></span><br><br>Processant amb IA...</div>';
-
-  const prompt = `Analitza aquest text i extreu informació estructurada en JSON:
-{
-  "clients": [{"empresa":"","cif":"","tipus":"empresa","contacte":"","email":"","telefon":"","sector":"","notes":""}],
-  "ofertes": [{"empresa":"","ram":"","prima_actual":0,"prima_brokkom":0,"asseguradora":"","estat":"Lead","notes":""}],
-  "venciments": [{"empresa":"","ram":"","data_venciment":"YYYY-MM-DD","prima_actual":0,"asseguradora":""}],
-  "seguiments": [{"empresa":"","data":"YYYY-MM-DD","canal":"Email|Telèfon|Reunió","resum":"","proper_pas":""}],
-  "resum": "resum executiu en 2-3 frases",
-  "alertes": []
-}
-
-TEXT:
-${txt}
-
-Retorna NOMÉS el JSON.`;
-
-  try {
-    const result = await callAnthropicAPI(prompt, state.config?.model_fast);
-    const cleaned = result.replace(/```json\n?|\n?```/g,'').trim();
-    const parsed = JSON.parse(cleaned);
-    let html = '';
-    if (parsed.resum) html += `<div style="padding:12px;background:var(--brand-soft);border-radius:var(--r);margin-bottom:12px;font-size:13px">${parsed.resum}</div>`;
-    if (parsed.alertes?.length) html += `<div class="section-title">⚠️ Alertes</div><ul style="font-size:13px;padding-left:20px;margin-bottom:14px">${parsed.alertes.map(a => `<li>${a}</li>`).join('')}</ul>`;
-    ['clients','ofertes','venciments','seguiments'].forEach(key => {
-      if (parsed[key]?.length) {
-        html += `<div class="section-title">${key}</div>`;
-        parsed[key].forEach((item,i) => {
-          html += `<div style="padding:8px;background:var(--surface-2);border-radius:var(--r);margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between"><div>${item.empresa||item.nom||''}</div><button class="btn btn-sm" onclick="window._iaImport('${key}',${i})">+ Importar</button></div>`;
-        });
-      }
-    });
-    resDiv.innerHTML = html || '<div class="empty-state">No s\'ha detectat info estructurada</div>';
-    window._iaParsed = parsed;
-    window._iaImport = async (key, i) => {
-      const item = parsed[key][i];
-      try {
-        if (key === 'clients') {
-          await supabase.from('clients').insert({ ...item, user_id: state.user.id });
-        } else if (key === 'venciments') {
-          await supabase.from('venciments').insert({ ...item, user_id: state.user.id });
-        }
-        await refreshData();
-        toast('Importat al CRM');
-      } catch (e) { toast('Error: '+e.message,'error'); }
-    };
-  } catch (err) {
-    resDiv.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
-  }
 };
 
 window.callAnthropicAPI = async function(prompt, model) {
@@ -1091,7 +1095,7 @@ window.renderConfig = function() {
     <div class="section-title" style="margin-top:24px">Compte</div>
     <div class="card">
       <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">Connectat com a: <strong>${state.mediador?.email}</strong></div>
-      <div style="font-size:13px;color:var(--text-2);margin-bottom:14px">Rol: <span class="role-badge ${window.isAdmin()?'role-admin':'role-agent'}">${state.mediador?.rol||'agent'}</span></div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:14px">Rol: <span class="role-badge ${roleBadgeClass(state.mediador?.rol)}">${escapeHtml(state.mediador?.rol||'lector')}</span></div>
       <button class="btn" onclick="doLogout()">Tancar sessió</button>
     </div>
 
@@ -1117,11 +1121,8 @@ window.saveCfg = async function() {
 };
 
 // Stubs per a mòduls que vindran al següent sprint
-window.renderInbox = () => { document.getElementById('tab-content').innerHTML = `<div class="topbar"><div><div class="page-title">📥 Bústia</div></div></div><div class="empty-state">Mòdul disponible al següent sprint</div>`; };
-window.renderNotes = () => { document.getElementById('tab-content').innerHTML = `<div class="topbar"><div><div class="page-title">💭 Notes</div></div></div><div class="empty-state">Mòdul disponible al següent sprint</div>`; };
 window.renderAgenda = () => { document.getElementById('tab-content').innerHTML = `<div class="topbar"><div><div class="page-title">📅 Agenda</div></div></div><div class="empty-state">Mòdul disponible al següent sprint</div>`; };
 window.renderEsborranys = () => { document.getElementById('tab-content').innerHTML = `<div class="topbar"><div><div class="page-title">📝 Esborranys</div></div></div><div class="empty-state">Mòdul disponible al següent sprint</div>`; };
-window.renderNotesList = window.renderNotes;
 window.renderAgendaList = window.renderAgenda;
 window.renderEsborranysList = window.renderEsborranys;
 
@@ -1143,11 +1144,14 @@ window.deleteRecord = async function(table, id) {
 window.toggleTasca = async function(id) {
   const t = state.tasques.find(x => x.id === id);
   if (!t) return;
-  const nouEstat = t.estat === 'done' ? 'pendent' : 'done';
+  const fet = t.estat !== 'done';
+  const nouEstat = fet ? 'done' : 'pendent';
+  const completedAt = fet ? new Date().toISOString() : null;
   try {
-    await supabase.from('tasques').update({ estat: nouEstat }).eq('id', id);
+    await supabase.from('tasques').update({ estat: nouEstat, completed_at: completedAt }).eq('id', id);
     t.estat = nouEstat;
-    renderTasques();
+    t.completed_at = completedAt;
+    renderCurrentTab();
     updateNavBadges();
   } catch (err) { toast('Error: '+err.message, 'error'); }
 };
@@ -1167,7 +1171,6 @@ window.exportConsolidats = function() {
 window.filterByHashtag = () => {};
 window.genCalendar = () => {};
 window.syncToGoogleCalendar = () => {};
-window.toggleFavoritaNota = () => {};
 window.copyEsborrany = () => {};
 window.selectTopic = () => {};
 window.copyPost = () => {};
@@ -1348,3 +1351,1122 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape') closeGlobalSearch();
 });
+
+// ==================================================================
+// SECCIÓ FUSIONADA des de brokkom-patch.js (Notes, Bústia IA, Usuaris,
+// compartir, processarIA/_iaImport amb sanejament). Consolidat 24/06/2026.
+// ==================================================================
+
+// ==================================================================
+// BROKKOM CRM · brokkom-patch.js — 08/06/2026
+// Es carrega DESPRÉS de modules.js i modals.js.
+// Sobreescriu funcions per arreglar la IA i afegir Notes.
+// NO toca cap altre fitxer.
+// ==================================================================
+console.log('🩹 brokkom-patch.js carregant...');
+
+// ------------------------------------------------------------------
+// SANEJAMENT DELS IMPORTS DE LA BÚSTIA IA (rescatat de brokkom-patch3)
+// La IA retorna "" per als camps que no troba. Inserir "" en una columna
+// de data o numèrica fa fallar tot l'import. Aquests helpers converteixen
+// "" → null, validen dates (YYYY-MM-DD) i normalitzen euros amb coma.
+// ------------------------------------------------------------------
+function bk3Date(v) {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+function bk3Num(v) {
+  // Reutilitza el parseEuro global; 0 es tracta com a "sense dada".
+  const n = (typeof window.parseEuro === 'function') ? window.parseEuro(v) : (v === '' ? null : parseFloat(v));
+  return (n === null || n === 0 || isNaN(n)) ? null : n;
+}
+function bk3Text(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s === '' ? null : s;
+}
+const BK3_SCHEMA = {
+  clients: {
+    empresa: bk3Text, nom: bk3Text, tipus: bk3Text, cif: bk3Text, dni: bk3Text,
+    contacte: bk3Text, carrec: bk3Text, email: bk3Text, telefon: bk3Text,
+    sector: bk3Text, facturacio: bk3Text, treballadors: bk3Text,
+    adreca: bk3Text, professio: bk3Text, notes: bk3Text
+  },
+  ofertes: {
+    empresa: bk3Text, ram: bk3Text, asseguradora: bk3Text,
+    prima_actual: bk3Num, prima_brokkom: bk3Num,
+    estat: bk3Text, venciment: bk3Date, notes: bk3Text
+  },
+  venciments: {
+    empresa: bk3Text, ram: bk3Text, asseguradora: bk3Text,
+    data_venciment: bk3Date, prima_actual: bk3Num
+  },
+  seguiments: {
+    data: bk3Date, canal: bk3Text, resum: bk3Text, proper_pas: bk3Text
+  },
+  oportunitats: {
+    empresa: bk3Text, producte: bk3Text, argument: bk3Text, prioritat: bk3Text
+  }
+};
+function bk3Clean(key, item) {
+  const schema = BK3_SCHEMA[key] || {};
+  const out = {};
+  for (const [camp, fn] of Object.entries(schema)) {
+    if (item[camp] === undefined) continue;
+    const v = fn(item[camp]);
+    if (v !== null) out[camp] = v;
+  }
+  return out;
+}
+
+// ------------------------------------------------------------------
+// FIX CRÍTIC 11/06/2026 — funcions auxiliars que FALTAVEN
+// modules.js crida getMediadorByUserId() i getSharedWith() des de
+// Clients, Seguiments, fitxa client i el modal de compartir, però
+// no estaven definides ENLLOC. Resultat: el renderitzador bo petava
+// amb TypeError, app.js capturava l'error en silenci i mostrava el
+// "pla B" (renderBasicTab) — la llista plana sense editar/eliminar.
+// Definir-les desbloqueja els mòduls complets.
+// ------------------------------------------------------------------
+if (!window.getMediadorByUserId) {
+  window.getMediadorByUserId = function(userId) {
+    return (state.mediadors || []).find(m => m.user_id === userId) || null;
+  };
+}
+if (!window.getSharedWith) {
+  window.getSharedWith = function(recursTipus, recursId) {
+    return (state.comparticions || [])
+      .filter(c => c.recurs_tipus === recursTipus && c.recurs_id === recursId)
+      .map(c => ({ ...c, mediador: window.getMediadorByUserId(c.compartit_amb_id) }));
+  };
+}
+if (!window.getAvatarColor) {
+  window.getAvatarColor = function(userId) {
+    const colors = ['#0F766E','#1D4ED8','#7C3AED','#B45309','#BE123C','#15803D'];
+    let h = 0;
+    for (const ch of String(userId || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return colors[h % colors.length];
+  };
+}
+
+// ------------------------------------------------------------------
+// HELPER: vincular o crear client per nom (empresa o particular)
+// ------------------------------------------------------------------
+async function _patchTrobaOCreaClient(nom) {
+  if (!nom) return null;
+  const n = nom.trim().toLowerCase();
+  let cli = state.clients.find(c =>
+    (c.empresa || '').toLowerCase() === n || (c.nom || '').toLowerCase() === n
+  );
+  if (cli) return cli.id;
+  // crear client mínim (empresa per defecte)
+  try {
+    const { data, error } = await supabase.from('clients')
+      .insert({ empresa: nom, tipus: 'empresa', user_id: state.user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    state.clients.push(data);
+    return data.id;
+  } catch (e) {
+    console.warn('No s\'ha pogut crear client:', e.message);
+    return null;
+  }
+}
+
+// ------------------------------------------------------------------
+// IA ASSISTENT (Bústia) — versió arreglada
+//   · fitxes completes amb totes les dades
+//   · import sense esborrar la pantalla (marca "✓ Importat")
+//   · importa 5 categories: clients, ofertes, venciments, seguiments, oportunitats
+//   · botó "Importar-ho tot"
+// ------------------------------------------------------------------
+window.processarIA = async function() {
+  const txt = document.getElementById('ia-input').value.trim();
+  if (!txt) { toast('Enganxa primer text', 'error'); return; }
+
+  const btn = document.querySelector('[onclick="processarIA()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Processant...'; }
+
+  const resDiv = document.getElementById('ia-result-content');
+  document.getElementById('ia-result').classList.remove('hidden');
+  resDiv.innerHTML = '<div class="empty-state"><span class="loader loader-lg"></span><br><br>Processant amb IA...</div>';
+
+  const prompt = `Ets el CRM intel·ligent de Brokkom Correduria de Seguros (sector transport). Analitza aquest text i extreu informació estructurada en JSON. Omple TOTS els camps que puguis deduir del text; deixa buit el que no aparegui (no inventis).
+
+{
+  "clients": [{"empresa":"","nom":"","tipus":"empresa","cif":"","dni":"","contacte":"","carrec":"","email":"","telefon":"","sector":"","facturacio":"","treballadors":"","adreca":"","professio":"","notes":""}],
+  "ofertes": [{"empresa":"","ram":"","prima_actual":0,"prima_brokkom":0,"asseguradora":"","estat":"Lead","venciment":"","notes":""}],
+  "venciments": [{"empresa":"","ram":"","data_venciment":"YYYY-MM-DD","prima_actual":0,"asseguradora":""}],
+  "oportunitats": [{"empresa":"","producte":"","argument":"","prioritat":"Alta|Mitjana|Baixa"}],
+  "seguiments": [{"empresa":"","data":"YYYY-MM-DD","canal":"Email|Telèfon|Reunió|WhatsApp","resum":"","proper_pas":""}],
+  "resum": "resum executiu en 2-3 frases",
+  "alertes": ["alertes, dades importants o estalvis grans"]
+}
+
+Regles:
+- Si és un email, el remitent és el contacte.
+- Convenis col·lectius → oportunitat alta RC Patronal/accidents.
+- Flota → oportunitat ciber + telemàtica.
+- Si l'estalvi supera el 30%, afegeix-ho a alertes.
+- tipus: "particular" si és una persona física, "empresa" altrament.
+- Números sense símbol €.
+
+TEXT:
+${txt}
+
+Retorna NOMÉS el JSON, sense cap explicació.`;
+
+  try {
+    const result = await callAnthropicAPI(prompt, state.config?.model_fast);
+    let parsed;
+    try {
+      const cleaned = result.replace(/```json\n?|\n?```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      resDiv.innerHTML = `<div style="white-space:pre-wrap;font-size:13px">${result}</div>`;
+      return;
+    }
+    window._iaParsed = parsed;
+    _patchRenderIAResult(parsed);
+  } catch (err) {
+    resDiv.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 Processar amb IA'; }
+  }
+};
+
+// Render del resultat IA amb fitxes detallades
+function _patchRenderIAResult(parsed) {
+  const resDiv = document.getElementById('ia-result-content');
+
+  // comptar total elements importables
+  const cats = ['clients', 'ofertes', 'venciments', 'seguiments', 'oportunitats'];
+  let totalItems = 0;
+  cats.forEach(k => { if (parsed[k]?.length) totalItems += parsed[k].length; });
+
+  let html = '';
+
+  // capçalera + botó importar-ho tot
+  html += `<div class="ia-result-head">
+    <span style="font-size:13px;font-weight:500">Resultat del processament</span>
+    ${totalItems > 0 ? `<button class="btn btn-brand btn-sm btn-import-all" onclick="window._iaImportTot()">⬇ Importar-ho tot (${totalItems})</button>` : ''}
+  </div>`;
+
+  // resum
+  if (parsed.resum) html += `<div class="ia-summary">${parsed.resum}</div>`;
+
+  // alertes
+  if (parsed.alertes?.length) {
+    html += `<div class="ia-alertes"><div class="ia-alertes-title">⚠️ Alertes</div><ul>${parsed.alertes.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+  }
+
+  // definició de com mostrar cada categoria
+  const renderers = {
+    clients: {
+      label: '🏢 Clients detectats',
+      fields: (c) => [
+        ['Tipus', c.tipus || 'empresa'],
+        ['CIF/DNI', c.cif || c.dni],
+        ['Contacte', c.contacte],
+        ['Càrrec', c.carrec],
+        ['Email', c.email],
+        ['Telèfon', c.telefon],
+        ['Sector', c.sector],
+        ['Treballadors', c.treballadors],
+        ['Facturació', c.facturacio],
+        ['Professió', c.professio],
+        ['Adreça', c.adreca]
+      ],
+      name: (c) => c.empresa || c.nom || '?',
+      note: (c) => c.notes
+    },
+    ofertes: {
+      label: '🎯 Ofertes detectades',
+      fields: (o) => {
+        const est = (parseFloat(o.prima_actual) || 0) - (parseFloat(o.prima_brokkom) || 0);
+        const pct = (o.prima_actual && o.prima_brokkom) ? Math.round((est / o.prima_actual) * 100) : 0;
+        return [
+          ['Ram', o.ram],
+          ['Asseguradora', o.asseguradora],
+          ['Prima actual', o.prima_actual ? fmtEur(o.prima_actual) : ''],
+          ['Prima Brokkom', o.prima_brokkom ? fmtEur(o.prima_brokkom) : ''],
+          ['Estalvi', est > 0 ? `<span class="ia-estalvi-bo">${fmtEur(est)} (${pct}%)</span>` : ''],
+          ['Estat', o.estat],
+          ['Venciment', o.venciment ? fmtDate(o.venciment) : '']
+        ];
+      },
+      name: (o) => o.empresa || '?',
+      note: (o) => o.notes
+    },
+    venciments: {
+      label: '📆 Venciments detectats',
+      fields: (v) => [
+        ['Ram', v.ram],
+        ['Asseguradora', v.asseguradora],
+        ['Data venciment', v.data_venciment ? fmtDate(v.data_venciment) : ''],
+        ['Prima actual', v.prima_actual ? fmtEur(v.prima_actual) : '']
+      ],
+      name: (v) => v.empresa || '?',
+      note: () => ''
+    },
+    seguiments: {
+      label: '📞 Seguiments detectats',
+      fields: (s) => [
+        ['Data', s.data ? fmtDate(s.data) : ''],
+        ['Canal', s.canal],
+        ['Proper pas', s.proper_pas]
+      ],
+      name: (s) => s.empresa || '?',
+      note: (s) => s.resum
+    },
+    oportunitats: {
+      label: '💡 Oportunitats detectades',
+      fields: (o) => [
+        ['Producte', o.producte],
+        ['Prioritat', o.prioritat]
+      ],
+      name: (o) => o.empresa || '?',
+      note: (o) => o.argument
+    }
+  };
+
+  cats.forEach(key => {
+    const items = parsed[key];
+    if (!items?.length) return;
+    const r = renderers[key];
+    html += `<div class="ia-cat">
+      <div class="ia-cat-title">${r.label} <span class="ia-cat-count">${items.length}</span></div>
+      ${items.map((item, idx) => {
+        const fieldsHtml = r.fields(item)
+          .filter(([, val]) => val !== undefined && val !== null && val !== '' && val !== 0)
+          .map(([label, val]) => `<div class="ia-field"><span class="ia-field-label">${label}</span><span class="ia-field-val">${val}</span></div>`)
+          .join('');
+        const noteVal = r.note(item);
+        return `<div class="ia-item" id="ia-item-${key}-${idx}">
+          <div class="ia-item-head">
+            <div class="ia-item-name">${r.name(item)}</div>
+            <button class="btn btn-sm" id="ia-btn-${key}-${idx}" onclick="window._iaImport('${key}',${idx})">+ Importar</button>
+          </div>
+          ${fieldsHtml ? `<div class="ia-item-fields">${fieldsHtml}</div>` : ''}
+          ${noteVal ? `<div class="ia-item-note">${noteVal}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+
+  resDiv.innerHTML = html || '<div class="empty-state">No s\'ha detectat informació estructurada</div>';
+}
+
+// Importa UN element sense re-renderitzar tota la pestanya.
+// FIX 11/06/2026:
+//   1. Comprovem l'error de CADA insert (abans es marcava "Importat"
+//      encara que Supabase hagués rebutjat la fila).
+//   2. Refresc SILENCIÓS: actualitzem l'estat directament des de Supabase
+//      sense cridar refreshData(), que re-renderitzava la pestanya i feia
+//      desaparèixer les fitxes pendents d'importar.
+window._iaImport = async function(key, idx) {
+  const parsed = window._iaParsed;
+  if (!parsed || !parsed[key] || !parsed[key][idx]) return;
+  const item = parsed[key][idx];
+  const btn = document.getElementById(`ia-btn-${key}-${idx}`);
+  const card = document.getElementById(`ia-item-${key}-${idx}`);
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  const mustOk = ({ error }) => { if (error) throw new Error(error.message); };
+
+  try {
+    if (key === 'clients') {
+      const payload = { ...bk3Clean('clients', item), user_id: state.user.id };
+      if (!payload.empresa && !payload.nom) throw new Error('Falta el nom o l\u2019empresa');
+      if (!payload.tipus) payload.tipus = 'empresa';
+      mustOk(await supabase.from('clients').insert(payload));
+
+    } else if (key === 'venciments') {
+      const cid = await _patchTrobaOCreaClient(item.empresa);
+      const net = bk3Clean('venciments', item);
+      if (!net.data_venciment) throw new Error('La data de venciment no és vàlida — afegeix-la a mà des de Venciments');
+      mustOk(await supabase.from('venciments').insert({ ...net, client_id: cid, user_id: state.user.id }));
+
+    } else if (key === 'ofertes') {
+      const cid = await _patchTrobaOCreaClient(item.empresa);
+      const net = bk3Clean('ofertes', item);
+      mustOk(await supabase.from('ofertes').insert({
+        ...net, client_id: cid, user_id: state.user.id,
+        estat: net.estat || 'Lead'
+      }));
+
+    } else if (key === 'seguiments') {
+      const cid = await _patchTrobaOCreaClient(item.empresa);
+      const net = bk3Clean('seguiments', item);
+      mustOk(await supabase.from('seguiments').insert({
+        ...net, client_id: cid, user_id: state.user.id,
+        data: net.data || new Date().toISOString().slice(0, 10)
+      }));
+
+    } else if (key === 'oportunitats') {
+      const cid = await _patchTrobaOCreaClient(item.empresa);
+      const net = bk3Clean('oportunitats', item);
+      mustOk(await supabase.from('oportunitats').insert({
+        ...net, client_id: cid, user_id: state.user.id, estat: 'Detectada'
+      }));
+    }
+
+    // marcar com importat — la fitxa es queda a pantalla
+    if (card) card.classList.add('imported');
+    if (btn) { btn.textContent = '✓ Importat'; btn.disabled = true; }
+
+    // refresc silenciós de l'estat (sense refreshData → sense re-render)
+    try {
+      const { data } = await supabase.from(key).select('*');
+      if (data) state[key] = data;
+    } catch (e) { /* l'import ja és fet; el refresc pot esperar */ }
+    if (typeof updateNavBadges === 'function') updateNavBadges();
+    toast('Importat al CRM');
+
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '+ Importar'; }
+    toast('Error important: ' + e.message, 'error');
+  }
+};
+
+// Importa TOTS els elements detectats
+window._iaImportTot = async function() {
+  const parsed = window._iaParsed;
+  if (!parsed) return;
+  const cats = ['clients', 'ofertes', 'venciments', 'seguiments', 'oportunitats'];
+  // clients primer (perquè ofertes/seguiments s'hi vinculin)
+  for (const key of cats) {
+    if (!parsed[key]?.length) continue;
+    for (let idx = 0; idx < parsed[key].length; idx++) {
+      const card = document.getElementById(`ia-item-${key}-${idx}`);
+      if (card && card.classList.contains('imported')) continue;
+      await window._iaImport(key, idx);
+    }
+  }
+  toast('Tot importat al CRM');
+};
+
+// ------------------------------------------------------------------
+// MÒDUL NOTES — complet, sempre lligat a un client, amb IA
+// ------------------------------------------------------------------
+window.renderNotes = function() {
+  const c = document.getElementById('tab-content');
+  const list = [...(state.notes || [])].sort((a, b) =>
+    new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)
+  );
+
+  c.innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">Notes</div><div class="page-sub">${list.length} notes · sempre lligades a un client</div></div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openNotaModal()" ${state.clients.length === 0 ? 'disabled title="Crea un client primer"' : ''}>+ Nova nota</button>
+      </div>
+    </div>
+    ${state.clients.length === 0 ? `
+      <div class="card"><div class="empty-state"><div class="empty-icon">💭</div>
+        Les notes van sempre lligades a un client.<br>Crea primer un client.<br><br>
+        <button class="btn btn-primary" onclick="openModal('client')">+ Crear client</button>
+      </div></div>
+    ` : list.length === 0 ? `
+      <div class="card"><div class="empty-state"><div class="empty-icon">💭</div>
+        Cap nota encara<br><br>
+        <button class="btn btn-primary" onclick="openNotaModal()">+ Crear primera nota</button>
+      </div></div>
+    ` : list.map(n => {
+      const cli = state.clients.find(x => x.id === n.client_id);
+      const nomCli = cli ? getClientNom(cli) : '(client esborrat)';
+      return `<div class="note-card ${n.favorita ? 'favorita' : ''}" id="note-card-${n.id}">
+        <div class="card-row">
+          <div style="flex:1">
+            ${n.titol ? `<div class="note-title">${n.titol}</div>` : ''}
+            <div class="note-link-client" onclick="state._clientObert='${n.client_id}';showTab('clients')">↗ ${nomCli}</div>
+          </div>
+          <span class="note-fav-star ${n.favorita ? 'on' : ''}" onclick="toggleFavoritaNota('${n.id}')" title="Marcar preferida">${n.favorita ? '★' : '☆'}</span>
+        </div>
+        <div class="note-body" style="margin-top:8px">${n.contingut || ''}</div>
+        <div id="note-ia-${n.id}"></div>
+        <div class="note-card-actions">
+          <button class="btn btn-sm" onclick="processarNotaIA('${n.id}')">🤖 Processar amb IA</button>
+          <button class="btn btn-sm" onclick="openNotaModal('${n.id}')">✏️ Editar</button>
+          <button class="btn btn-sm" onclick="deleteRecord('notes','${n.id}')" style="color:var(--danger)">🗑</button>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+};
+window.renderNotesList = window.renderNotes;
+
+// Marcar nota preferida
+window.toggleFavoritaNota = async function(id) {
+  const n = (state.notes || []).find(x => x.id === id);
+  if (!n) return;
+  try {
+    const nou = !n.favorita;
+    await supabase.from('notes').update({ favorita: nou }).eq('id', id);
+    n.favorita = nou;
+    renderNotes();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// Processar una nota concreta amb IA → oportunitats + seguiments
+window.processarNotaIA = async function(id) {
+  const n = (state.notes || []).find(x => x.id === id);
+  if (!n) return;
+  const cli = state.clients.find(c => c.id === n.client_id);
+  if (!cli) { toast('Aquesta nota no té client vinculat', 'error'); return; }
+
+  const box = document.getElementById('note-ia-' + id);
+  if (box) box.innerHTML = '<div class="note-ia-result"><span class="loader"></span> Analitzant la nota amb IA...</div>';
+
+  const prompt = `Ets el CRM de Brokkom Correduria (sector transport i particulars). Analitza aquesta nota sobre el client i extreu oportunitats de venda i propers passos.
+
+CLIENT: ${getClientNom(cli)} (${cli.tipus || 'empresa'})
+${cli.sector ? 'Sector: ' + cli.sector : ''}
+${cli.professio ? 'Professió: ' + cli.professio : ''}
+
+NOTA:
+${n.contingut || ''}
+
+Retorna NOMÉS aquest JSON:
+{
+  "oportunitats": [{"producte":"","argument":"","prioritat":"Alta|Mitjana|Baixa"}],
+  "seguiments": [{"data":"YYYY-MM-DD","canal":"Email|Telèfon|Reunió|WhatsApp","resum":"","proper_pas":""}],
+  "resum": "una frase resum"
+}`;
+
+  try {
+    const result = await callAnthropicAPI(prompt, state.config?.model_smart);
+    const cleaned = result.replace(/```json\n?|\n?```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    window['_notaIA_' + id] = { parsed, clientId: n.client_id };
+
+    let html = '<div class="note-ia-result">';
+    if (parsed.resum) html += `<div style="margin-bottom:8px">${parsed.resum}</div>`;
+
+    if (parsed.oportunitats?.length) {
+      html += `<div style="font-weight:600;margin-bottom:4px">💡 Oportunitats</div>`;
+      parsed.oportunitats.forEach((o, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0">
+          <span>${o.producte} <span class="pill ${o.prioritat === 'Alta' ? 'p-danger' : o.prioritat === 'Mitjana' ? 'p-warning' : 'p-success'}">${o.prioritat || ''}</span></span>
+          <button class="btn btn-sm" onclick="importarNotaOpp('${id}',${i})">+ Afegir</button>
+        </div>`;
+      });
+    }
+    if (parsed.seguiments?.length) {
+      html += `<div style="font-weight:600;margin:8px 0 4px">📞 Seguiments suggerits</div>`;
+      parsed.seguiments.forEach((s, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0">
+          <span>${s.canal || ''}${s.proper_pas ? ' — ' + s.proper_pas : (s.resum ? ' — ' + s.resum : '')}</span>
+          <button class="btn btn-sm" onclick="importarNotaSeg('${id}',${i})">+ Afegir</button>
+        </div>`;
+      });
+    }
+    if (!parsed.oportunitats?.length && !parsed.seguiments?.length) {
+      html += '<div>No s\'han detectat oportunitats ni seguiments clars.</div>';
+    }
+    html += '</div>';
+    if (box) box.innerHTML = html;
+  } catch (e) {
+    if (box) box.innerHTML = `<div class="note-ia-result" style="color:var(--danger)">Error: ${e.message}</div>`;
+  }
+};
+
+window.importarNotaOpp = async function(noteId, i) {
+  const d = window['_notaIA_' + noteId];
+  if (!d) return;
+  const o = d.parsed.oportunitats[i];
+  const cli = state.clients.find(c => c.id === d.clientId);
+  try {
+    await supabase.from('oportunitats').insert({
+      client_id: d.clientId, empresa: cli?.empresa || cli?.nom, user_id: state.user.id,
+      producte: o.producte, argument: o.argument, prioritat: o.prioritat, estat: 'Detectada'
+    });
+    await refreshData('oportunitats');
+    updateNavBadges();
+    toast('Oportunitat afegida');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window.importarNotaSeg = async function(noteId, i) {
+  const d = window['_notaIA_' + noteId];
+  if (!d) return;
+  const s = d.parsed.seguiments[i];
+  try {
+    await supabase.from('seguiments').insert({
+      client_id: d.clientId, user_id: state.user.id,
+      data: s.data || new Date().toISOString().slice(0, 10),
+      canal: s.canal, resum: s.resum, proper_pas: s.proper_pas
+    });
+    await refreshData('seguiments');
+    toast('Seguiment afegit');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// Modal crear/editar nota (lligada a client)
+window.openNotaModal = function(id) {
+  const nota = id ? (state.notes || []).find(n => n.id === id) : null;
+  const clientOptions = state.clients.map(c =>
+    `<option value="${c.id}" ${nota && nota.client_id === c.id ? 'selected' : (state._clientObert === c.id ? 'selected' : '')}>${getClientNom(c)}</option>`
+  ).join('');
+
+  const html = `
+    <div class="modal-title">${id ? 'Editar' : 'Nova'} nota</div>
+    <div class="modal-sub">Sempre vinculada a un client</div>
+    <div class="form-row"><label>Client *</label><select id="m-nota-client"><option value="">— selecciona —</option>${clientOptions}</select></div>
+    <div class="form-row"><label>Títol (opcional)</label><input type="text" id="m-nota-titol" value="${nota?.titol || ''}"></div>
+    <div class="form-row"><label>Contingut</label><textarea id="m-nota-contingut" style="min-height:140px" placeholder="Escriu aquí la nota. Després pots prémer 'Processar amb IA' per treure'n oportunitats.">${nota?.contingut || ''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel·lar</button>
+      <button class="btn btn-primary" onclick="saveNota('${id || ''}')">Guardar</button>
+    </div>
+  `;
+  document.getElementById('modal-container').innerHTML =
+    `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+};
+
+window.saveNota = async function(id) {
+  const clientId = document.getElementById('m-nota-client').value;
+  if (!clientId) { toast('Selecciona un client', 'error'); return; }
+  const payload = {
+    client_id: clientId,
+    titol: document.getElementById('m-nota-titol').value.trim(),
+    contingut: document.getElementById('m-nota-contingut').value.trim(),
+    user_id: state.user.id
+  };
+  try {
+    if (id) {
+      await supabase.from('notes').update(payload).eq('id', id);
+    } else {
+      await supabase.from('notes').insert(payload);
+    }
+    closeModal();
+    await refreshData('notes');
+    updateNavBadges();
+    renderNotes();
+    toast('Nota guardada');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+// ------------------------------------------------------------------
+// renderUsuaris — protegit contra state.user null
+// ------------------------------------------------------------------
+window.renderUsuaris = function() {
+  const c = document.getElementById('tab-content');
+  const meuId = state.user?.id;
+  c.innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">Usuaris</div><div class="page-sub">${state.mediadors.length} mediadors</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto">
+      <table class="table">
+        <thead><tr><th></th><th>Nom</th><th>Email</th><th>Rol</th><th>Actiu</th></tr></thead>
+        <tbody>${state.mediadors.map(u => `
+          <tr>
+            <td>${renderUserAvatar(u.user_id, 'md')}</td>
+            <td><strong>${u.nom || '—'}</strong></td>
+            <td>${u.email}</td>
+            <td>
+              ${window.isAdmin() && u.user_id !== meuId ? `
+                <select onchange="canviarRol('${u.user_id}',this.value)" style="font-size:11px;padding:3px 6px">
+                  <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>admin</option>
+                  <option value="mediador" ${u.rol === 'mediador' ? 'selected' : ''}>mediador</option>
+                  <option value="lector" ${u.rol === 'lector' ? 'selected' : ''}>lector</option>
+                </select>
+              ` : `<span class="role-badge ${roleBadgeClass(u.rol)}">${escapeHtml(u.rol || 'lector')}</span>`}
+            </td>
+            <td>${u.actiu ? '✓' : '✗'}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    </div>
+  `;
+};
+
+// ------------------------------------------------------------------
+// BÚSTIA = IA ASSISTENT (11/06/2026)
+// La pestanya 📥 Bústia mostrava un stub ("Mòdul disponible al següent
+// sprint") perquè la taula inbox_items no la fa servir res encara.
+// A la pràctica, la "bústia" de Brokkom és l'assistent IA: enganxar
+// text → processar → importar. Fem que la pestanya obri directament
+// aquesta funcionalitat. Aquesta línia s'executa l'última i guanya
+// sobre l'stub de modules.js.
+// ------------------------------------------------------------------
+window.renderInbox = function() {
+  window.renderIA();
+};
+
+console.log('✅ brokkom-patch.js carregat (IA + Notes + Bústia + fixes)');
+
+// ==================================================================
+// SECCIÓ FUSIONADA des de brokkom-patch2.js (Informes + Contactes de
+// companyia + renderAsseguradores). Consolidat 24/06/2026.
+// ==================================================================
+
+// ==================================================================
+// BROKKOM CRM · brokkom-patch2.js — 12/06/2026
+// Es carrega DESPRÉS de brokkom-patch.js. NO toca cap altre fitxer.
+//
+// Afegeix:
+//   1. Pestanya "Informes" — informe trimestral per a junta de socis
+//      (mètriques, comparativa any anterior, gràfics, resum IA, PDF)
+//   2. Contactes de companyia a Asseguradores (múltiples contactes)
+//      Requereix la migració SQL 2026_06_12_contactes_cia.sql
+// ==================================================================
+console.log('🩹 brokkom-patch2.js carregant...');
+
+// ------------------------------------------------------------------
+// Helpers locals
+// ------------------------------------------------------------------
+function bk2Esc(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function bk2Pct(actual, anterior) {
+  if (!anterior) return null;
+  return ((actual - anterior) / anterior) * 100;
+}
+function bk2Delta(actual, anterior, invers = false) {
+  const p = bk2Pct(actual, anterior);
+  if (p === null || !isFinite(p)) return '';
+  const puja = p >= 0;
+  const bo = invers ? !puja : puja;
+  const fletxa = puja ? '▲' : '▼';
+  const color = Math.abs(p) < 0.5 ? 'var(--text-3)' : (bo ? 'var(--success)' : 'var(--danger)');
+  return `<span style="color:${color};font-size:11px;font-weight:600">${fletxa} ${Math.abs(p).toFixed(0)}%</span>`;
+}
+
+// ==================================================================
+// 1) PESTANYA INFORMES
+// ==================================================================
+
+// Rang de dates d'un període
+function bk2Rang(periode, any) {
+  const r = {
+    T1: [`${any}-01-01`, `${any}-03-31`],
+    T2: [`${any}-04-01`, `${any}-06-30`],
+    T3: [`${any}-07-01`, `${any}-09-30`],
+    T4: [`${any}-10-01`, `${any}-12-31`],
+    Y:  [`${any}-01-01`, `${any}-12-31`],
+  };
+  if (periode === 'YTD') return [`${any}-01-01`, new Date().toISOString().slice(0, 10)];
+  return r[periode] || r.Y;
+}
+function bk2RangComparacio(periode, any, mode) {
+  if (mode === 'none') return null;
+  if (mode === 'yoy') return bk2Rang(periode, any - 1);
+  // període anterior
+  const ordre = ['T1', 'T2', 'T3', 'T4'];
+  const i = ordre.indexOf(periode);
+  if (i > 0) return bk2Rang(ordre[i - 1], any);
+  if (i === 0) return bk2Rang('T4', any - 1);
+  return bk2Rang(periode, any - 1); // YTD/Y → any anterior
+}
+function bk2EnRang(dataStr, rang) {
+  if (!dataStr || !rang) return false;
+  const d = String(dataStr).slice(0, 10);
+  return d >= rang[0] && d <= rang[1];
+}
+
+// Calcula totes les mètriques d'un rang
+function bk2Metriques(rang) {
+  if (!rang) return null;
+  const tanc = state.consolidats.filter(c => bk2EnRang(c.data_tancament, rang));
+  const primaTotal = tanc.reduce((s, c) => s + (parseFloat(c.prima_anual) || 0), 0);
+  const perdudes = state.ofertes.filter(o => o.estat === 'Tancada perduda' && bk2EnRang(o.updated_at || o.created_at, rang));
+  const totalDecidides = tanc.length + perdudes.length;
+  const nousClients = state.clients.filter(c => bk2EnRang(c.data_alta || c.created_at, rang));
+  const seguiments = state.seguiments.filter(s => bk2EnRang(s.data, rang));
+  const ofertesNoves = state.ofertes.filter(o => bk2EnRang(o.data_oferta || o.created_at, rang));
+
+  const agrupa = (llista, camp, valor) => {
+    const out = {};
+    for (const item of llista) {
+      const k = item[camp] || '—';
+      if (!out[k]) out[k] = { n: 0, prima: 0 };
+      out[k].n++;
+      out[k].prima += parseFloat(item[valor]) || 0;
+    }
+    return Object.entries(out).sort((a, b) => b[1].prima - a[1].prima);
+  };
+
+  // Top clients per prima del període
+  const perClient = agrupa(tanc, 'empresa', 'prima_anual').slice(0, 5);
+
+  // Evolució mensual dins del rang
+  const perMes = {};
+  for (const c of tanc) {
+    const k = String(c.data_tancament).slice(0, 7);
+    if (!perMes[k]) perMes[k] = { n: 0, prima: 0 };
+    perMes[k].n++;
+    perMes[k].prima += parseFloat(c.prima_anual) || 0;
+  }
+
+  return {
+    rang, tanc, primaTotal,
+    primaMitjana: tanc.length ? primaTotal / tanc.length : 0,
+    perdudes: perdudes.length,
+    conversio: totalDecidides ? (tanc.length / totalDecidides) * 100 : null,
+    nousClients: nousClients.length,
+    seguiments: seguiments.length,
+    ofertesNoves: ofertesNoves.length,
+    perAsseguradora: agrupa(tanc, 'asseguradora', 'prima_anual'),
+    perRam: agrupa(tanc, 'ram', 'prima_anual'),
+    perMediador: agrupa(tanc, 'mediador', 'prima_anual'),
+    topClients: perClient,
+    perMes: Object.entries(perMes).sort(),
+  };
+}
+
+window.renderInformes = function () {
+  const c = document.getElementById('tab-content');
+  const ara = new Date();
+  const anyActual = ara.getFullYear();
+  const triPerDefecte = 'T' + (Math.floor(ara.getMonth() / 3) + 1);
+  const sel = window._bk2InformeSel || (window._bk2InformeSel = { periode: triPerDefecte, any: anyActual, vs: 'yoy' });
+
+  // Anys disponibles segons les dades
+  const anys = [...new Set(state.consolidats.map(x => String(x.data_tancament || '').slice(0, 4)).filter(Boolean))].sort().reverse();
+  if (!anys.includes(String(anyActual))) anys.unshift(String(anyActual));
+
+  const m = bk2Metriques(bk2Rang(sel.periode, sel.any));
+  const mc = bk2Metriques(bk2RangComparacio(sel.periode, sel.any, sel.vs));
+  const nomPeriode = sel.periode === 'YTD' ? `Any en curs ${sel.any}` : sel.periode === 'Y' ? `Any ${sel.any}` : `${sel.periode} ${sel.any}`;
+  const nomVs = sel.vs === 'yoy' ? 'vs mateix període any anterior' : sel.vs === 'prev' ? 'vs període anterior' : '';
+
+  const barres = (llista, color) => {
+    if (!llista.length) return '<div class="empty-state">Sense dades en aquest període</div>';
+    const max = llista[0][1].prima || 1;
+    return llista.map(([nom, d]) => `
+      <div class="chart-bar">
+        <div class="chart-label" title="${bk2Esc(nom)}">${bk2Esc(nom)}</div>
+        <div class="chart-track"><div class="chart-fill" style="width:${(d.prima / max) * 100}%;background:${color}"></div></div>
+        <div class="chart-value">${d.n} · ${fmtEur(d.prima)}</div>
+      </div>`).join('');
+  };
+
+  const metrica = (label, valor, sub, delta) => `
+    <div class="metric">
+      <div class="metric-label">${label}</div>
+      <div class="metric-value">${valor} ${delta || ''}</div>
+      ${sub ? `<div class="metric-sub">${sub}</div>` : ''}
+    </div>`;
+
+  c.innerHTML = `
+    <div class="topbar bk2-noprint">
+      <div>
+        <div class="page-title">📈 Informe per a socis</div>
+        <div class="page-sub">Síntesi del període per a la junta · comparatives · resum executiu IA</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn btn-primary" id="bk2-btn-ia" onclick="bk2GenerarResumIA()">🤖 Resum executiu IA</button>
+      </div>
+    </div>
+
+    <div class="card bk2-noprint" style="margin-bottom:18px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-row" style="margin:0;flex:1;min-width:150px">
+          <label>Període</label>
+          <select id="bk2-periode" onchange="bk2CanviSel()">
+            ${['T1','T2','T3','T4','YTD','Y'].map(p => `<option value="${p}" ${sel.periode===p?'selected':''}>${p==='YTD'?'Any en curs':p==='Y'?'Any complet':p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row" style="margin:0;flex:1;min-width:110px">
+          <label>Any</label>
+          <select id="bk2-any" onchange="bk2CanviSel()">
+            ${anys.map(a => `<option value="${a}" ${String(sel.any)===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row" style="margin:0;flex:1;min-width:200px">
+          <label>Comparar amb</label>
+          <select id="bk2-vs" onchange="bk2CanviSel()">
+            <option value="yoy" ${sel.vs==='yoy'?'selected':''}>Mateix període any anterior</option>
+            <option value="prev" ${sel.vs==='prev'?'selected':''}>Període anterior</option>
+            <option value="none" ${sel.vs==='none'?'selected':''}>Sense comparativa</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="bk2-print-head" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #1A3A6B;padding-bottom:8px;margin-bottom:18px">
+        <div style="font-size:18px;font-weight:700;color:#1A3A6B">BROKKOM Correduria de Seguros</div>
+        <div style="font-size:12px;color:#555">Informe comercial · ${bk2Esc(nomPeriode)} · generat ${ara.toLocaleDateString('ca-ES')}</div>
+      </div>
+    </div>
+
+    <div class="section-title">${bk2Esc(nomPeriode)} ${mc ? '· ' + bk2Esc(nomVs) : ''}</div>
+    <div class="metrics">
+      ${metrica('Tancaments', m.tanc.length, mc ? `${mc.tanc.length} al període comparat` : '', mc ? bk2Delta(m.tanc.length, mc.tanc.length) : '')}
+      ${metrica('Prima primada', fmtEur(m.primaTotal), mc ? `${fmtEur(mc.primaTotal)} comparat` : '', mc ? bk2Delta(m.primaTotal, mc.primaTotal) : '')}
+      ${metrica('Prima mitjana', fmtEur(m.primaMitjana), '', mc ? bk2Delta(m.primaMitjana, mc.primaMitjana) : '')}
+      ${metrica('Conversió', m.conversio === null ? '—' : Math.round(m.conversio) + '%', `${m.perdudes} perdudes`, (mc && mc.conversio !== null && m.conversio !== null) ? bk2Delta(m.conversio, mc.conversio) : '')}
+      ${metrica('Clients nous', m.nousClients, '', mc ? bk2Delta(m.nousClients, mc.nousClients) : '')}
+      ${metrica('Activitat', m.seguiments, `seguiments · ${m.ofertesNoves} ofertes noves`, mc ? bk2Delta(m.seguiments, mc.seguiments) : '')}
+    </div>
+
+    <div id="bk2-resum-ia" class="hidden" style="margin-bottom:20px">
+      <div class="section-title">Resum executiu</div>
+      <div class="card" id="bk2-resum-ia-text" style="line-height:1.75;font-size:13.5px;white-space:pre-wrap"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div>
+        <div class="section-title">Prima per asseguradora</div>
+        <div class="card">${barres(m.perAsseguradora, 'var(--brand)')}</div>
+      </div>
+      <div>
+        <div class="section-title">Prima per ram</div>
+        <div class="card">${barres(m.perRam, '#574A9E')}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div>
+        <div class="section-title">Evolució mensual del període</div>
+        <div class="card">${m.perMes.length === 0 ? '<div class="empty-state">Sense dades</div>' : (() => {
+          const max = Math.max(...m.perMes.map(x => x[1].prima)) || 1;
+          return m.perMes.map(([mes, d]) => {
+            const [y, mm] = mes.split('-');
+            const label = new Date(+y, +mm - 1).toLocaleDateString('ca-ES', { month: 'short', year: '2-digit' });
+            return `<div class="chart-bar">
+              <div class="chart-label">${label}</div>
+              <div class="chart-track"><div class="chart-fill" style="width:${(d.prima / max) * 100}%;background:var(--success)"></div></div>
+              <div class="chart-value">${d.n} · ${fmtEur(d.prima)}</div>
+            </div>`;
+          }).join('');
+        })()}</div>
+      </div>
+      <div>
+        <div class="section-title">Top clients del període</div>
+        <div class="card">${m.topClients.length === 0 ? '<div class="empty-state">Sense dades</div>' :
+          m.topClients.map(([nom, d], i) => `
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <div><span style="color:var(--text-3);font-variant-numeric:tabular-nums">${i + 1}.</span> <strong>${bk2Esc(nom)}</strong></div>
+              <div style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--success)">${fmtEur(d.prima)}</div>
+            </div>`).join('')}</div>
+      </div>
+    </div>
+
+    ${m.perMediador.length > 1 ? `
+    <div class="section-title">Per mediador</div>
+    <div class="card" style="margin-bottom:20px">${barres(m.perMediador, '#2F62A8')}</div>` : ''}
+
+    <div class="section-title">Detall de tancaments del període</div>
+    <div class="card" style="padding:0;overflow-x:auto">
+      <table class="table">
+        <thead><tr><th>Data</th><th>Empresa</th><th>Ram</th><th>Asseguradora</th><th>Núm. pòlissa</th><th class="num">Prima</th></tr></thead>
+        <tbody>${m.tanc.length === 0 ? '<tr><td colspan="6"><div class="empty-state">Cap tancament en aquest període</div></td></tr>' :
+          [...m.tanc].sort((a, b) => String(b.data_tancament).localeCompare(String(a.data_tancament))).map(t => `
+            <tr>
+              <td>${fmtDate(t.data_tancament)}</td>
+              <td><strong>${bk2Esc(t.empresa)}</strong></td>
+              <td>${bk2Esc(t.ram) || '—'}</td>
+              <td>${bk2Esc(t.asseguradora) || '—'}</td>
+              <td style="font-family:ui-monospace,monospace;font-size:12px">${bk2Esc(t.num_polissa) || '—'}</td>
+              <td class="num"><strong>${fmtEur(t.prima_anual)}</strong></td>
+            </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+};
+
+window.bk2CanviSel = function () {
+  window._bk2InformeSel = {
+    periode: document.getElementById('bk2-periode').value,
+    any: parseInt(document.getElementById('bk2-any').value, 10),
+    vs: document.getElementById('bk2-vs').value,
+  };
+  renderInformes();
+};
+
+window.bk2GenerarResumIA = async function () {
+  const sel = window._bk2InformeSel;
+  const m = bk2Metriques(bk2Rang(sel.periode, sel.any));
+  const mc = bk2Metriques(bk2RangComparacio(sel.periode, sel.any, sel.vs));
+  const btn = document.getElementById('bk2-btn-ia');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Generant...';
+
+  const dades = {
+    periode: sel.periode, any: sel.any,
+    tancaments: m.tanc.length, prima_total: Math.round(m.primaTotal),
+    prima_mitjana: Math.round(m.primaMitjana), conversio_pct: m.conversio ? Math.round(m.conversio) : null,
+    ofertes_perdudes: m.perdudes, clients_nous: m.nousClients,
+    seguiments: m.seguiments, ofertes_noves: m.ofertesNoves,
+    per_asseguradora: Object.fromEntries(m.perAsseguradora.map(([k, v]) => [k, Math.round(v.prima)])),
+    per_ram: Object.fromEntries(m.perRam.map(([k, v]) => [k, Math.round(v.prima)])),
+    top_clients: m.topClients.map(([k, v]) => ({ empresa: k, prima: Math.round(v.prima) })),
+    comparativa: mc ? {
+      tancaments: mc.tanc.length, prima_total: Math.round(mc.primaTotal),
+      conversio_pct: mc.conversio ? Math.round(mc.conversio) : null,
+      clients_nous: mc.nousClients, seguiments: mc.seguiments,
+    } : null,
+  };
+
+  const prompt = `Ets l'analista comercial de Brokkom Correduria de Seguros (especialista en sector transport). Redacta el RESUM EXECUTIU de l'informe trimestral per a la junta de socis, en català, a partir d'aquestes dades:
+
+${JSON.stringify(dades, null, 2)}
+
+Requisits:
+- 3 o 4 paràgrafs, to professional i directe, sense floritures
+- Comença pel resultat principal del període (tancaments i prima)
+- Si hi ha comparativa, destaca les variacions rellevants en % i el perquè probable
+- Comenta concentració de cartera (dependència d'asseguradores o de pocs clients) si és visible
+- Acaba amb 2-3 recomanacions accionables per al proper període
+- NOMÉS el text, sense títols ni markdown`;
+
+  try {
+    const response = await window.apiCallWithRetry('/api/ai-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: state.config?.model_smart || 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await response.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+    document.getElementById('bk2-resum-ia-text').textContent = text || 'La IA no ha retornat text.';
+    document.getElementById('bk2-resum-ia').classList.remove('hidden');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 Resum executiu IA';
+  }
+};
+
+// --- Estils d'impressió per a l'informe en PDF ---
+// (El nav d'Informes és estàtic a index.html i el routing el fa app.js,
+//  per això ja no cal injectar el menú ni embolcallar renderCurrentTab.)
+(function bk2PrintStyles() {
+  const style = document.createElement('style');
+  style.textContent = `@media print {
+    .bk2-noprint { display: none !important; }
+    .bk2-print-head { display: block !important; }
+  }`;
+  document.head.appendChild(style);
+})();
+
+// ==================================================================
+// 2) CONTACTES DE COMPANYIA (asseguradores.contactes jsonb)
+// ==================================================================
+
+window.renderAsseguradores = function () {
+  const c = document.getElementById('tab-content');
+  c.innerHTML = `
+    <div class="topbar">
+      <div><div class="page-title">Asseguradores</div><div class="page-sub">Catàleg Brokkom · contactes de companyia</div></div>
+      ${window.isAdmin() ? '<div class="topbar-actions"><button class="btn btn-primary" onclick="openModal(\'asseguradora\')">+ Nova</button></div>' : ''}
+    </div>
+    ${state.asseguradores.length === 0 ? '<div class="card"><div class="empty-state">Cap asseguradora</div></div>' :
+      state.asseguradores.map(a => {
+        const contactes = Array.isArray(a.contactes) ? a.contactes : [];
+        return `
+        <div class="card">
+          <div class="card-row">
+            <div>
+              <div class="card-title">${bk2Esc(a.nom)}</div>
+              ${a.contacte_intern ? `<div class="card-sub">${bk2Esc(a.contacte_intern)}${a.email ? ' · ' + bk2Esc(a.email) : ''}${a.telefon ? ' · ' + bk2Esc(a.telefon) : ''}</div>` : ''}
+            </div>
+            <div style="display:flex;gap:6px">
+              ${window.isAdmin() ? `<button class="btn btn-sm" onclick="bk2ObreContacte('${a.id}')">+ Contacte</button>
+              <button class="btn btn-sm" onclick="deleteRecord('asseguradores','${a.id}')" style="color:var(--danger)">🗑</button>` : ''}
+            </div>
+          </div>
+          ${(a.rams || []).length > 0 ? `<div style="margin-top:8px">${(a.rams || []).map(r => `<span class="pill p-info" style="margin-right:4px">${bk2Esc(r)}</span>`).join('')}</div>` : ''}
+          ${contactes.length > 0 ? `
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+              <div class="section-title" style="margin-bottom:6px">Contactes</div>
+              ${contactes.map((ct, i) => `
+                <div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+                  <div style="flex:1;min-width:0">
+                    <strong>${bk2Esc(ct.nom)}</strong>${ct.carrec ? ` <span style="color:var(--text-3)">· ${bk2Esc(ct.carrec)}</span>` : ''}
+                    <div style="font-size:11.5px;color:var(--text-2)">
+                      ${ct.email ? `<a href="mailto:${bk2Esc(ct.email)}" style="color:var(--brand);text-decoration:none">${bk2Esc(ct.email)}</a>` : ''}
+                      ${ct.email && ct.telefon ? ' · ' : ''}
+                      ${ct.telefon ? `<a href="tel:${bk2Esc(ct.telefon)}" style="color:var(--brand);text-decoration:none">${bk2Esc(ct.telefon)}</a>` : ''}
+                    </div>
+                    ${ct.notes ? `<div style="font-size:11.5px;color:var(--text-3);margin-top:2px">${bk2Esc(ct.notes)}</div>` : ''}
+                  </div>
+                  ${window.isAdmin() ? `
+                  <button class="btn btn-sm" onclick="bk2ObreContacte('${a.id}', ${i})">✏️</button>
+                  <button class="btn btn-sm" onclick="bk2EsborraContacte('${a.id}', ${i})" style="color:var(--danger)">🗑</button>` : ''}
+                </div>`).join('')}
+            </div>` : ''}
+          ${a.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">${bk2Esc(a.notes)}</div>` : ''}
+        </div>`;
+      }).join('')
+    }
+  `;
+};
+
+window.bk2ObreContacte = function (assegId, idx) {
+  const a = state.asseguradores.find(x => x.id === assegId);
+  if (!a) return;
+  const ct = (idx !== undefined && Array.isArray(a.contactes)) ? (a.contactes[idx] || {}) : {};
+  const html = `
+    <div class="modal-title">${idx !== undefined ? 'Editar' : 'Nou'} contacte — ${bk2Esc(a.nom)}</div>
+    <div class="modal-sub">Persona de referència dins de la companyia</div>
+    <div class="form-grid">
+      <div class="form-row"><label>Nom *</label><input type="text" id="bk2-ct-nom" value="${bk2Esc(ct.nom) || ''}"></div>
+      <div class="form-row"><label>Càrrec / departament</label><input type="text" id="bk2-ct-carrec" value="${bk2Esc(ct.carrec) || ''}" placeholder="Suscripció flotes, sinistres, comercial..."></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Email</label><input type="email" id="bk2-ct-email" value="${bk2Esc(ct.email) || ''}"></div>
+      <div class="form-row"><label>Telèfon</label><input type="tel" id="bk2-ct-telefon" value="${bk2Esc(ct.telefon) || ''}"></div>
+    </div>
+    <div class="form-row"><label>Notes</label><textarea id="bk2-ct-notes" placeholder="Horari, particularitats, com tractar-hi...">${bk2Esc(ct.notes) || ''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel·lar</button>
+      <button class="btn btn-primary" onclick="bk2GuardaContacte('${assegId}', ${idx !== undefined ? idx : 'null'})">Guardar</button>
+    </div>`;
+  document.getElementById('modal-container').innerHTML =
+    `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+};
+
+window.bk2GuardaContacte = async function (assegId, idx) {
+  const a = state.asseguradores.find(x => x.id === assegId);
+  if (!a) return;
+  const nom = document.getElementById('bk2-ct-nom').value.trim();
+  if (!nom) { toast('El nom és obligatori', 'error'); return; }
+  const ct = {
+    nom,
+    carrec: document.getElementById('bk2-ct-carrec').value.trim(),
+    email: document.getElementById('bk2-ct-email').value.trim(),
+    telefon: document.getElementById('bk2-ct-telefon').value.trim(),
+    notes: document.getElementById('bk2-ct-notes').value.trim(),
+  };
+  const contactes = Array.isArray(a.contactes) ? [...a.contactes] : [];
+  if (idx === null || idx === undefined) contactes.push(ct); else contactes[idx] = ct;
+  const { error } = await window.supabase.from('asseguradores').update({ contactes }).eq('id', assegId);
+  if (error) {
+    const msg = /contactes/.test(error.message) ?
+      'Falta executar la migració SQL dels contactes (2026_06_12_contactes_cia.sql) a Supabase.' : error.message;
+    toast(msg, 'error');
+    return;
+  }
+  a.contactes = contactes;
+  closeModal();
+  renderAsseguradores();
+  toast('Contacte guardat');
+};
+
+window.bk2EsborraContacte = async function (assegId, idx) {
+  if (!confirm('Esborrar aquest contacte?')) return;
+  const a = state.asseguradores.find(x => x.id === assegId);
+  if (!a || !Array.isArray(a.contactes)) return;
+  const contactes = a.contactes.filter((_, i) => i !== idx);
+  const { error } = await window.supabase.from('asseguradores').update({ contactes }).eq('id', assegId);
+  if (error) { toast(error.message, 'error'); return; }
+  a.contactes = contactes;
+  renderAsseguradores();
+  toast('Contacte esborrat');
+};
+
+console.log('✅ brokkom-patch2.js carregat — Informes + Contactes de cia');

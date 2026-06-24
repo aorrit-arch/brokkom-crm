@@ -37,11 +37,6 @@
     <div class="auth-title">CRM comercial</div>
     <div class="auth-sub">Entra al teu espai de treball</div>
 
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Iniciar sessió</button>
-      <button class="auth-tab" data-tab="signup" onclick="switchAuthTab('signup')">Crear compte</button>
-    </div>
-
     <form id="login-form" onsubmit="doLogin(event)">
       <div class="form-row"><label>Email</label><input type="email" id="login-email" required></div>
       <div class="form-row"><label>Contrasenya</label><input type="password" id="login-password" required></div>
@@ -51,12 +46,7 @@
       </div>
     </form>
 
-    <form id="signup-form" class="hidden" onsubmit="doSignup(event)">
-      <div class="form-row"><label>Nom</label><input type="text" id="signup-nom" required></div>
-      <div class="form-row"><label>Email</label><input type="email" id="signup-email" required></div>
-      <div class="form-row"><label>Contrasenya</label><input type="password" id="signup-password" minlength="6" required></div>
-      <button type="submit" class="btn btn-primary" id="btn-signup" style="width:100%;justify-content:center;padding:9px">Crear compte</button>
-    </form>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);text-align:center;line-height:1.5">L'accés és per a l'equip de Brokkom. Si necessites un compte, demana'l a un administrador.</div>
   </div>
 </div>
 
@@ -84,6 +74,7 @@
       <div class="nav-item" data-tab="clients"><span class="nav-item-icon">👥</span><span class="nav-item-text">Clients</span><span class="nav-item-badge" id="nav-clients">0</span></div>
       <div class="nav-item" data-tab="pipeline"><span class="nav-item-icon">🎯</span><span class="nav-item-text">Pipeline</span><span class="nav-item-badge" id="nav-pipeline">0</span></div>
       <div class="nav-item" data-tab="consolidats"><span class="nav-item-icon">🏆</span><span class="nav-item-text">Consolidats</span><span class="nav-item-badge" id="nav-consolidats">0</span></div>
+      <div class="nav-item" data-tab="informes"><span class="nav-item-icon">📈</span><span class="nav-item-text">Informes</span></div>
       <div class="nav-item" data-tab="seguiments"><span class="nav-item-icon">📞</span><span class="nav-item-text">Seguiments</span></div>
       <div class="nav-item" data-tab="oportunitats"><span class="nav-item-icon">💡</span><span class="nav-item-text">Oportunitats</span><span class="nav-item-badge" id="nav-opps">0</span></div>
       <div class="nav-item" data-tab="prospeccio"><span class="nav-item-icon">☎️</span><span class="nav-item-text">Centre de trucades</span><span class="nav-item-badge" id="nav-prospeccio">0</span></div>
@@ -128,8 +119,6 @@
 <script type="module" src="app.js"></script>
 <script src="modules.js"></script>
 <script src="modals.js"></script>
-<script src="brokkom-patch.js"></script>
-<script src="brokkom-patch2.js"></script>
 <script src="brokkom-prospeccio.js"></script>
 
 </body>

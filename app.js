@@ -52,7 +52,52 @@ window.fmtDate = d => {
   return dt.toLocaleDateString('ca-ES');
 };
 window.daysFromNow = d => Math.ceil((new Date(d) - new Date()) / 86400000);
+
+// --- Seguretat: escapa HTML en QUALSEVOL contingut que vingui de l'usuari,
+//     de la IA, de Telegram, d'emails o de la base de dades abans d'injectar-lo
+//     a innerHTML. Evita XSS i que un apòstrof o un < trenqui el markup.
+window.escapeHtml = (s) => {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+// --- Imports en euros: accepta "1.234,50 €", "1234,5", "1 234,50", "€1.200"
+//     i retorna un Number net. Retorna null si no hi ha cap xifra.
+//     Heurística: si hi ha coma I punt, el darrer separador és el decimal.
+window.parseEuro = (v) => {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  let s = String(v).trim().replace(/[€\s\u00A0]/g, '');
+  if (!s) return null;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    // El darrer separador que apareix és el decimal; l'altre són milers.
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');   // 1.234,50 → 1234.50
+    } else {
+      s = s.replace(/,/g, '');                       // 1,234.50 → 1234.50
+    }
+  } else if (hasComma) {
+    s = s.replace(',', '.');                          // 1234,50 → 1234.50
+  }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+};
+
 window.isAdmin = () => state.mediador?.rol === 'admin';
+window.isLector = () => state.mediador?.rol === 'lector';
+// Classe CSS del badge segons el rol real (admin / mediador / lector)
+window.roleBadgeClass = (rol) => {
+  if (rol === 'admin') return 'role-admin';
+  if (rol === 'lector') return 'role-lector';
+  return 'role-mediador';
+};
 window.getInitials = (s) => {
   if (!s) return '?';
   const str = String(s).split('@')[0];
@@ -70,12 +115,8 @@ window.toast = (msg, type = 'success') => {
   setTimeout(() => t.remove(), 4000);
 };
 
-// AUTH
-window.switchAuthTab = (tab) => {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
-};
+// AUTH — només login. El signup públic s'ha eliminat: els usuaris els crea
+// un admin des de la pestanya "Usuaris" (eina interna, no registre obert).
 window.doLogin = async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btn-login');
@@ -91,26 +132,6 @@ window.doLogin = async (e) => {
     toast('Error: ' + err.message, 'error');
     btn.disabled = false;
     btn.textContent = 'Iniciar sessió';
-  }
-};
-window.doSignup = async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btn-signup');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Creant...';
-  try {
-    const nom = document.getElementById('signup-nom').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value;
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { nom } } });
-    if (error) throw error;
-    toast('Compte creat! Inicia sessió');
-    switchAuthTab('login');
-  } catch (err) {
-    toast('Error: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Crear compte';
   }
 };
 window.recoverPassword = async (e) => {
@@ -134,12 +155,13 @@ window.doLogout = async () => {
 async function loadMediador() {
   console.log('📥 [2] loadMediador() iniciat per user_id:', state.user.id);
 
-  // Fallback per defecte — si tot falla, l'app segueix
+  // Fallback per defecte — si tot falla, l'app segueix amb el mínim privilegi
+  // (lector). Un usuari sense fitxa a `mediadors` no ha de poder editar res.
   state.mediador = {
     user_id: state.user.id,
     email: state.user.email,
     nom: state.user.email,
-    rol: 'agent',
+    rol: 'lector',
     actiu: true
   };
   state.profile = state.mediador;
@@ -165,7 +187,7 @@ async function loadMediador() {
     }
   } catch (err) {
     console.error('❌ [2] Excepció loadMediador:', err.message);
-    console.warn('🔧 [2] Continuant amb mediador fictici (rol: agent)');
+    console.warn('🔧 [2] Continuant amb mediador fictici (rol: lector)');
   }
 }
 
@@ -190,7 +212,11 @@ async function loadAllData() {
   console.log('📥 [4] loadAllData() iniciat');
   const fetchAll = async (table, intent = 1) => {
     try {
-      const query = supabase.from(table).select('*');
+      // Sostre de seguretat: evita carregar taules sense límit quan creixin.
+      // Primer pas cap a paginació (Prioritat 1 · punt 14). Amb el volum
+      // actual no afecta; quan una taula superi aquest sostre, caldrà
+      // paginar (prospectes, notes, seguiments, històrics).
+      const query = supabase.from(table).select('*').limit(2000);
       const { data, error } = await withTimeout(query, 15000, `select ${table}`);
       if (error) {
         console.warn(`⚠️ [4] ${table} error:`, error.message);
@@ -269,7 +295,7 @@ window.updateNavBadges = () => {
   set('nav-consolidats', state.consolidats.length);
   set('nav-opps', state.oportunitats.filter(o => o.estat !== 'Descartada').length);
   set('nav-venc', state.venciments.length);
-  set('nav-tasques', state.tasques.filter(t => t.estat === 'pendent').length);
+  set('nav-tasques', state.tasques.filter(t => typeof window.tascaActivaAvui === 'function' ? window.tascaActivaAvui(t) : t.estat === 'pendent').length);
   set('nav-inbox', state.inbox.filter(i => i.estat === 'pendent').length);
   set('nav-notes', state.notes.length);
   set('nav-esborranys', (state.esborranys || []).filter(e => e.estat !== 'arxivat').length);
@@ -302,7 +328,7 @@ window.refreshUserUI = function() {
       <div class="user-info">
         <div class="user-name">${nomMostrar}</div>
         <div class="user-role">
-          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m.rol || 'agent'}</span>
+          <span class="role-badge ${roleBadgeClass(m.rol)}">${escapeHtml(m.rol || 'lector')}</span>
         </div>
       </div>
       <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>
@@ -347,7 +373,8 @@ window.renderCurrentTab = () => {
     notes: window.renderNotes,
     agenda: window.renderAgenda,
     esborranys: window.renderEsborranys,
-    prospeccio: window.renderProspeccio
+    prospeccio: window.renderProspeccio,
+    informes: window.renderInformes
   };
   if (typeof renderers[tab] === 'function') {
     try { renderers[tab](); return; }
@@ -375,7 +402,8 @@ function renderBasicTab(tab) {
     inbox: ['📥 Bústia', "Captura"],
     notes: ['💭 Notes', "Idees"],
     agenda: ['📅 Agenda', "Esdeveniments"],
-    esborranys: ['📝 Esborranys', "A mig fer"]
+    esborranys: ['📝 Esborranys', "A mig fer"],
+    informes: ['📊 Informes', "Producció i anàlisi"]
   };
   const [tit, sub] = titulars[tab] || [tab, ''];
   let preview = '';
@@ -400,8 +428,8 @@ function renderBasicTab(tab) {
         <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Clients de la cartera:</div>
         ${state.clients.slice(0, 20).map(c => `
           <div style="padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
-            <span style="font-weight:500">${c.empresa || c.nom || '?'}</span>
-            <span style="color:var(--text-3);font-size:11px">${c.cif || c.email || ''}</span>
+            <span style="font-weight:500">${escapeHtml(c.empresa || c.nom || '?')}</span>
+            <span style="color:var(--text-3);font-size:11px">${escapeHtml(c.cif || c.email || '')}</span>
           </div>
         `).join('')}
       </div>
@@ -412,7 +440,7 @@ function renderBasicTab(tab) {
         <table class="table">
           <thead><tr><th>Nom</th><th>Email</th><th>Rol</th><th>Actiu</th></tr></thead>
           <tbody>${state.mediadors.map(u => `
-            <tr><td><strong>${u.nom || '—'}</strong></td><td>${u.email}</td><td><span class="role-badge ${u.rol === 'admin' ? 'role-admin' : 'role-agent'}">${u.rol}</span></td><td>${u.actiu ? '✓' : '✗'}</td></tr>
+            <tr><td><strong>${escapeHtml(u.nom || '—')}</strong></td><td>${escapeHtml(u.email)}</td><td><span class="role-badge ${roleBadgeClass(u.rol)}">${escapeHtml(u.rol || 'lector')}</span></td><td>${u.actiu ? '✓' : '✗'}</td></tr>
           `).join('')}</tbody>
         </table>
       </div>
@@ -441,7 +469,7 @@ async function startApp() {
       <div class="user-info">
         <div class="user-name">${nomMostrar}</div>
         <div class="user-role">
-          <span class="role-badge ${isAdmin() ? 'role-admin' : 'role-agent'}">${m?.rol || 'agent'}</span>
+          <span class="role-badge ${roleBadgeClass(m?.rol)}">${escapeHtml(m?.rol || 'lector')}</span>
         </div>
       </div>
       <button class="user-logout" onclick="doLogout()" title="Tancar sessió">⏻</button>

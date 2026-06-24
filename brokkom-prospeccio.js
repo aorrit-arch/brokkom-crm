@@ -377,7 +377,7 @@
 
     try {
       const { error: e1 } = await supabase.from('trucades').insert([{
-        prospecte_id: id, user_id: state.user.id, mediador_id: state.user.id,
+        prospecte_id: id, user_id: state.user.id, mediador_id: state.mediador?.id || null,
         data: new Date().toISOString(), resultat, resum: resum || null,
         callback_data: callbackData ? new Date(callbackData).toISOString() : null
       }]);
