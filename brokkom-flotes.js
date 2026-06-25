@@ -51,7 +51,23 @@
   function toastErr(msg) { try { if (typeof window.toast === 'function') return window.toast(msg, 'error'); } catch (e) {} console.error(msg); }
 
   // mappers in-memory -> fila DB
-  const flotaCols = f => ({ empresa: f.empresa || null, asseguradora_actual: f.asseguradora_actual || null, prima_global_override: numOrNull(f.prima_global_override), ambit: f.ambit || null, adr: !!f.adr, venciment: dateOrNull(f.venciment), tasa_dp: numOrNull(f.tasa_dp), min_dp: numOrNull(f.min_dp), comprum: !!f.comprum, estat: f.estat || 'dades', sini_anual_manual: numOrNull(f.sini_anual_manual) });
+  const flotaCols = f => ({ empresa: f.empresa || null, asseguradora_actual: f.asseguradora_actual || null, prima_global_override: numOrNull(f.prima_global_override), ambit: f.ambit || null, adr: !!f.adr, venciment: dateOrNull(f.venciment), tasa_dp: numOrNull(f.tasa_dp), min_dp: numOrNull(f.min_dp), comprum: !!f.comprum, estat: f.estat || 'dades', sini_anual_manual: numOrNull(f.sini_anual_manual), documents: Array.isArray(f.documents) ? f.documents : [], frigorific: !!f.frigorific, n_conductors: numOrNull(f.n_conductors), internacional: !!f.internacional, naus: !!f.naus });
+
+  // llista estàndard de documents per a una renovació de flota
+  function defaultDocs() {
+    return [
+      'Pòlissa actual + condicionat',
+      'Últim rebut (prima global i per vehicle)',
+      'Parc actualitzat (matrícula, tipus, valor, venciment)',
+      'Loss run / sinistralitat (3–5 anys)',
+      'Moviments previstos (altes i baixes)',
+      'Fitxa d\'activitat (àmbit · ADR · frigorífic · conductors)',
+      'CIF / dades fiscals',
+      'Targetes de transport / autoritzacions',
+      'Certificat ADR (si transport de mercaderies perilloses)',
+      'Relació de conductors'
+    ].map(n => ({ id: uid(), nom: n, estat: 'pendent', data: null, nota: '' }));
+  }
   const vehicleRow = (f, v) => ({ flota_id: f.id, user_id: usr(), mat: v.mat || '', tipus: v.tipus || null, model: v.model || null, valor: numOrNull(v.valor), venciment: dateOrNull(v.venciment), prima_rc: numOrNull(v.prima_rc), prima_dp_ov: numOrNull(v.prima_dp_ov) });
   const sinisRow = (f, s) => ({ flota_id: f.id, user_id: usr(), num: s.n || null, mat: s.mat || null, causa: s.causa || null, tipo: s.tipo || null, estado: s.estado || null, f_sin: dateOrNull(s.f_sin), imp: numOrNull(s.imp) || 0, periode: s.per || null, dp: !!s.dp });
   const ofertaRow = (f, o) => ({ flota_id: f.id, user_id: usr(), cia: o.cia || null, comprum: !!o.comprum, prima: numOrNull(o.prima), garanties: o.g || {}, franquicia: numOrNull(o.franquicia), comissio: numOrNull(o.comissio), pros: o.pros || null, contres: o.contres || null, presentar: o.presentar !== false });
@@ -119,7 +135,7 @@
       const sinis = sin.filter(s => s.flota_id === fl.id).map(s => ({ n: s.num, mat: s.mat, causa: s.causa, tipo: s.tipo, estado: s.estado, f_sin: s.f_sin, imp: s.imp || 0, per: s.periode, dp: !!s.dp }));
       const ofertes = ofe.filter(o => o.flota_id === fl.id).map(o => ({ id: o.id, cia: o.cia, comprum: !!o.comprum, prima: o.prima, g: Object.assign({ rc: 1, danys: 0, llunes: 0, assist: 0, defensa: 0, robatori: 0 }, o.garanties || {}), franquicia: o.franquicia, comissio: o.comissio, pros: o.pros || '', contres: o.contres || '', presentar: o.presentar !== false }));
       const pendents = tas.filter(t => t.flota_id === fl.id).map(t => ({ id: t.id, text: t.text, bloqueja: t.bloqueja, data: t.data, estat: t.estat || 'obert', subtasks: Array.isArray(t.subtasks) ? t.subtasks : [] }));
-      const f = { id: fl.id, client_id: fl.client_id, empresa: fl.empresa || '(flota)', cif: '', asseguradora_actual: fl.asseguradora_actual || '', prima_global_override: fl.prima_global_override, ambit: fl.ambit || 'Nacional', adr: !!fl.adr, venciment: fl.venciment, tasa_dp: fl.tasa_dp ?? 4, min_dp: fl.min_dp ?? 150, comprum: !!fl.comprum, estat: fl.estat || 'dades', sini_anual_manual: fl.sini_anual_manual, parc, sinis, veh: [], ofertes, pendents };
+      const f = { id: fl.id, client_id: fl.client_id, empresa: fl.empresa || '(flota)', cif: '', asseguradora_actual: fl.asseguradora_actual || '', prima_global_override: fl.prima_global_override, ambit: fl.ambit || 'Nacional', adr: !!fl.adr, venciment: fl.venciment, tasa_dp: fl.tasa_dp ?? 4, min_dp: fl.min_dp ?? 150, comprum: !!fl.comprum, estat: fl.estat || 'dades', sini_anual_manual: fl.sini_anual_manual, documents: (Array.isArray(fl.documents) && fl.documents.length) ? fl.documents : defaultDocs(), frigorific: !!fl.frigorific, n_conductors: fl.n_conductors, internacional: !!fl.internacional, naus: !!fl.naus, parc, sinis, veh: [], ofertes, pendents };
       f.veh = computeVeh(sinis);
       snapshot(f);
       return f;
@@ -158,7 +174,7 @@
   async function novaFlota() {
     const nom = prompt('Nom de la nova empresa/flota:'); if (!nom) return;
     const clientId = await ensureClient(nom, null);
-    const f = { id: null, client_id: clientId, empresa: nom, cif: '', asseguradora_actual: '', prima_global_override: null, ambit: 'Nacional', adr: false, venciment: '2026-12-31', tasa_dp: 4, min_dp: 150, comprum: false, estat: 'dades', sini_anual_manual: null, parc: [], sinis: [], veh: [], ofertes: [], pendents: [] };
+    const f = { id: null, client_id: clientId, empresa: nom, cif: '', asseguradora_actual: '', prima_global_override: null, ambit: 'Nacional', adr: false, venciment: '2026-12-31', tasa_dp: 4, min_dp: 150, comprum: false, estat: 'dades', sini_anual_manual: null, documents: defaultDocs(), frigorific: false, n_conductors: null, internacional: false, naus: false, parc: [], sinis: [], veh: [], ofertes: [], pendents: [] };
     try {
       const { data: fl, error } = await sb().from('flotes').insert({ ...flotaCols(f), client_id: clientId, user_id: usr() }).select().single();
       if (error) throw error;
@@ -167,7 +183,7 @@
     snapshot(f); FLEETS.push(f); CUR = f.id; TAB = 'parc'; render();
   }
 
-  function normalizeFleet(f) { f.parc = f.parc || []; f.sinis = f.sinis || []; f.ofertes = f.ofertes || []; f.pendents = f.pendents || []; f.veh = f.veh || []; f.ofertes.forEach(o => { if (o.pros == null) o.pros = ''; if (o.contres == null) o.contres = ''; if (o.presentar == null) o.presentar = true; if (!o.g) o.g = { rc: 1, danys: 0, llunes: 0, assist: 0, defensa: 0, robatori: 0 }; }); f.pendents.forEach(p => { if (!p.subtasks) p.subtasks = []; }); }
+  function normalizeFleet(f) { f.parc = f.parc || []; f.sinis = f.sinis || []; f.ofertes = f.ofertes || []; f.pendents = f.pendents || []; f.veh = f.veh || []; if (!Array.isArray(f.documents)) f.documents = []; f.ofertes.forEach(o => { if (o.pros == null) o.pros = ''; if (o.contres == null) o.contres = ''; if (o.presentar == null) o.presentar = true; if (!o.g) o.g = { rc: 1, danys: 0, llunes: 0, assist: 0, defensa: 0, robatori: 0 }; }); f.pendents.forEach(p => { if (!p.subtasks) p.subtasks = []; }); }
 
   // =====================================================================
   // RENDER (entrada des del CRM) + subnav
@@ -202,12 +218,12 @@
     render();
   }
 
-  function renderSubnav() { const t = [['dash', '📊 Dashboard'], ['resum', 'Resum flota'], ['parc', 'Parc & primes'], ['sini', 'Sinistralitat'], ['ofertes', 'Ofertes & Comparativa'], ['plant', 'Plantilles & informes'], ['pend', 'Tasques']]; const el = document.getElementById('fl-subnav'); if (el) el.innerHTML = t.map(([k, l]) => `<button class="${TAB === k ? 'active' : ''}" onclick="FL.setTab('${k}')">${l}</button>`).join(''); }
+  function renderSubnav() { const t = [['dash', '📊 Dashboard'], ['resum', 'Resum flota'], ['doc', '📁 Documentació'], ['parc', 'Parc & primes'], ['sini', 'Sinistralitat'], ['ofertes', 'Ofertes & Comparativa'], ['matriu', '🎯 Venda creuada'], ['plant', 'Plantilles & informes'], ['pend', 'Tasques']]; const el = document.getElementById('fl-subnav'); if (el) el.innerHTML = t.map(([k, l]) => `<button class="${TAB === k ? 'active' : ''}" onclick="FL.setTab('${k}')">${l}</button>`).join(''); }
   function setTab(t) { TAB = t; render(); }
   function setInclDP(v) { INCL_DP = v; render(); }
   function selFleet(id) { CUR = id; render(); }
   function fillSel() { const el = document.getElementById('fl-fleetSel'); if (el) el.innerHTML = FLEETS.map(f => `<option value="${f.id}" ${f.id === CUR ? 'selected' : ''}>${f.empresa} · ${f.parc.length} veh.</option>`).join(''); }
-  function render() { if (!FLEETS.length || !fleet()) return; fillSel(); renderSubnav(); const v = document.getElementById('fl-view'); if (v) v.innerHTML = ({ dash: vDash, resum: vResum, parc: vParc, sini: vSini, ofertes: vOfertes, plant: vPlant, pend: vPend }[TAB] || vResum)(); }
+  function render() { if (!FLEETS.length || !fleet()) return; fillSel(); renderSubnav(); const v = document.getElementById('fl-view'); if (v) v.innerHTML = ({ dash: vDash, resum: vResum, doc: vDoc, parc: vParc, sini: vSini, ofertes: vOfertes, matriu: vMatriu, plant: vPlant, pend: vPend }[TAB] || vResum)(); }
 
   // =====================================================================
   // VISTES (idèntiques a l'original; handlers inline -> FL.*)
@@ -239,6 +255,109 @@
   function reconcileTxt(f) { if (f.prima_global_override == null) return 'Prima global = suma per vehicle (' + eur(parcSum(f)) + ').'; const d = f.prima_global_override - parcSum(f); if (Math.abs(d) < 1) return 'Override = suma per vehicle ✓'; return `⚠ Override ≠ suma per vehicle · diferència ${eur(Math.abs(d))} ${d > 0 ? '(descompte flota/taxes)' : '(revisar)'}.`; }
   function topVeh(f, k) { const t = [...f.veh].sort((a, b) => b.total - a.total).slice(0, k); const mx = t[0]?.total || 1; return t.map(v => `<div class="chart-bar"><div class="chart-label" style="font-family:monospace">${v.mat} ${riskPill(v.riesgo)}</div><div class="chart-track"><div class="chart-fill" style="width:${v.total / mx * 100}%;background:${v.riesgo === 'ALTO' ? 'var(--danger)' : v.riesgo === 'MEDIO' ? 'var(--warning)' : 'var(--brand)'}"></div></div><div class="chart-value">${eur(v.total)} · ${v.n} sin.</div></div>`).join(''); }
   function riskPill(r) { const m = { ALTO: 'p-danger', MEDIO: 'p-warning', BAJO: 'p-gray' }; return `<span class="pill ${m[r] || 'p-gray'}">${r}</span>`; }
+
+  // ===== DOCUMENTACIÓ (checklist què tenim / què falta) =====
+  function vDoc() {
+    const f = fleet(); const docs = f.documents || [];
+    const na = docs.filter(d => d.estat === 'na').length;
+    const rebut = docs.filter(d => d.estat === 'rebut').length;
+    const base = docs.length - na;
+    const pct = base ? Math.round(rebut / base * 100) : 0;
+    const col = pct === 100 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    const pendents = docs.filter(d => d.estat === 'pendent');
+    return `<div class="note">Control de <b>què tenim / què falta</b> per sortir al mercat. Marca cada document com a <b>rebut</b>, <b>pendent</b> o <b>no aplica</b>. La barra compta només sobre els que apliquen.</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="section-title" style="margin:0">Documentació rebuda</div>
+        <b style="font-size:15px;color:${col}">${rebut}/${base} · ${pct}%</b>
+      </div>
+      <div class="chart-track" style="height:10px"><div class="chart-fill" style="width:${pct}%;background:${col}"></div></div>
+      ${pendents.length ? `<div class="mini" style="margin-top:10px"><b>Falten:</b> ${pendents.map(d => d.nom).join(' · ')}</div>` : '<div class="mini" style="margin-top:10px;color:var(--success)">Tot rebut ✓ — a punt per sortir al mercat.</div>'}
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto"><table class="table">
+      <thead><tr><th>Document / dada</th><th>Estat</th><th>Data</th><th>Nota</th><th></th></tr></thead>
+      <tbody>${docs.map((d, i) => docRow(d, i)).join('') || '<tr><td colspan="5"><div class="empty" style="padding:14px">Cap document a la llista.</div></td></tr>'}</tbody>
+    </table></div>
+    <div style="display:flex;gap:6px;margin-top:8px"><input id="doc-new" placeholder="+ Afegir document a la llista..." style="flex:1"><button class="btn btn-sm" onclick="FL.addDoc()">+ Afegir</button><button class="btn btn-sm" onclick="FL.resetDocs()">↺ Llista estàndard</button></div>`;
+  }
+  function docRow(d, i) {
+    return `<tr>
+      <td style="font-weight:500">${d.nom}</td>
+      <td><select onchange="FL.setDocEstat(${i},this.value)" style="max-width:120px">
+        <option value="pendent" ${d.estat === 'pendent' ? 'selected' : ''}>Pendent</option>
+        <option value="rebut" ${d.estat === 'rebut' ? 'selected' : ''}>Rebut</option>
+        <option value="na" ${d.estat === 'na' ? 'selected' : ''}>No aplica</option>
+      </select></td>
+      <td><input type="date" value="${d.data || ''}" onchange="FL.setDocData(${i},this.value)" style="max-width:140px"></td>
+      <td><input value="${(d.nota || '').replace(/"/g, '&quot;')}" placeholder="—" onchange="FL.setDocNota(${i},this.value)" style="min-width:140px"></td>
+      <td><span class="add-link" style="color:var(--danger);margin:0" onclick="FL.delDoc(${i})">✕</span></td>
+    </tr>`;
+  }
+  function setDocEstat(i, v) { fleet().documents[i].estat = v; render(); save(); }
+  function setDocData(i, v) { fleet().documents[i].data = v || null; save(); }
+  function setDocNota(i, v) { fleet().documents[i].nota = v; save(); }
+  function addDoc() { const inp = document.getElementById('doc-new'); const t = inp.value.trim(); if (!t) return; fleet().documents.push({ id: uid(), nom: t, estat: 'pendent', data: null, nota: '' }); render(); save(); }
+  function delDoc(i) { fleet().documents.splice(i, 1); render(); save(); }
+  function resetDocs() { if (!confirm('Tornar a la llista estàndard de documents? Es perdran els estats i notes actuals.')) return; fleet().documents = defaultDocs(); render(); save(); }
+
+  // ===== MATRIU DE VENDA CREUADA / RISCOS =====
+  function matriuRules(f) {
+    const veh = f.parc.length;
+    const cond = f.n_conductors || 0;
+    const data7 = '';
+    return [
+      { cond: !!f.adr, producte: 'RC Mediambiental ADR', prioritat: 'Alta', argument: 'Transport ADR: la RC Mediambiental sol ser obligatòria i sovint queda descoberta.' },
+      { cond: !!f.frigorific, producte: 'Avaria d\'equip frigorífic', prioritat: 'Mitjana', argument: 'Flota frigorífica: cobertura d\'avaria de l\'equip de fred i pèrdua de mercaderia perible.' },
+      { cond: cond > 0, producte: 'Complement IT · pèrdua de carnet · CAP', prioritat: 'Mitjana', argument: `${cond} conductors: protecció d'incapacitat temporal, pèrdua de carnet i renovació CAP.` },
+      { cond: !!f.internacional, producte: 'ICC A + crèdit a l\'exportació', prioritat: 'Alta', argument: 'Trànsit internacional / CMR: la CMR no ho cobreix tot; l\'ICC A tanca el gap i el crèdit a l\'exportació protegeix l\'impagament.' },
+      { cond: !!f.naus, producte: 'Multiriscos industrial (nau)', prioritat: 'Mitjana', argument: 'Naus o instal·lacions: multiriscos per a continent, contingut i RC d\'explotació.' },
+      { cond: veh > 0, producte: 'Ciber + telemàtica (dossier de risc)', prioritat: 'Mitjana', argument: 'Flota connectada (GPS/telemàtica): exposició ciber i NIS2; el dossier telemàtic millora la tarificació.' },
+      { cond: veh >= 10, producte: 'Pèrdua de beneficis', prioritat: 'Baixa', argument: 'Flota gran: la paralització de l\'activitat per un sinistre greu es pot cobrir amb pèrdua de beneficis.' },
+      { cond: true, producte: 'Retribució flexible + salut col·lectiva', prioritat: 'Baixa', argument: 'Retenció de talent: retribució flexible (cost zero per a l\'empresa) i salut col·lectiva per als conductors.' }
+    ];
+  }
+  function matriuFlag(k, label, val) { return `<div class="toggle-row" style="margin:0"><label class="switch"><input type="checkbox" ${val ? 'checked' : ''} onchange="FL.setFlag('${k}',this.checked)"><span class="slider"></span></label>${label}</div>`; }
+  function vMatriu() {
+    const f = fleet();
+    const opps = (window.state && Array.isArray(window.state.oportunitats)) ? window.state.oportunitats : [];
+    const existing = new Set(opps.filter(o => o.client_id === f.client_id && o.estat !== 'Descartada').map(o => (o.producte || '').toLowerCase()));
+    const rows = matriuRules(f).filter(r => r.cond);
+    const prioPill = p => p === 'Alta' ? 'p-danger' : p === 'Mitjana' ? 'p-warning' : 'p-success';
+    return `<div class="note">Marca el <b>perfil</b> de la flota i et proposem els productes que normalment falten en transport. Cada oportunitat es pot crear al CRM (mòdul 💡 Oportunitats), lligada al client de la flota.</div>
+    <div class="card"><div class="section-title">Perfil de la flota</div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
+        ${matriuFlag('adr', 'Transport ADR (perilloses)', f.adr)}
+        ${matriuFlag('frigorific', 'Frigorífic', f.frigorific)}
+        ${matriuFlag('internacional', 'Internacional / CMR', f.internacional)}
+        ${matriuFlag('naus', 'Naus / instal·lacions', f.naus)}
+        <div class="toggle-row" style="margin:0;gap:6px">Nº conductors <input type="number" value="${f.n_conductors ?? ''}" placeholder="—" onchange="FL.setNConductors(this.value)" style="width:80px"></div>
+      </div></div>
+    <div class="card" style="padding:0;overflow-x:auto"><table class="table">
+      <thead><tr><th>Producte recomanat</th><th>Per què</th><th>Prioritat</th><th></th></tr></thead>
+      <tbody>${rows.map((r, i) => { const ja = existing.has(r.producte.toLowerCase()); return `<tr>
+        <td style="font-weight:600">${r.producte}</td>
+        <td class="mini" style="max-width:420px">${r.argument}</td>
+        <td><span class="pill ${prioPill(r.prioritat)}">${r.prioritat}</span></td>
+        <td>${ja ? '<span class="pill p-success">✓ ja al CRM</span>' : `<button class="btn btn-sm btn-primary" onclick="FL.crearOportunitat(${i})">+ Oportunitat</button>`}</td>
+      </tr>`; }).join('')}</tbody>
+    </table></div>
+    <div class="mini">Les oportunitats creades apareixen al mòdul <b>💡 Oportunitats</b> del CRM, llestes per treballar-les comercialment.</div>`;
+  }
+  function setFlag(k, v) { fleet()[k] = !!v; render(); save(); }
+  function setNConductors(v) { fleet().n_conductors = parseInt(v) || null; render(); save(); }
+  async function crearOportunitat(idx) {
+    const f = fleet(); const r = matriuRules(f).filter(x => x.cond)[idx]; if (!r) return;
+    let clientId = f.client_id;
+    if (!clientId && typeof window._patchTrobaOCreaClient === 'function') clientId = await window._patchTrobaOCreaClient(f.empresa);
+    try {
+      const res = await sb().from('oportunitats').insert({ client_id: clientId, empresa: f.empresa, user_id: usr(), producte: r.producte, argument: r.argument, prioritat: r.prioritat, estat: 'Detectada' });
+      if (res.error) throw res.error;
+      if (typeof window.refreshData === 'function') await window.refreshData('oportunitats');
+      if (typeof window.updateNavBadges === 'function') window.updateNavBadges();
+      if (typeof window.toast === 'function') window.toast('Oportunitat creada al CRM ✓'); else flash();
+      render();
+    } catch (e) { toastErr('Error creant l\'oportunitat: ' + (e.message || e)); }
+  }
 
   // ===== PARC & PRIMES =====
   function vParc() {
@@ -407,15 +526,35 @@
           <button class="btn btn-sm" onclick="FL.exportSinisCSV()">⬇ Loss run CSV</button>
         </div></div>
     </div>
-    <div class="grid2">
-      <div class="card"><div class="section-title">Text · petició de dades (entrada)</div><textarea class="tpl-area" id="tpl-in">${tplEntrada()}</textarea><button class="btn btn-sm" style="margin-top:8px" onclick="FL.copyTpl('tpl-in')">📋 Copiar</button></div>
-      <div class="card"><div class="section-title">Text · enviament d'ofertes (sortida)</div><textarea class="tpl-area" id="tpl-out">${tplSortida()}</textarea><button class="btn btn-sm" style="margin-top:8px" onclick="FL.copyTpl('tpl-out')">📋 Copiar</button> <button class="btn btn-sm" style="margin-top:8px" onclick="document.getElementById('tpl-out').value=FL.tplSortida()">↻ Regenerar</button></div>
+    <div class="card"><div class="section-title">Textos · gestió → seguiment</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <select id="tpl-sel" onchange="FL.renderTpl()" style="max-width:320px">${TPL.map(t => `<option value="${t.k}">${t.n}</option>`).join('')}</select>
+        <button class="btn btn-sm" onclick="FL.renderTpl()">↻ Regenerar</button>
+        <button class="btn btn-sm" onclick="FL.copyTpl('tpl-text')">📋 Copiar</button>
+        <button class="btn btn-sm btn-primary" onclick="FL.tplToTask()">+ Tasca de seguiment (7 dies)</button>
+      </div>
+      <textarea class="tpl-area" id="tpl-text">${TPL[0].fn()}</textarea>
+      <div class="mini" style="margin-top:6px">Tria una plantilla, ajusta-la i copia-la. "Tasca de seguiment" crea una tasca a la flota (a 7 dies) perquè la gestió no es perdi.</div>
     </div>
     <div class="note"><b>Resum dels fluxos:</b> del <b>client</b> entra parc + loss run (CSV); de la <b>CIA</b> entren ofertes (CSV). Cap al <b>client</b> surt l'informe comparativa (PDF/CSV, sense dades internes); cap a la <b>CIA</b> surt la presentació de risc i la relació de vehicles + loss run perquè puguin tarificar.</div>`;
   }
   function tplEntrada() { const f = fleet(); return `SOL·LICITUD DE DADES — RENOVACIÓ FLOTA\nEmpresa: ${f.empresa}\nVenciment: ${fmtDate(f.venciment)}\n\nNecessitem per sortir al mercat:\n\n1) PARC (Excel, una fila per vehicle):\n   matrícula · tipus · marca i model · valor · data alta · venciment · prima actual\n\n2) SINISTRALITAT / LOSS RUN (3–5 anys, una fila per sinistre):\n   data · matrícula · cobertura · culpa/no culpa · import pagat · reserva · estat\n\n3) PÒLISSA ACTUAL: condicions + últim rebut (prima global i per vehicle)\n4) MOVIMENTS PREVISTOS: altes i baixes fins a renovació\n5) ACTIVITAT: àmbit · ADR · frigorífic · nº conductors`; }
   function tplSortida() { const f = fleet(); const ov = f.ofertes.filter(o => o.prima); const pa = primaGlobal(f); let s = `COMPARATIVA D'OFERTES — ${f.empresa}\n${f.parc.length} vehicles · venciment ${fmtDate(f.venciment)}\n\nSITUACIÓ ACTUAL: ${f.asseguradora_actual || '(actual)'} · prima ${eur(pa)}\n\n`; if (!ov.length) { s += 'OFERTES: (carrega primes)\n'; return s; } s += 'OFERTES REBUDES:\n'; ov.sort((a, b) => a.prima - b.prima).forEach(o => { const gar = GARANTIES.filter(([k]) => o.g[k]).map(([, l]) => l).join(', '); const est = pa ? ` · estalvi ${eur(pa - o.prima)} (${Math.round((pa - o.prima) / pa * 100)}%)` : ''; s += `\n• ${o.cia || 'CIA'} — ${eur(o.prima)}${est}\n  Garanties: ${gar}\n  Franquícia danys: ${o.franquicia != null ? eur(o.franquicia) : '—'}\n`; }); const b = ov[0]; s += `\nRECOMANACIÓ: ${b.cia || 'CIA'} (${eur(b.prima)})${pa ? `, ${eur(pa - b.prima)} d'estalvi` : ''}, mantenint garanties.`; return s; }
   function copyTpl(id) { const t = document.getElementById(id); t.select(); try { document.execCommand('copy'); } catch (e) { navigator.clipboard && navigator.clipboard.writeText(t.value); } flash(); }
+
+  // --- plantilles addicionals (mòdul Textos i tasques) ---
+  function tplRecordatori() { const f = fleet(); const pend = (f.documents || []).filter(d => d.estat === 'pendent').map(d => '· ' + d.nom).join('\n'); return `RECORDATORI — DADES PENDENTS · ${f.empresa}\nVenciment: ${fmtDate(f.venciment)}\n\nPer poder tancar la renovació a temps, encara ens falta rebre:\n\n${pend || '(res pendent — gràcies!)'}\n\nQuan ens ho puguis fer arribar, sortim al mercat de seguida. Moltes gràcies.`; }
+  function tplReclamacioCIA() { const f = fleet(); const limit = fmtDate(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)); return `RECLAMACIÓ DE QUOTACIÓ · ${f.empresa}\nFlota de ${f.parc.length} vehicles · venciment ${fmtDate(f.venciment)}\n\nBon dia,\n\nEstem pendents de la vostra quotació per a aquesta flota. El client ha de decidir aviat: ens podríeu confirmar oferta (prima i garanties) abans del ${limit}?\n\nJa us hem fet arribar la relació de vehicles i el loss run. Si us falta qualsevol cosa per tarificar, digueu-nos-ho i us ho passem el mateix dia.\n\nGràcies.`; }
+  function tplDecisio() { const f = fleet(); const ov = f.ofertes.filter(o => o.prima).sort((a, b) => a.prima - b.prima); const pa = primaGlobal(f); const b = ov[0]; return `RECOMANACIÓ · ${f.empresa}\n\nHem analitzat les ofertes rebudes per a la teva flota (${f.parc.length} vehicles).\n\n${b ? `La nostra recomanació és ${b.cia || 'aquesta companyia'} per ${eur(b.prima)}${pa ? `, amb un estalvi de ${eur(pa - b.prima)} respecte a la situació actual` : ''}, mantenint les garanties.` : '(carrega les ofertes a la comparativa per generar la recomanació)'}\n\nT'adjuntem la comparativa completa perquè ho vegis amb detall. Quan ens ho confirmis, tramitem l'emissió.`; }
+  const TPL = [
+    { k: 'entrada', n: 'Petició de dades (client)', bloqueja: 'Client', fn: tplEntrada },
+    { k: 'recordatori', n: 'Recordatori dades pendents (client)', bloqueja: 'Client', fn: tplRecordatori },
+    { k: 'reclamacioCIA', n: 'Reclamació de quotació (CIA)', bloqueja: 'CIA', fn: tplReclamacioCIA },
+    { k: 'sortida', n: 'Enviament d\'ofertes (client)', bloqueja: 'Client', fn: tplSortida },
+    { k: 'decisio', n: 'Recomanació / decisió (client)', bloqueja: 'Client', fn: tplDecisio }
+  ];
+  function renderTpl() { const sel = document.getElementById('tpl-sel'); const t = TPL.find(x => x.k === (sel ? sel.value : '')) || TPL[0]; const ta = document.getElementById('tpl-text'); if (ta) ta.value = t.fn(); }
+  function tplToTask() { const sel = document.getElementById('tpl-sel'); const t = TPL.find(x => x.k === (sel ? sel.value : '')) || TPL[0]; const f = fleet(); const data = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10); f.pendents.push({ id: uid(), text: 'Seguiment: ' + t.n, bloqueja: t.bloqueja, data, estat: 'obert', subtasks: [] }); save(); if (typeof window.toast === 'function') window.toast('Tasca de seguiment creada (7 dies)'); else flash(); }
 
   // ----- informes imprimibles -----
   function openReport(title, body) { const w = window.open('', '_blank'); w.document.write(`<!DOCTYPE html><html lang="ca"><head><meta charset="UTF-8"><title>${title}</title><style>
@@ -502,7 +641,7 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th{t
       <div class="metric"><div class="metric-label">Flotes</div><div class="metric-value">${F.length}</div><div class="metric-sub">${totVeh} vehicles</div></div>
       <div class="metric"><div class="metric-label">Prima exposada</div><div class="metric-value">${eur(totPrima)}</div><div class="metric-sub">cartera flotes</div></div>
       <div class="metric"><div class="metric-label">Ràtio ponderat</div><div class="metric-value" style="color:${ratioPond > 85 ? 'var(--danger)' : ratioPond > 70 ? 'var(--warning)' : 'var(--success)'}">${ratioPond != null ? ratioPond + '%' : '—'}</div><div class="metric-sub">sinistralitat/prima</div></div>
-      <div class="metric" style="border-color:#EAD6A8;background:linear-gradient(0deg,#FFFDF7,#fff)"><div class="metric-label">Cohort 31/12</div><div class="metric-value" style="color:var(--warning)">${cohort.length}</div><div class="metric-sub">${eur(cohortPrima)} exposats</div></div>
+      <div class="metric" style="border-color:var(--warning);background:var(--warning-soft)"><div class="metric-label">Cohort 31/12</div><div class="metric-value" style="color:var(--warning)">${cohort.length}</div><div class="metric-sub">${eur(cohortPrima)} exposats</div></div>
       <div class="metric"><div class="metric-label">Tasques CIA</div><div class="metric-value" style="color:${tasquesCIA ? 'var(--info)' : 'var(--text)'}">${tasquesCIA}</div><div class="metric-sub">pendents companyia</div></div>
       <div class="metric"><div class="metric-label">Tasques client</div><div class="metric-value" style="color:${tasquesCli ? 'var(--warning)' : 'var(--text)'}">${tasquesCli}</div><div class="metric-sub">pendents client</div></div>
     </div>
@@ -608,40 +747,24 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th{t
     if (document.getElementById('flotes-css')) return;
     const css = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-#flotes-root{--surface:#fff;--surface-2:#EDF0F4;--text:#1B2536;--text-2:#49546A;--text-3:#8792A3;--border:#E2E7EE;--border-2:#C9D2DE;--brand:#1A3A6B;--brand-2:#142E56;--brand-soft:#E8EEF7;--success:#1F7A4D;--success-soft:#E3F2E9;--warning:#98620F;--warning-soft:#FAF0DB;--danger:#B23939;--danger-soft:#FBEAEA;--info:#2F62A8;--info-soft:#E8F0FA;--r-sm:6px;--r:8px;--r-md:12px;--r-lg:16px;color:var(--text);font-size:14px;line-height:1.55;letter-spacing:-.006em}
+/* Flotes hereta els tokens del tema actiu del CRM (clar o fosc). NO fixem paleta pròpia. */
+#flotes-root{color:var(--text);font-size:14px;line-height:1.55;letter-spacing:-.006em}
 #flotes-root *,#flotes-root *::before,#flotes-root *::after{box-sizing:border-box}
 #flotes-root .wrap{max-width:1320px;margin:0 auto;padding:4px 2px 40px}
-#flotes-root .page-title{font-size:23px;font-weight:650;letter-spacing:-.025em;display:flex;align-items:center;gap:10px}
-#flotes-root .page-sub{font-size:12.5px;color:var(--text-2);margin-top:3px}
 #flotes-root .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:14px;flex-wrap:wrap}
 #flotes-root .topbar-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap}
-#flotes-root .btn{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:var(--r);border:1px solid var(--border-2);background:var(--surface);color:var(--text);cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:6px}
-#flotes-root .btn:hover{background:var(--surface-2)}
-#flotes-root .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:500}
-#flotes-root .btn-primary:hover{background:var(--brand-2)}
-#flotes-root .btn-sm{font-size:11.5px;padding:4px 9px}
+/* page-title, page-sub i botons (.btn/.btn-primary/.btn-sm): heretats del CRM */
 #flotes-root select,#flotes-root input,#flotes-root textarea{font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border-2);border-radius:var(--r);background:var(--surface);color:var(--text);width:100%}
-#flotes-root select:focus,#flotes-root input:focus,#flotes-root textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,58,107,.12)}
-#flotes-root .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 2px 6px rgba(16,24,40,.045)}
+#flotes-root select:focus,#flotes-root input:focus,#flotes-root textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
 #flotes-root .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:16px}
-#flotes-root .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:.15s}
-#flotes-root .metric:hover{box-shadow:0 6px 20px rgba(16,24,40,.10);transform:translateY(-1px)}
-#flotes-root .metric-label{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600}
-#flotes-root .metric-value{font-size:23px;font-weight:700;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
-#flotes-root .metric-sub{font-size:11px;color:var(--text-3);margin-top:4px}
-#flotes-root .section-title{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin:0 0 10px}
+/* card, metric/metric-label/value/sub, section-title: heretats del CRM */
 #flotes-root .table{width:100%;border-collapse:collapse;font-size:12.5px}
 #flotes-root .table th{text-align:left;font-size:9.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;padding:7px 8px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
 #flotes-root .table td{padding:6px 8px;border-bottom:1px solid var(--border)}
 #flotes-root .table tr:last-child td{border-bottom:none}
-#flotes-root .table tbody tr:hover{background:#F7F9FB}
+#flotes-root .table tbody tr:hover{background:var(--surface-2)}
 #flotes-root .table .num{text-align:right;font-variant-numeric:tabular-nums}
-#flotes-root .pill{display:inline-flex;align-items:center;font-size:10px;padding:1.5px 7px;border-radius:10px;font-weight:600;line-height:1.4}
-#flotes-root .p-success{background:var(--success-soft);color:var(--success)}
-#flotes-root .p-warning{background:var(--warning-soft);color:var(--warning)}
-#flotes-root .p-danger{background:var(--danger-soft);color:var(--danger)}
-#flotes-root .p-info{background:var(--info-soft);color:var(--info)}
-#flotes-root .p-gray{background:var(--surface-2);color:var(--text-2)}
+/* pill i p-success/warning/danger/info/gray: heretats del CRM */
 #flotes-root .p-brand{background:var(--brand-soft);color:var(--brand)}
 #flotes-root .chart-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
 #flotes-root .chart-label{flex:0 0 160px;color:var(--text-2)}
@@ -659,15 +782,15 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th{t
 #flotes-root .slider::before{content:"";position:absolute;height:14px;width:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
 #flotes-root .switch input:checked+.slider{background:var(--brand)}
 #flotes-root .switch input:checked+.slider::before{transform:translateX(16px)}
-#flotes-root .empty{text-align:center;padding:30px;color:var(--text-3);font-size:13px}
-#flotes-root .note{font-size:12px;color:var(--text-2);background:var(--info-soft);border:1px solid #D4E2F4;border-radius:var(--r);padding:9px 12px;margin-bottom:14px;line-height:1.5}
-#flotes-root .note.warn{background:var(--warning-soft);border-color:#EAD6A8}
-#flotes-root .note.ok{background:var(--success-soft);border-color:#C2E2CE}
+/* empty: heretat del CRM */
+#flotes-root .note{font-size:12px;color:var(--text-2);background:var(--info-soft);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;margin-bottom:14px;line-height:1.5}
+#flotes-root .note.warn{background:var(--warning-soft);border-color:var(--border-2)}
+#flotes-root .note.ok{background:var(--success-soft);border-color:var(--border-2)}
 #flotes-root .cmp-table{width:100%;border-collapse:collapse;font-size:13px}
 #flotes-root .cmp-table th,#flotes-root .cmp-table td{padding:8px 11px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums}
 #flotes-root .cmp-table th:first-child,#flotes-root .cmp-table td:first-child{text-align:left;font-variant-numeric:normal}
 #flotes-root .cmp-table thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);border-bottom:2px solid var(--border-2);vertical-align:bottom}
-#flotes-root .cmp-col-actual{background:#FAFBFD}
+#flotes-root .cmp-col-actual{background:var(--surface-2)}
 #flotes-root .cmp-best{background:var(--success-soft)!important}
 #flotes-root .cmp-table .rowlbl{color:var(--text-2);font-weight:500}
 #flotes-root .cmp-table input{padding:4px 7px;font-size:12.5px;text-align:right;max-width:106px}
@@ -685,7 +808,7 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th{t
 #flotes-root .tpl-area{width:100%;min-height:320px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre;resize:vertical}
 #flotes-root .saved{font-size:11px;color:var(--success);opacity:0;transition:opacity .3s}
 #flotes-root .saved.show{opacity:1}
-#flotes-root .taxbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:var(--brand-soft);border:1px solid #D4E2F4;border-radius:var(--r);padding:10px 14px;margin-bottom:12px}
+#flotes-root .taxbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:var(--brand-soft);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:12px}
 #flotes-root .taxbar label{font-size:11px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:6px}
 #flotes-root .taxbar input{width:70px;text-align:right}
 `;
@@ -702,6 +825,8 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}th{t
     downloadTemplate, importCSV, dlTpl, importSinis, importOfertes,
     setOf, togG, setOfPrima, setOfCom, setOfQuiet, addOferta, delOferta,
     addPend, closePend, addSub, togSub, genSubCIA,
+    setDocEstat, setDocData, setDocNota, addDoc, delDoc, resetDocs,
+    setFlag, setNConductors, crearOportunitat, renderTpl, tplToTask,
     informeClient, informeCIA, exportParcCSV, exportSinisCSV, exportComparativaCSV, exportExcelClient,
     copyTpl, tplSortida, openFleet, setSort
   };
