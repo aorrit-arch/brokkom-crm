@@ -374,7 +374,8 @@ window.renderCurrentTab = () => {
     agenda: window.renderAgenda,
     esborranys: window.renderEsborranys,
     prospeccio: window.renderProspeccio,
-    informes: window.renderInformes
+    informes: window.renderInformes,
+    flotes: window.renderFlotes
   };
   if (typeof renderers[tab] === 'function') {
     try { renderers[tab](); return; }
@@ -403,7 +404,8 @@ function renderBasicTab(tab) {
     notes: ['💭 Notes', "Idees"],
     agenda: ['📅 Agenda', "Esdeveniments"],
     esborranys: ['📝 Esborranys', "A mig fer"],
-    informes: ['📊 Informes', "Producció i anàlisi"]
+    informes: ['📊 Informes', "Producció i anàlisi"],
+    flotes: ['🚛 Flotes', "Tarificador i renovacions"]
   };
   const [tit, sub] = titulars[tab] || [tab, ''];
   let preview = '';
