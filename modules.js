@@ -866,8 +866,10 @@ function _tascaItemHTML(t) {
   const accions = t.estat !== 'done'
     ? `<button class="btn btn-sm" onclick="posposarTascaModal('${t.id}')" title="Prorrogar">⏭ Posposar</button>`
     : '';
+  const _ownerColor = (window.isViewAll && window.isViewAll() && t.user_id && window.getAvatarColor) ? window.getAvatarColor(t.user_id) : '';
+  const _liStyle = _ownerColor ? ` style="border-left:3px solid ${_ownerColor};padding-left:8px"` : '';
   return `
-    <li>
+    <li${_liStyle}>
       <div class="check ${t.estat==='done'?'done':''}" onclick="toggleTasca('${t.id}')"></div>
       <div style="flex:1">
         <div class="text ${t.estat==='done'?'done':''}">${escapeHtml(t.titol)}</div>
@@ -889,6 +891,9 @@ window.renderTasques = function() {
   else if (filtre === 'pendent') list = state.tasques.filter(t => t.estat === 'pendent');
   else if (filtre === 'done') list = state.tasques.filter(t => t.estat === 'done');
   else list = [...state.tasques];
+  const _viewAll = !!(window.isViewAll && window.isViewAll());
+  const userFilter = _viewAll ? (state._filtreTascaUser || '') : '';
+  if (userFilter) list = list.filter(t => t.user_id === userFilter);
   const ord = {'Alta':3,'Mitjana':2,'Baixa':1};
   list.sort((a,b) => {
     const ea = window.tascaEndarrerida(a)?1:0, eb = window.tascaEndarrerida(b)?1:0;
@@ -896,6 +901,20 @@ window.renderTasques = function() {
     return (ord[b.prioritat]||0)-(ord[a.prioritat]||0);
   });
   const endarrerides = list.filter(window.tascaEndarrerida).length;
+  let userPills = '';
+  if (_viewAll) {
+    const me = state.user && state.user.id;
+    const ids = [...new Set(state.tasques.map(t => t.user_id).filter(Boolean))];
+    const _pill = (val, label, active) => `<button class="btn btn-pill ${active?'active':''}" onclick="state._filtreTascaUser='${val}';renderTasques()">${label}</button>`;
+    if (ids.length > 1) {
+      userPills = '<div class="toolbar">' + _pill('', 'Tots', !userFilter) +
+        ids.map(id => {
+          const m = window.getMediadorByUserId ? window.getMediadorByUserId(id) : null;
+          const nom = (id === me) ? 'Tu' : ((m && (m.nom || m.email)) || '?');
+          return _pill(id, escapeHtml(nom), userFilter === id);
+        }).join('') + '</div>';
+    }
+  }
   c.innerHTML = `
     <div class="topbar">
       <div><div class="page-title">Tasques</div><div class="page-sub">${list.length} ${filtre==='avui'?"per avui":(filtre||'totes')}${endarrerides?` · ${endarrerides} endarrerides`:''}</div></div>
@@ -907,6 +926,7 @@ window.renderTasques = function() {
       <button class="btn btn-pill ${filtre==='done'?'active':''}" onclick="state._filtreTasques='done';renderTasques()">Fetes</button>
       <button class="btn btn-pill ${filtre===''?'active':''}" onclick="state._filtreTasques='';renderTasques()">Totes</button>
     </div>
+    ${userPills}
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;gap:8px">
         <input type="text" id="quick-tasca" placeholder="Afegeix una tasca per avui i prem Enter…" onkeydown="if(event.key==='Enter')quickAddTascaAvui()" style="flex:1">
