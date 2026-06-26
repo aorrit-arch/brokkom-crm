@@ -853,6 +853,16 @@ function _tascaItemHTML(t) {
   const prorrPill = (t.num_prorrogues||0) >= 2 ? `<span class="pill p-warning" title="Prorrogada ${t.num_prorrogues} cops">⏳ ${t.num_prorrogues}×</span>` : '';
   const limitPill = t.data_limit ? `<span class="pill p-gray" title="Data límit">⏰ ${fmtDate(t.data_limit)}</span>` : '';
   const avatar = (window.isAdmin() && t.user_id) ? renderUserAvatar(t.user_id,'sm') : '';
+  let assignPill = '';
+  const _me = state.user && state.user.id;
+  if (t.assigned_to && t.assigned_to !== t.user_id) {
+    if (t.assigned_to === _me) {
+      assignPill = `<span class="pill p-info" title="Tasca assignada a tu">↘ per a tu</span>`;
+    } else {
+      const _am = window.getMediadorByUserId ? window.getMediadorByUserId(t.assigned_to) : null;
+      assignPill = `<span class="pill p-gray" title="Assignada a un company">→ ${escapeHtml(_am?.nom || _am?.email || 'company')}</span>`;
+    }
+  }
   const accions = t.estat !== 'done'
     ? `<button class="btn btn-sm" onclick="posposarTascaModal('${t.id}')" title="Prorrogar">⏭ Posposar</button>`
     : '';
@@ -862,7 +872,7 @@ function _tascaItemHTML(t) {
       <div style="flex:1">
         <div class="text ${t.estat==='done'?'done':''}">${escapeHtml(t.titol)}</div>
         ${t.descripcio ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${escapeHtml(t.descripcio)}</div>` : ''}
-        <div class="text-meta">${prioPill}${catPill}${dataPill}${prorrPill}${limitPill}${avatar}</div>
+        <div class="text-meta">${prioPill}${catPill}${dataPill}${prorrPill}${limitPill}${assignPill}${avatar}</div>
       </div>
       <div style="display:flex;gap:4px">
         ${accions}

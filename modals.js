@@ -206,6 +206,11 @@ window.openModal = function(type, data = {}) {
         <div class="form-row"><label>Per a quin dia</label><input type="date" id="m-data-prevista" value="${new Date().toISOString().slice(0,10)}"></div>
         <div class="form-row"><label>Data límit (opcional)</label><input type="date" id="m-data-limit"></div>
       </div>
+      <div class="form-row"><label>Assignar a</label>
+        <select id="m-assigned">
+          ${(state.mediadors||[]).filter(u => u.user_id).map(u => `<option value="${u.user_id}" ${u.user_id===state.user.id?'selected':''}>${escapeHtml(u.nom||u.email)}${u.user_id===state.user.id?' (jo)':''}</option>`).join('')}
+        </select>
+      </div>
       <div class="modal-actions">
         <button class="btn" onclick="closeModal()">Cancel·lar</button>
         <button class="btn btn-primary" onclick="saveTasca()">Guardar</button>
@@ -504,6 +509,7 @@ window.saveTasca = async function() {
     data_limit: document.getElementById('m-data-limit').value || null,
     estat: 'pendent',
     user_id: state.user.id,
+    assigned_to: (document.getElementById('m-assigned') && document.getElementById('m-assigned').value) || state.user.id,
     mediador_id: state.mediador?.id || null
   };
   try {
